@@ -1731,6 +1731,22 @@ body[data-window-view="settings"] .checkbox-toggle-field {
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
+body[data-window-view="settings"] .checkbox-toggle {
+  min-height: 44px;
+  padding: 0 12px;
+}
+
+body[data-window-view="settings"] .message-sound-card {
+  gap: 14px;
+  padding: 16px;
+}
+
+body[data-window-view="settings"] .message-sound-card .selected-room-volume-controls {
+  grid-template-columns: minmax(180px, 240px) minmax(0, 1fr);
+}
+
 body[data-window-view="settings"] .role-launch-card {
   grid-template-columns: minmax(0, 1fr) auto;
+  min-height: 0;
+  padding: 16px;
 }
