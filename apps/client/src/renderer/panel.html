@@ -151,8 +151,8 @@
           <div class="settings-layout">
             <aside class="settings-sidebar" aria-label="Settings sections">
               <button class="settings-sidebar-link is-active" type="button" data-settings-section-link="settings-general">General</button>
-              <button class="settings-sidebar-link" type="button" data-settings-section-link="settings-buttons">Button Actions</button>
-              <button class="settings-sidebar-link" type="button" data-settings-section-link="settings-message-groups">Message Groups</button>
+              <button class="settings-sidebar-link" type="button" data-settings-section-link="settings-buttons">Buttons</button>
+              <button class="settings-sidebar-link" type="button" data-settings-section-link="settings-message-groups">Messaging</button>
               <button class="settings-sidebar-link" type="button" data-settings-section-link="settings-connection">Connection</button>
             </aside>
             <div class="settings-content">
@@ -178,7 +178,7 @@
           <section class="settings-section settings-tab-section" id="settings-buttons" data-settings-section="settings-buttons" hidden>
             <div class="settings-section-head">
               <div>
-                <h3>Button Actions</h3>
+                <h3>Buttons</h3>
               </div>
             </div>
             <div class="room-row">
@@ -194,28 +194,9 @@
           <section class="settings-section settings-tab-section" id="settings-message-groups" data-settings-section="settings-message-groups" hidden>
             <div class="settings-section-head">
               <div>
-                <h3>Message Groups</h3>
+                <h3>Messaging</h3>
               </div>
               <button class="settings-add-button" id="add-message-group-button" type="button">Add group</button>
-            </div>
-            <div class="message-group-list" id="message-group-list"></div>
-          </section>
-
-          <section class="settings-section settings-tab-section" id="settings-general" data-settings-section="settings-general">
-            <div class="settings-section-head">
-              <div>
-                <h3>General</h3>
-              </div>
-            </div>
-            <div class="checkbox-toggle-field">
-              <label class="checkbox-toggle">
-                <input id="show-panel-at-startup-input" type="checkbox" />
-                <span>Show panel on startup</span>
-              </label>
-              <label class="checkbox-toggle">
-                <input id="always-on-top-input" type="checkbox" />
-                <span>Always on top</span>
-              </label>
             </div>
             <div class="selected-room-volume-card message-sound-card">
               <div class="selected-room-volume-header">
@@ -252,6 +233,25 @@
                   </div>
                 </label>
               </div>
+            </div>
+            <div class="message-group-list" id="message-group-list"></div>
+          </section>
+
+          <section class="settings-section settings-tab-section" id="settings-general" data-settings-section="settings-general">
+            <div class="settings-section-head">
+              <div>
+                <h3>General</h3>
+              </div>
+            </div>
+            <div class="checkbox-toggle-field">
+              <label class="checkbox-toggle">
+                <input id="show-panel-at-startup-input" type="checkbox" />
+                <span>Show panel on startup</span>
+              </label>
+              <label class="checkbox-toggle">
+                <input id="always-on-top-input" type="checkbox" />
+                <span>Always on top</span>
+              </label>
             </div>
             <div class="role-launch-card">
               <div class="role-launch-copy">

@@ -1503,42 +1503,6 @@ body[data-window-view="settings"] .settings-content {
   border-bottom: 1px solid var(--line);
 }
 
-.selected-room-action-toggle {
-  width: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 0;
-  border: 0;
-  background: transparent;
-  color: var(--text);
-  font: inherit;
-  cursor: pointer;
-  text-align: left;
-}
-
-.selected-room-action-toggle::after {
-  content: "";
-  width: 12px;
-  height: 12px;
-  flex: 0 0 12px;
-  background-color: currentColor;
-  -webkit-mask-image: var(--icon-chevron);
-  mask-image: var(--icon-chevron);
-  -webkit-mask-repeat: no-repeat;
-  mask-repeat: no-repeat;
-  -webkit-mask-position: center;
-  mask-position: center;
-  -webkit-mask-size: contain;
-  mask-size: contain;
-  transition: transform 150ms ease;
-}
-
-.selected-room-action-toggle[aria-expanded="true"]::after {
-  transform: rotate(90deg);
-}
-
 .room-action-list {
   display: grid;
   gap: 10px;

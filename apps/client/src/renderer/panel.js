@@ -118,7 +118,6 @@ let roomRightAuxSettings = {};
 let roomActionSettings = {};
 let roomMessageGroups = {};
 let roomPinnedMessageThreads = {};
-let roomActionSectionsExpanded = {};
 let preferredRoomId = "";
 let roomSettingsInteractionLockUntil = 0;
 let chatMessages = [];
@@ -1631,10 +1630,6 @@ function renderRoomActionRows(roomId) {
     .join("");
 }
 
-function isRoomActionSectionExpanded(roomId) {
-  return Boolean(roomActionSectionsExpanded[String(roomId || "").trim()]);
-}
-
 function renderSelectedRoomVolumeControl() {
   if (!selectedRoomVolume) {
     return;
@@ -1654,24 +1649,13 @@ function renderSelectedRoomVolumeControl() {
   const buttonAppearance = getRoomButtonAppearance(room.id);
   const leftAuxSetting = getRoomLeftAuxSetting(room.id);
   const rightAuxSetting = getRoomRightAuxSetting(room.id);
-  const roomActionsExpanded = isRoomActionSectionExpanded(room.id);
   selectedRoomVolume.dataset.roomSettingsId = room.id;
   selectedRoomVolume.classList.remove("hidden");
   selectedRoomVolume.innerHTML = `
     <div class="selected-room-volume-card push-down">
-      <div class="selected-room-volume-header">
-        <div class="selected-room-volume-title">Room Settings</div>
-      </div>
       <div class="selected-room-action-card">
-        <button
-          class="selected-room-action-toggle"
-          data-room-actions-toggle-id="${escapeHtml(room.id)}"
-          type="button"
-          aria-expanded="${roomActionsExpanded ? "true" : "false"}"
-        >
-          <span class="selected-room-control-label">Room Actions</span>
-        </button>
-        <div class="room-action-list ${roomActionsExpanded ? "" : "hidden"}">
+        <span class="selected-room-control-label">Actions</span>
+        <div class="room-action-list">
           ${renderRoomActionRows(room.id)}
         </div>
       </div>
@@ -3069,23 +3053,6 @@ selectedRoomVolume?.addEventListener("click", async (event) => {
     }
 
     await playRoomAlertSound(roomId).catch(() => {});
-    return;
-  }
-
-  const roomActionsToggle = target.closest("[data-room-actions-toggle-id]");
-
-  if (roomActionsToggle) {
-    const roomId = String(roomActionsToggle.getAttribute("data-room-actions-toggle-id") || "").trim();
-
-    if (!roomId) {
-      return;
-    }
-
-    roomActionSectionsExpanded = {
-      ...roomActionSectionsExpanded,
-      [roomId]: !isRoomActionSectionExpanded(roomId),
-    };
-    renderSelectedRoomVolumeControl();
     return;
   }
 
