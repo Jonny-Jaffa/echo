@@ -87,7 +87,7 @@ function renderRoleView(roleState = {}) {
   if (roleCurrentLabel) {
     roleCurrentLabel.textContent = isSupportedInThisBuild
       ? `Current saved role: ${formatRuntimeRoleLabel(runtimeRole)}`
-      : `This Echo Reception build supports ${formatRuntimeRoleLabel(nativeRuntimeRole)} only. Switch back to ${formatRuntimeRoleLabel(nativeRuntimeRole)} to continue using this install.`;
+      : `This Pip Reception build supports ${formatRuntimeRoleLabel(nativeRuntimeRole)} only. Switch back to ${formatRuntimeRoleLabel(nativeRuntimeRole)} to continue using this install.`;
   }
 }
 function clearNotification() {
@@ -423,7 +423,7 @@ function reportGadgetHeight() {
   }
 
   lastReportedGadgetHeight = nextHeight;
-  window.patientPing.updateGadgetHeight(nextHeight).catch(() => {});
+  window.pip.updateGadgetHeight(nextHeight).catch(() => {});
 }
 
 function scheduleGadgetHeightReport() {
@@ -676,13 +676,13 @@ async function init() {
 
   if (isRoleWindow) {
     rolePanel?.classList.remove("hidden");
-    const roleState = await window.patientPing.getRoleState?.().catch(() => null);
+    const roleState = await window.pip.getRoleState?.().catch(() => null);
     renderRoleView(roleState || {});
     return;
   }
 
-  const status = await window.patientPing.getStatus();
-  const config = await window.patientPing.getConfig();
+  const status = await window.pip.getStatus();
+  const config = await window.pip.getConfig();
   draftConfig = structuredClone(config);
   populateEditor(draftConfig);
   applyState(status);
@@ -696,11 +696,11 @@ alertList?.addEventListener("click", async (event) => {
   }
 
   if (target.dataset.action === "dismiss") {
-    await window.patientPing.dismissNotification();
+    await window.pip.dismissNotification();
   }
 
   if (target.dataset.action === "dismiss-row") {
-    await window.patientPing.dismissNotificationById(
+    await window.pip.dismissNotificationById(
       target.dataset.notificationId,
     );
   }
@@ -709,7 +709,7 @@ alertList?.addEventListener("click", async (event) => {
     const roomId = target.dataset.roomId;
     if (pendingPingRooms.has(roomId)) {
       pendingPingRooms.delete(roomId);
-      await window.patientPing.clearPing(roomId);
+      await window.pip.clearPing(roomId);
       renderAlertList(appState);
       return;
     }
@@ -720,7 +720,7 @@ alertList?.addEventListener("click", async (event) => {
     ];
     const latestAlertForRoom = alerts.find((alert) => alert.roomId === roomId) || null;
     pendingPingRooms.set(roomId, latestAlertForRoom?.notificationId || null);
-    await window.patientPing.pingRoom(roomId);
+    await window.pip.pingRoom(roomId);
     renderAlertList(appState);
   }
 
@@ -728,25 +728,25 @@ alertList?.addEventListener("click", async (event) => {
 
 adminModeButton?.addEventListener("click", async () => {
   clearFeedback();
-  await window.patientPing.openSettingsWindow?.().catch(() => {});
+  await window.pip.openSettingsWindow?.().catch(() => {});
 });
 
 compactModeButton?.addEventListener("click", async () => {
-  await window.patientPing.updateDisplaySettings({
+  await window.pip.updateDisplaySettings({
     compactMode: !appState.config.display.compactMode,
   });
 });
 
 minimizeWindowButton?.addEventListener("click", async () => {
-  await window.patientPing.minimizeWindow?.().catch(() => {});
+  await window.pip.minimizeWindow?.().catch(() => {});
 });
 
 minimizeAdminButton?.addEventListener("click", async () => {
-  await window.patientPing.minimizeWindow?.().catch(() => {});
+  await window.pip.minimizeWindow?.().catch(() => {});
 });
 
 quitAppButton?.addEventListener("click", async () => {
-  await window.patientPing.confirmQuit();
+  await window.pip.confirmQuit();
 });
 
 closeAdminButton?.addEventListener("click", async () => {
@@ -757,7 +757,7 @@ closeAdminButton?.addEventListener("click", async () => {
 saveConfigButton?.addEventListener("click", async () => {
   clearFeedback();
   const nextConfig = buildConfigFromForm();
-  const result = await window.patientPing.saveConfig(nextConfig);
+  const result = await window.pip.saveConfig(nextConfig);
 
   if (!result.ok) {
     showFeedback(result.errors.join(" "), "error");
@@ -817,14 +817,14 @@ document.body.addEventListener("input", (event) => {
 });
 
 audioPlayTestButton?.addEventListener("click", async () => {
-  await window.patientPing.playReceptionTestSound({
+  await window.pip.playReceptionTestSound({
     sound: normalizeReceptionSound(audioNotificationSoundInput.value),
     volume: Number(audioMasterVolumeInput.value),
   }).catch(() => {});
 });
 
 audioMessagePlayTestButton?.addEventListener("click", async () => {
-  await window.patientPing.playReceptionTestSound({
+  await window.pip.playReceptionTestSound({
     sound: normalizeReceptionSound(audioMessageSoundInput.value),
     volume: Number(audioMessageVolumeInput.value),
   }).catch(() => {});
@@ -842,7 +842,7 @@ chatSendButton?.addEventListener("click", async () => {
     return;
   }
 
-  const result = await window.patientPing.sendChatMessage({
+  const result = await window.pip.sendChatMessage({
     recipientRoomIds: [...selectedChatRoomIds],
     text,
   });
@@ -931,25 +931,25 @@ roleOptionList?.addEventListener("click", async (event) => {
     return;
   }
 
-  const nextRoleState = await window.patientPing.updateRoleState({
+  const nextRoleState = await window.pip.updateRoleState({
     runtimeRole,
     runtimeRoleConfirmed: true,
   }).catch(() => null);
 
   renderRoleView(nextRoleState || { runtimeRole });
-  await window.patientPing.closeRoleWindow?.().catch(() => {});
+  await window.pip.closeRoleWindow?.().catch(() => {});
 });
 
 roleCloseButton?.addEventListener("click", async () => {
-  await window.patientPing.closeRoleWindow?.().catch(() => {});
+  await window.pip.closeRoleWindow?.().catch(() => {});
 });
 
 openRoleWindowButton?.addEventListener("click", async () => {
-  await window.patientPing.openRoleWindow?.().catch(() => {});
+  await window.pip.openRoleWindow?.().catch(() => {});
 });
 
-window.patientPing.onStateUpdate(applyState);
-window.patientPing.onChatUpdate((messages) => {
+window.pip.onStateUpdate(applyState);
+window.pip.onChatUpdate((messages) => {
   if (!appState) {
     return;
   }
@@ -960,7 +960,7 @@ window.patientPing.onChatUpdate((messages) => {
   };
   renderChatMessages(appState);
 });
-window.patientPing.onPingCleared((payload) => {
+window.pip.onPingCleared((payload) => {
   if (payload?.roomId) {
     pendingPingRooms.delete(payload.roomId);
     if (appState) {

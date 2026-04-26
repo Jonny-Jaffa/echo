@@ -34,8 +34,10 @@ export function normalizeRuntimeRole(
 }
 
 export function resolveConfigPath() {
-  if (process.env.PATIENT_PING_CONFIG_PATH && fs.existsSync(process.env.PATIENT_PING_CONFIG_PATH)) {
-    return process.env.PATIENT_PING_CONFIG_PATH;
+  const envConfigPath = process.env.PIP_CONFIG_PATH;
+
+  if (envConfigPath && fs.existsSync(envConfigPath)) {
+    return envConfigPath;
   }
 
   const candidates = [

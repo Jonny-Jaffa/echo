@@ -1,5 +1,5 @@
 {
-  "name": "@patient-ping/echo",
+  "name": "@pip/echo",
   "version": "0.2.2",
   "private": true,
   "author": "Blackworks",
@@ -9,7 +9,7 @@
     "start": "env -u ELECTRON_RUN_AS_NODE electron ."
   },
   "dependencies": {
-    "@patient-ping/shared": "0.2.2"
+    "@pip/shared": "0.2.2"
   },
   "devDependencies": {
     "electron": "37.2.1"

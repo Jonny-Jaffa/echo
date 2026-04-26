@@ -107,10 +107,10 @@ let isSettingsPanelExpanded = false;
 let clientSettings = {
   runtimeRole: RUNTIME_ROLE_ROOM,
   runtimeRoleConfirmed: true,
-  serverUrl: process.env.PATIENT_PING_SERVER || "http://127.0.0.1:3210",
-  serverAccessKey: process.env.PATIENT_PING_ACCESS_KEY || "",
-  roomId: process.env.PATIENT_PING_ROOM_ID || "surgery-1",
-  deviceId: process.env.PATIENT_PING_DEVICE_ID || randomUUID(),
+  serverUrl: process.env.PIP_SERVER || "http://127.0.0.1:3210",
+  serverAccessKey: process.env.PIP_ACCESS_KEY || "",
+  roomId: process.env.PIP_ROOM_ID || "surgery-1",
+  deviceId: process.env.PIP_DEVICE_ID || randomUUID(),
   launchAtStartup: true,
   showPanelAtStartup: true,
   alwaysOnTop: false,
@@ -375,7 +375,7 @@ function normalizeRoomRightAuxSettings(roomRightAuxSettings) {
 
 function configureAboutPanel() {
   app.setAboutPanelOptions({
-    applicationName: "Echo Surgery",
+    applicationName: "Patient Pip",
     applicationVersion: app.getVersion(),
     version: app.getVersion(),
     credits: "Developed by Blackworks",
@@ -395,7 +395,7 @@ function createWindow({ showInitially = true } = {}) {
     minWidth: SURGERY_WINDOW_WIDTH,
     minHeight: getPanelDisplayModeHeight(clientSettings.panelDisplayMode),
     autoHideMenuBar: true,
-    title: "Echo Surgery",
+    title: "Pip Surgery",
     show: false,
     skipTaskbar: false,
     frame: false,
@@ -462,7 +462,7 @@ function createSettingsWindow() {
     minWidth: SURGERY_SETTINGS_WINDOW_WIDTH,
     minHeight: 680,
     autoHideMenuBar: true,
-    title: "Echo Surgery Settings",
+    title: "Pip Surgery Settings",
     show: false,
     skipTaskbar: false,
     frame: false,
@@ -512,7 +512,7 @@ function createRoleWindow() {
     minWidth: 420,
     minHeight: 420,
     autoHideMenuBar: true,
-    title: "Echo Role",
+    title: "Pip Role",
     show: false,
     skipTaskbar: false,
     frame: false,
@@ -690,8 +690,8 @@ function discoverReceptionServer(timeoutMs = 1800) {
     const socket = dgram.createSocket("udp4");
     const discoveryPayload = Buffer.from(
       JSON.stringify({
-        type: "patient-ping-discovery",
-        app: "patient-ping-surgery",
+        type: "pip-discovery",
+        app: "pip-room",
       }),
     );
 
@@ -710,7 +710,7 @@ function discoverReceptionServer(timeoutMs = 1800) {
         const payload = JSON.parse(String(message));
 
         if (
-          payload?.type === "patient-ping-discovery-response" &&
+          payload?.type === "pip-discovery-response" &&
           typeof payload.serverUrl === "string" &&
           payload.serverUrl.trim()
         ) {
@@ -935,7 +935,7 @@ function getAppIcon() {
 }
 
 function getBrandLogoDataUrl() {
-  const logoPath = path.join(__dirname, "assets", "echo-logo-colour.png");
+  const logoPath = path.join(__dirname, "assets", "patient-pip-logo-colour.png");
 
   if (!fs.existsSync(logoPath)) {
     return "";
@@ -959,7 +959,7 @@ function showAboutDialog() {
     return;
   }
 
-  const appName = "Echo Surgery";
+  const appName = "Patient Pip";
   const appVersion = app.getVersion();
   const brandLogoDataUrl = getBrandLogoDataUrl();
   const appIcon = getAppIcon();
@@ -1073,7 +1073,7 @@ function showAboutDialog() {
     </head>
     <body>
       <main class="about-card">
-        ${brandLogoDataUrl ? `<img class="about-logo" src="${brandLogoDataUrl}" alt="Echo" />` : ""}
+        ${brandLogoDataUrl ? `<img class="about-logo" src="${brandLogoDataUrl}" alt="Patient Pip" />` : ""}
         <h1 class="about-title">${escapeHtml(appName)}</h1>
         <p class="about-version">Version ${escapeHtml(appVersion)}</p>
         <p class="about-line">Developed by Blackworks</p>
@@ -1164,8 +1164,8 @@ function refreshTrayMenu() {
     {
       label: hasSupportedMainWindow
         ? isWindowVisible
-          ? "Hide Echo Surgery"
-          : "Open Echo Surgery"
+          ? "Hide Pip Surgery"
+          : "Open Pip Surgery"
         : "Choose device role",
       click: () => {
         if (hasSupportedMainWindow) {
@@ -1200,7 +1200,7 @@ function refreshTrayMenu() {
     },
   ]);
 
-  tray.setToolTip("Echo Surgery");
+  tray.setToolTip("Pip Surgery");
   tray.setContextMenu(menu);
 }
 

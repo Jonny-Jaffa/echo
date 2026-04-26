@@ -1,4 +1,4 @@
-# Echo Install Guide
+# Pip Install Guide
 
 Developer: `Blackworks`
 
@@ -7,13 +7,13 @@ Developer: `Blackworks`
 Use two separate installers:
 
 - Reception computer:
-  `dist/reception/Echo Reception Setup 0.2.1.exe`
+  `dist/reception/Pip Reception Setup 0.2.1.exe`
 - Surgery computers:
-  `dist/surgery/Echo Surgery Setup 0.2.1.exe`
+  `dist/surgery/Pip Surgery Setup 0.2.1.exe`
 
 ZIP builds are also available in the same folders, but for normal Windows installation you should run the `Setup ... .exe` file directly. You do not need to unzip anything before running the installer.
 
-For surgery computers, each installed `Echo Surgery` app includes a room selector. Choose the room for that specific computer on first launch and it will save that room assignment locally, along with a persistent device ID, so multiple surgery PCs and Elgato Neo devices can all connect to the same reception app on the same LAN without colliding.
+For surgery computers, each installed `Pip Surgery` app includes a room selector. Choose the room for that specific computer on first launch and it will save that room assignment locally, along with a persistent device ID, so multiple surgery PCs and Elgato Neo devices can all connect to the same reception app on the same LAN without colliding.
 
 ## Windows installer note
 
@@ -27,8 +27,8 @@ The packaged macOS reception app still needs proper Apple code signing and notar
 
 For now:
 
-- `Echo Surgery` can continue to be tested from the packaged app if it opens correctly on your Mac
-- `Echo Reception` should be run using the local Mac test launcher below during development
+- `Pip Surgery` can continue to be tested from the packaged app if it opens correctly on your Mac
+- `Pip Reception` should be run using the local Mac test launcher below during development
 
 ## Local Mac test launcher for Reception
 
@@ -42,14 +42,14 @@ This launches the reception gadget directly from source and avoids the current u
 
 ## What goes where
 
-- Install `Echo Reception` on the front desk / reception computer
-- Install `Echo Surgery` on each surgery computer that will use:
+- Install `Pip Reception` on the front desk / reception computer
+- Install `Pip Surgery` on each surgery computer that will use:
   - the Elgato Stream Deck Neo
   - the optional on-screen surgery panel
 
 ## Reception setup
 
-1. Open `Echo Reception`
+1. Open `Pip Reception`
 2. Open `Settings`
 3. Configure:
    - room names
@@ -60,7 +60,7 @@ This launches the reception gadget directly from source and avoids the current u
 
 ## Surgery setup
 
-1. Open `Echo Surgery`
+1. Open `Pip Surgery`
 2. Select the correct surgery room for that machine
 3. Enter the reception server address if needed
 4. Enter the same pairing code shown in reception

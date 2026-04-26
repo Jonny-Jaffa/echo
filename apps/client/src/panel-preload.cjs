@@ -1,9 +1,9 @@
 const { contextBridge, ipcRenderer } = require("electron");
 
-contextBridge.exposeInMainWorld("patientPingPanel", {
-  defaultServerUrl: process.env.PATIENT_PING_SERVER || "http://127.0.0.1:3210",
-  defaultServerAccessKey: process.env.PATIENT_PING_ACCESS_KEY || "",
-  defaultRoomId: process.env.PATIENT_PING_ROOM_ID || "surgery-1",
+contextBridge.exposeInMainWorld("pipPanel", {
+  defaultServerUrl: process.env.PIP_SERVER || "http://127.0.0.1:3210",
+  defaultServerAccessKey: process.env.PIP_ACCESS_KEY || "",
+  defaultRoomId: process.env.PIP_ROOM_ID || "surgery-1",
   hideWindow: () => ipcRenderer.invoke("panel:hideWindow"),
   minimizeWindow: () => ipcRenderer.invoke("panel:minimizeWindow"),
   openSettingsWindow: () => ipcRenderer.invoke("panel:openSettingsWindow"),

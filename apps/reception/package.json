@@ -1,5 +1,5 @@
 {
-  "name": "@patient-ping/reception",
+  "name": "@pip/reception",
   "version": "0.2.2",
   "private": true,
   "author": "Blackworks",
@@ -9,15 +9,15 @@
     "start": "env -u ELECTRON_RUN_AS_NODE electron ."
   },
   "dependencies": {
-    "@patient-ping/shared": "0.2.2",
+    "@pip/shared": "0.2.2",
     "ws": "^8.18.3"
   },
   "devDependencies": {
     "electron": "37.2.1"
   },
   "build": {
-    "appId": "com.echo.reception",
-    "productName": "Echo Reception",
+    "appId": "com.patientpip.reception",
+    "productName": "Pip Reception",
     "icon": "build/icon.png",
     "copyright": "Copyright Blackworks",
     "directories": {

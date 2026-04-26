@@ -1,4 +1,4 @@
-# Echo Dev Log
+# Pip Dev Log
 
 ## 2026-04-16
 
@@ -149,18 +149,18 @@
 
 ### Session 1
 
-- Added a persistent branding note to the dev plan so future sessions treat `Echo` as the canonical product name
-- Began project-wide user-facing rename to `Echo`
+- Added a persistent branding note to the dev plan so future sessions treat `Pip` as the canonical product name
+- Began project-wide user-facing rename to `Pip`
 - Confirmed the rename should cover app titles, UI labels, tray text, installer product names, dialog copy, and documentation
 - Promoted the temporary reception test installer identity into the proper release branding:
-  - `Echo Reception`
-  - `Echo Surgery`
+  - `Pip Reception`
+  - `Pip Surgery`
 - Aligned workspace package versions for the next Windows release build
 
 ### Notes
 
 - For stability, internal package/folder identifiers may temporarily retain older names where they are not user-facing
-- User-facing branding should now consistently read `Echo`
+- User-facing branding should now consistently read `Pip`
 
 ### Session 2
 
@@ -174,14 +174,14 @@
 ### Session 3
 
 - Diagnosed the packaged surgery startup failure shown in the panel status as a shared-package import problem rather than a Stream Deck problem
-- Fixed `@patient-ping/shared` so config-path resolution is lazy and only happens when `loadConfig()` or `saveConfig()` are actually called
+- Fixed `@pip/shared` so config-path resolution is lazy and only happens when `loadConfig()` or `saveConfig()` are actually called
 - Removed the packaged surgery app's accidental requirement for a local bundled `config.json` just to import `buildNotificationPayload()`
 - Bumped workspace/app versions from `0.1.4` to `0.1.5` for the next installer output
 
 ### Session 4
 
 - Added a dedicated surgery-panel startup waiting state for the case where the surgery computer is running before reception is available
-- The waiting state now shows only the Echo logo, an offline indicator, and the message `Waiting to connect to reception`
+- The waiting state now shows only the Pip logo, an offline indicator, and the message `Waiting to connect to reception`
 - Fixed the Neo fallback button renderer so fallback mode still paints button labels instead of blank lit buttons
 - Increased the reception gadget alert icon size
 - Bumped workspace/app versions from `0.1.5` to `0.1.6` for the next installer output
@@ -252,8 +252,8 @@
   - designed to be mutually exclusive with party mode so the animations do not clash
 - Bumped workspace/app versions to `0.2.1`
 - Built fresh Windows installers and ZIPs for both apps:
-  - `dist/reception/Echo Reception Setup 0.2.1.exe`
-  - `dist/surgery/Echo Surgery Setup 0.2.1.exe`
+  - `dist/reception/Pip Reception Setup 0.2.1.exe`
+  - `dist/surgery/Pip Surgery Setup 0.2.1.exe`
 
 ### Notes
 
@@ -263,7 +263,7 @@
 
 ### Session 1
 
-- Initialized a new Git repository for the working Echo folder after the previous session crash
+- Initialized a new Git repository for the working Pip folder after the previous session crash
 - Added a `.gitignore` that keeps generated dependencies, build outputs, local backup folders, and OS metadata out of source control
 - Created and pushed the initial working baseline to `git@github.com:Jonny-Jaffa/echo.git`
 - Corrected the README quick start to use the confirmed local desktop smoke-test pair:
@@ -279,7 +279,7 @@
 ### Notes
 
 - The handoff still launches the trusted existing role apps as separate development processes
-- The next migration step is to host the full role-specific windows directly from the unified `apps/echo` process, then consolidate packaging around one `Echo` app identity
+- The next migration step is to host the full role-specific windows directly from the unified `apps/echo` process, then consolidate packaging around one `Pip` app identity
 
 ### Session 2
 
@@ -427,7 +427,7 @@
 
 ### Next Checkpoint
 
-- Document and implement a role-selection model for a unified `Echo` installer/app
+- Document and implement a role-selection model for a unified `Pip` installer/app
 - Identify what can be shared between reception and room modes without coupling the startup logic too tightly
 - Keep the reception server/runtime responsibilities isolated even if both roles eventually live inside one packaged Electron product
 - The pairing code is stored locally in each app config; new reception installs default to `1234` unless that value has already been changed and saved

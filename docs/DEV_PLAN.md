@@ -1,19 +1,19 @@
-# Echo Dev Plan
+# Pip Dev Plan
 
 Last updated: 2026-04-26
 
 ## Branding Note
 
-- Effective 2026-04-20, the product name is `Echo`
-- Future user-facing text should use `Echo` consistently
+- Effective 2026-04-26, the product name is `Patient Pip`, shortened to `Pip` in the apps
+- Future user-facing text should use `Pip` consistently
 - This includes:
   - app window titles
   - tray labels and tooltips
   - installer product names
   - dialog copy
   - documentation headings and instructions
-- Internal package names, folder names, and legacy identifiers may still temporarily use older naming where changing them would risk breaking workspace wiring; user-facing branding should still read `Echo`
-- Windows installers should now ship as `Echo Reception` and `Echo Surgery` without any `Test` suffix in release filenames
+- Internal package names, folder names, and legacy identifiers may still temporarily use older naming where changing them would risk breaking workspace wiring; user-facing branding should still read `Pip`
+- Windows installers should now ship as `Pip Reception` and `Pip Surgery` without any `Test` suffix in release filenames
 
 ## Current Phase
 
@@ -88,12 +88,12 @@ Phase 6: Unified Product and Role Selection
 
 - Windows packaging hardening and installer validation
 - Final multi-machine deployment validation on physical reception/surgery PCs
-- Architecture planning for a single packaged `Echo` product with role-based startup
-- Full direct in-app hosting of the role-specific Reception and Room windows from the future `Echo` app
+- Architecture planning for a single packaged `Pip` product with role-based startup
+- Full direct in-app hosting of the role-specific Reception and Room windows from the future `Pip` app
 
 ### Next
 
-- Design first-run role selection for a single packaged `Echo` app
+- Design first-run role selection for a single packaged `Pip` app
 - [x] Expose the role chooser from a deliberate settings/support path
 - Decide whether the first unified build should reuse one renderer entrypoint or introduce a dedicated bootstrap main process
 - Extract/share common shell, messaging, and settings-window pieces where it reduces duplication safely

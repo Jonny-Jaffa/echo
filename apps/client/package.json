@@ -1,5 +1,5 @@
 {
-  "name": "@patient-ping/client",
+  "name": "@pip/client",
   "version": "0.2.2",
   "private": true,
   "author": "Blackworks",
@@ -14,7 +14,7 @@
   },
   "dependencies": {
     "@elgato-stream-deck/node": "^7.6.2",
-    "@patient-ping/shared": "0.2.2",
+    "@pip/shared": "0.2.2",
     "@resvg/resvg-wasm": "^2.6.2",
     "ws": "^8.18.3"
   },
@@ -22,8 +22,8 @@
     "electron": "37.2.1"
   },
   "build": {
-    "appId": "com.echo.surgery",
-    "productName": "Echo Surgery",
+    "appId": "com.patientpip.surgery",
+    "productName": "Pip Surgery",
     "icon": "build/icon.png",
     "copyright": "Copyright Blackworks",
     "directories": {

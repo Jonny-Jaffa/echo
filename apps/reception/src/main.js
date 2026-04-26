@@ -41,7 +41,7 @@ const WINDOW_ADMIN_HEIGHT = 600;
 const GADGET_HEADER_HEIGHT = 0;
 const GADGET_ROW_HEIGHT = 40;
 const GADGET_FRAME_PADDING = 7;
-const STARTUP_LOG_PATH = path.join(os.tmpdir(), "patient-ping-reception.log");
+const STARTUP_LOG_PATH = path.join(os.tmpdir(), "pip-reception.log");
 const DEFAULT_RECEPTION_SOUND = "notification_sound_01";
 const RECEPTION_SOUND_FILE_MAP = Object.fromEntries(
   Array.from({ length: 17 }, (_value, index) => {
@@ -318,7 +318,7 @@ function getAppIcon() {
 }
 
 function getBrandLogoDataUrl() {
-  const logoPath = path.join(__dirname, "assets", "echo-logo-colour.png");
+  const logoPath = path.join(__dirname, "assets", "patient-pip-logo-colour.png");
 
   if (!fs.existsSync(logoPath)) {
     return "";
@@ -349,7 +349,7 @@ function getTrayIcon() {
 
 function createTray() {
   tray = new Tray(getTrayIcon());
-  tray.setToolTip("Echo Reception");
+  tray.setToolTip("Pip Reception");
   tray.on("click", () => {
     if (mainWindow) {
       mainWindow.show();
@@ -373,7 +373,7 @@ function createTray() {
 
 function configureAboutPanel() {
   app.setAboutPanelOptions({
-    applicationName: "Echo Reception",
+    applicationName: "Patient Pip",
     applicationVersion: app.getVersion(),
     version: app.getVersion(),
     credits: "Developed by Blackworks",
@@ -397,7 +397,7 @@ function showAboutDialog() {
     return;
   }
 
-  const appName = "Echo Reception";
+  const appName = "Patient Pip";
   const appVersion = app.getVersion();
   const brandLogoDataUrl = getBrandLogoDataUrl();
   const appIcon = getAppIcon();
@@ -511,7 +511,7 @@ function showAboutDialog() {
     </head>
     <body>
       <main class="about-card">
-        ${brandLogoDataUrl ? `<img class="about-logo" src="${brandLogoDataUrl}" alt="Echo" />` : ""}
+        ${brandLogoDataUrl ? `<img class="about-logo" src="${brandLogoDataUrl}" alt="Patient Pip" />` : ""}
         <h1 class="about-title">${escapeHtml(appName)}</h1>
         <p class="about-version">Version ${escapeHtml(appVersion)}</p>
         <p class="about-line">Developed by Blackworks</p>
@@ -540,7 +540,7 @@ function refreshTrayMenu() {
   tray.setContextMenu(
     Menu.buildFromTemplate([
       {
-        label: hasSupportedMainWindow ? "Show Echo Reception" : "Choose device role",
+        label: hasSupportedMainWindow ? "Show Pip Reception" : "Choose device role",
         click: () => {
           if (hasSupportedMainWindow) {
             mainWindow?.show();
@@ -551,7 +551,7 @@ function refreshTrayMenu() {
         },
       },
       {
-        label: configState?.display?.minimized ? "Expand Echo Reception" : "Minimize Echo Reception",
+        label: configState?.display?.minimized ? "Expand Pip Reception" : "Minimize Pip Reception",
         click: () => updateDisplaySettings({
           minimized: !configState.display.minimized,
         }),
@@ -954,7 +954,7 @@ function initializeConfigPath() {
   });
 
   if (fs.existsSync(userConfigPath)) {
-    process.env.PATIENT_PING_CONFIG_PATH = userConfigPath;
+    process.env.PIP_CONFIG_PATH = userConfigPath;
     logStartup("Using existing user config", userConfigPath);
     return userConfigPath;
   }
@@ -978,7 +978,7 @@ function initializeConfigPath() {
     logStartup("Copied bundled config to user data", userConfigPath);
   }
 
-  process.env.PATIENT_PING_CONFIG_PATH = userConfigPath;
+  process.env.PIP_CONFIG_PATH = userConfigPath;
   return userConfigPath;
 }
 
@@ -1007,7 +1007,7 @@ app.whenReady().then(async () => {
   saveLocalAppState();
   initializeConfigPath();
 
-  const { loadConfig, saveConfig, formatTime, normalizeConfig, validateConfig } = await import("@patient-ping/shared");
+  const { loadConfig, saveConfig, formatTime, normalizeConfig, validateConfig } = await import("@pip/shared");
   loadConfigFn = loadConfig;
   saveConfigFn = saveConfig;
   formatTimeFn = formatTime;
@@ -1333,8 +1333,8 @@ app.whenReady().then(async () => {
       buttons: ["Cancel", "Quit"],
       defaultId: 1,
       cancelId: 0,
-      title: "Quit Echo",
-      message: "Do you want to quit Echo?",
+      title: "Quit Pip",
+      message: "Do you want to quit Pip?",
       detail: "The reception gadget and local network service will stop running.",
       noLink: true,
     });

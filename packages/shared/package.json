@@ -1,5 +1,5 @@
 {
-  "name": "@patient-ping/shared",
+  "name": "@pip/shared",
   "version": "0.2.2",
   "private": true,
   "type": "module",

@@ -1,4 +1,4 @@
-# Echo Role Product Plan
+# Pip Role Product Plan
 
 Last updated: 2026-04-26
 
@@ -6,10 +6,10 @@ Last updated: 2026-04-26
 
 Move from two separately installed products:
 
-- `Echo Reception`
-- `Echo Surgery`
+- `Pip Reception`
+- `Pip Surgery`
 
-to one packaged `Echo` product with two explicit runtime roles:
+to one packaged `Pip` product with two explicit runtime roles:
 
 - `Reception`
 - `Room`
@@ -74,7 +74,7 @@ Because of that, a direct UI merge would increase coupling and make setup/runtim
 
 ### Phase 2: Unified App Shell
 
-- Introduce a single packaged Electron app identity: `Echo`
+- Introduce a single packaged Electron app identity: `Pip`
 - Add a first-run role chooser window
 - Add a safe way to reopen the role chooser later
 - Keep current reception and room code paths available behind that shell
@@ -100,7 +100,7 @@ Do **not** force role-specific panels into one giant conditional renderer if the
 
 ### Phase 5: Packaging Consolidation
 
-- Replace separate setup outputs with one `Echo Setup ...`
+- Replace separate setup outputs with one `Pip Setup ...`
 - Keep role selection part of first-run onboarding
 - Update install docs and support notes to describe role selection clearly
 
@@ -172,7 +172,7 @@ Still outstanding:
 
 - the full reception and room window experiences are not yet directly hosted inside the `apps/echo` process
 - the product is still packaged as separate reception and surgery installers
-- shared assets and packaging still need to be consolidated around the new `Echo` bootstrap app
+- shared assets and packaging still need to be consolidated around the new `Pip` bootstrap app
 
 ## Current Non-Goals
 

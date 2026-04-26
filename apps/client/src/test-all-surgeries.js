@@ -1,8 +1,8 @@
-import { buildNotificationPayload } from "@patient-ping/shared";
+import { buildNotificationPayload } from "@pip/shared";
 
-const DEFAULT_SERVER_URL = process.env.PATIENT_PING_SERVER || "http://127.0.0.1:3210";
-const DEFAULT_ACTION_ID = process.env.PATIENT_PING_ACTION_ID || "send-next-patient";
-const DELAY_MS = Number(process.env.PATIENT_PING_TEST_DELAY_MS || 1200);
+const DEFAULT_SERVER_URL = process.env.PIP_SERVER || "http://127.0.0.1:3210";
+const DEFAULT_ACTION_ID = process.env.PIP_ACTION_ID || "send-next-patient";
+const DELAY_MS = Number(process.env.PIP_TEST_DELAY_MS || 1200);
 
 async function main() {
   const config = await fetchJson(`${DEFAULT_SERVER_URL}/config`);

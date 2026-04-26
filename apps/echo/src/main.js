@@ -9,19 +9,19 @@ const { createReceptionServer } = require("../../reception/src/server.js");
 const RUNTIME_ROLE_RECEPTION = "reception";
 const RUNTIME_ROLE_ROOM = "room";
 const ROLE_OPTIONS = [RUNTIME_ROLE_RECEPTION, RUNTIME_ROLE_ROOM];
-const APP_NAME = "Echo";
+const APP_NAME = "Pip";
 const DEFAULT_PAIRING_CODE = "1234";
 const WINDOW_WIDTH = 500;
 const WINDOW_HEIGHT = 640;
 const MIN_WINDOW_WIDTH = 500;
 const MIN_WINDOW_HEIGHT = 640;
 const DEFAULT_ROOM_RUNTIME_SETTINGS = {
-  serverUrl: process.env.PATIENT_PING_SERVER || "http://127.0.0.1:3210",
-  serverAccessKey: process.env.PATIENT_PING_ACCESS_KEY || "",
-  roomId: process.env.PATIENT_PING_ROOM_ID || "surgery-1",
+  serverUrl: process.env.PIP_SERVER || "http://127.0.0.1:3210",
+  serverAccessKey: process.env.PIP_ACCESS_KEY || "",
+  roomId: process.env.PIP_ROOM_ID || "surgery-1",
   deviceId:
-    process.env.PATIENT_PING_DEVICE_ID ||
-    `${os.hostname()}-${process.env.PATIENT_PING_ROOM_ID || "surgery-1"}`,
+    process.env.PIP_DEVICE_ID ||
+    `${os.hostname()}-${process.env.PIP_ROOM_ID || "surgery-1"}`,
 };
 
 let mainWindow = null;
@@ -240,7 +240,7 @@ function setRoleExperienceState(nextState = {}) {
 }
 
 async function loadSharedModule() {
-  return import("@patient-ping/shared");
+  return import("@pip/shared");
 }
 
 function loadRoomServiceModule() {
@@ -354,7 +354,7 @@ function stopRoleExperience() {
   setRoleExperienceState({
     activeRole: stoppedRole,
     state: "stopped",
-    detail: "Full role workspace was closed by Echo",
+    detail: "Full role workspace was closed by Pip",
   });
 }
 
@@ -454,7 +454,7 @@ function formatRuntimeRole(runtimeRole) {
     ? "Reception"
     : runtimeRole === RUNTIME_ROLE_ROOM
       ? "Room"
-      : "Echo";
+      : "Pip";
 }
 
 async function startReceptionRuntime() {
@@ -583,7 +583,7 @@ function refreshTrayMenu() {
         enabled: false,
       },
       {
-        label: "Open Echo",
+        label: "Open Pip",
         click: () => {
           const targetWindow = createMainWindow();
           targetWindow.show();

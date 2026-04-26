@@ -15,7 +15,7 @@ async function createReceptionServer({
   onChatMessage,
   onAuditEvent,
 }) {
-  const { parseJsonBody, buildNotificationPayload } = await import("@patient-ping/shared");
+  const { parseJsonBody, buildNotificationPayload } = await import("@pip/shared");
   const clients = new Map();
   const notifications = [];
   const chatMessages = [];
@@ -32,7 +32,7 @@ async function createReceptionServer({
     if (req.method === "GET" && url.pathname === "/health") {
       writeJson(res, 200, {
         ok: true,
-        service: "patient-ping-reception",
+        service: "pip-reception",
         connectedClients: clients.size,
       });
       return;
@@ -411,7 +411,7 @@ async function createReceptionServer({
       return;
     }
 
-    if (payload?.type !== "patient-ping-discovery") {
+    if (payload?.type !== "pip-discovery") {
       return;
     }
 
@@ -420,8 +420,8 @@ async function createReceptionServer({
       const advertisedHost = getAdvertisedHost(currentConfig);
       const response = Buffer.from(
         JSON.stringify({
-          type: "patient-ping-discovery-response",
-          app: "patient-ping-reception",
+          type: "pip-discovery-response",
+          app: "pip-reception",
           host: advertisedHost,
           port: currentConfig.network.port,
           serverUrl: `http://${advertisedHost}:${currentConfig.network.port}`,
@@ -764,7 +764,7 @@ function getExpectedAccessKey(config) {
 }
 
 function getProvidedAccessKey(req, url) {
-  const headerKey = String(req.headers["x-patient-ping-key"] || "").trim();
+  const headerKey = String(req.headers["x-pip-key"] || "").trim();
 
   if (headerKey) {
     return headerKey;

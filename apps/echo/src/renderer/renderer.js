@@ -121,8 +121,8 @@ function renderBootstrapState(state = {}) {
 
   if (selectionFeedback) {
     selectionFeedback.textContent = runtimeRole
-      ? `Saved role: ${formatRuntimeRoleLabel(runtimeRole)}. The unified Echo app now uses that saved role to start the matching transitional runtime service.`
-      : "Pick the intended role now. The future unified runtime handoff will read this saved choice when the single-install Echo product is completed.";
+      ? `Saved role: ${formatRuntimeRoleLabel(runtimeRole)}. The unified Pip app now uses that saved role to start the matching transitional runtime service.`
+      : "Pick the intended role now. The future unified runtime handoff will read this saved choice when the single-install Pip product is completed.";
   }
 
   if (roleHomeEyebrow) {
@@ -144,7 +144,7 @@ function renderBootstrapState(state = {}) {
       ? "Use this mode for the front desk machine that hosts the LAN service, pairing, queue state, and future unified reception workspace."
       : runtimeRole === "room"
         ? "Use this mode for a chairside computer that needs the room runtime, local device identity, and future unified room panel."
-        : "Pick `Reception` or `Room` below to start shaping this machine into the right kind of Echo workstation.";
+        : "Pick `Reception` or `Room` below to start shaping this machine into the right kind of Pip workstation.";
   }
 
   if (roleChipPrimary) {

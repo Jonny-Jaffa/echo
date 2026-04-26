@@ -1,6 +1,6 @@
 const { contextBridge, ipcRenderer } = require("electron");
 
-contextBridge.exposeInMainWorld("patientPing", {
+contextBridge.exposeInMainWorld("pip", {
   getStatus: () => ipcRenderer.invoke("app:getStatus"),
   openSettingsWindow: () => ipcRenderer.invoke("app:openSettingsWindow"),
   openRoleWindow: () => ipcRenderer.invoke("app:openRoleWindow"),

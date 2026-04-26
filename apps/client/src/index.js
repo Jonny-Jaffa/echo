@@ -14,13 +14,13 @@ const require = createRequire(import.meta.url);
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const DEFAULT_RUNTIME_SETTINGS = {
-  serverUrl: process.env.PATIENT_PING_SERVER || "http://127.0.0.1:3210",
-  serverAccessKey: process.env.PATIENT_PING_ACCESS_KEY || "",
-  roomId: process.env.PATIENT_PING_ROOM_ID || "surgery-1",
+  serverUrl: process.env.PIP_SERVER || "http://127.0.0.1:3210",
+  serverAccessKey: process.env.PIP_ACCESS_KEY || "",
+  roomId: process.env.PIP_ROOM_ID || "surgery-1",
   deviceId:
-    process.env.PATIENT_PING_DEVICE_ID ||
-    `${os.hostname()}-${process.env.PATIENT_PING_ROOM_ID || "surgery-1"}`,
-  streamDeckSerial: process.env.PATIENT_PING_STREAMDECK_SERIAL || "",
+    process.env.PIP_DEVICE_ID ||
+    `${os.hostname()}-${process.env.PIP_ROOM_ID || "surgery-1"}`,
+  streamDeckSerial: process.env.PIP_STREAMDECK_SERIAL || "",
   playPingAudio: true,
   roomButtonAppearances: {},
   roomLeftAuxSettings: {},
@@ -2760,7 +2760,7 @@ function buildAuthenticatedHeaders() {
 
   return serverAccessKey
     ? {
-        "x-patient-ping-key": serverAccessKey,
+        "x-pip-key": serverAccessKey,
       }
     : {};
 }

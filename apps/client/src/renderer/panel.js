@@ -50,8 +50,8 @@ const windowView = requestedWindowView === "settings"
 const isSettingsWindow = windowView === "settings";
 const isRoleWindow = windowView === "role";
 
-const STORAGE_KEY = "patient-ping-panel";
-const PANEL_DEVICE_ID_STORAGE_KEY = "patient-ping-panel-device-id";
+const STORAGE_KEY = "pip-panel";
+const PANEL_DEVICE_ID_STORAGE_KEY = "pip-panel-device-id";
 const CONFIG_REFRESH_MS = 3000;
 const DEFAULT_BUTTON_APPEARANCE = {
   defaultBackground: "#FDD905",
@@ -164,7 +164,7 @@ function renderRoleView(roleState = {}) {
   if (roleCurrentLabel) {
     roleCurrentLabel.textContent = isSupportedInThisBuild
       ? `Current saved role: ${formatRuntimeRoleLabel(runtimeRole)}`
-      : `This Echo Surgery build supports ${formatRuntimeRoleLabel(nativeRuntimeRole)} only. Switch back to ${formatRuntimeRoleLabel(nativeRuntimeRole)} to continue using this install.`;
+      : `This Pip Surgery build supports ${formatRuntimeRoleLabel(nativeRuntimeRole)} only. Switch back to ${formatRuntimeRoleLabel(nativeRuntimeRole)} to continue using this install.`;
   }
 }
 
@@ -586,7 +586,7 @@ async function setPanelDisplayMode(mode, options = {}) {
   renderPanelDisplayModeMenu();
 
   if (!isSettingsWindow && resize) {
-    await window.patientPingPanel
+    await window.pipPanel
       .setSettingsExpanded?.({
         mode: panelDisplayMode,
       })
@@ -594,7 +594,7 @@ async function setPanelDisplayMode(mode, options = {}) {
   }
 
   if (!isSettingsWindow && persist) {
-    await window.patientPingPanel.updateSettings({
+    await window.pipPanel.updateSettings({
       panelDisplayMode,
     }).catch(() => {});
   }
@@ -603,7 +603,7 @@ async function setPanelDisplayMode(mode, options = {}) {
 async function fetchConfig() {
   const serverUrl = serverInput.value.trim();
   const selectedRoomId =
-    preferredRoomId || roomSelect.value || window.patientPingPanel.defaultRoomId;
+    preferredRoomId || roomSelect.value || window.pipPanel.defaultRoomId;
   const response = await fetch(`${serverUrl}/config`, {
     headers: buildAuthenticatedHeaders(),
   });
@@ -823,7 +823,7 @@ function sendIdentify() {
 
 function renderRooms(preferredRoomId = "") {
   const currentValue =
-    preferredRoomId || roomSelect.value || window.patientPingPanel.defaultRoomId;
+    preferredRoomId || roomSelect.value || window.pipPanel.defaultRoomId;
 
   roomSelect.innerHTML = (configState.rooms || [])
     .map(
@@ -839,7 +839,7 @@ function renderRooms(preferredRoomId = "") {
     roomSelect.value = configState.rooms?.[0]?.id || "";
   }
 
-  preferredRoomId = roomSelect.value || currentValue || window.patientPingPanel.defaultRoomId;
+  preferredRoomId = roomSelect.value || currentValue || window.pipPanel.defaultRoomId;
 
   sendIdentify();
 }
@@ -1975,7 +1975,7 @@ async function persistMessageGroups() {
     roomMessageGroups: { ...roomMessageGroups },
   };
 
-  await window.patientPingPanel.updateSettings({
+  await window.pipPanel.updateSettings({
     roomMessageGroups,
   }).catch(() => {});
 }
@@ -1986,7 +1986,7 @@ async function persistPinnedMessageThreads() {
     roomPinnedMessageThreads: { ...roomPinnedMessageThreads },
   };
 
-  await window.patientPingPanel.updateSettings({
+  await window.pipPanel.updateSettings({
     roomPinnedMessageThreads,
   }).catch(() => {});
 }
@@ -2004,7 +2004,7 @@ async function persistRoomSettings() {
     roomPinnedMessageThreads: { ...roomPinnedMessageThreads },
   };
 
-  await window.patientPingPanel.updateSettings({
+  await window.pipPanel.updateSettings({
     roomAlertVolumes,
     roomAlertSounds,
     roomButtonAppearances,
@@ -2023,7 +2023,7 @@ async function persistMessageSoundSettings() {
     messageVolume,
   };
 
-  await window.patientPingPanel.updateSettings({
+  await window.pipPanel.updateSettings({
     messageSound,
     messageVolume,
   }).catch(() => {});
@@ -2038,7 +2038,7 @@ function buildAuthenticatedHeaders() {
 
   return accessKey
     ? {
-        "x-patient-ping-key": accessKey,
+        "x-pip-key": accessKey,
       }
     : {};
 }
@@ -2070,7 +2070,7 @@ async function playRoomAlertSound(roomId) {
       volume,
     });
   } catch {
-    await window.patientPingPanel.playAlertSound?.({
+    await window.pipPanel.playAlertSound?.({
       sound,
       volume,
     }).catch(() => {});
@@ -2088,7 +2088,7 @@ async function playRoomMessageSound() {
       volume: messageVolume,
     });
   } catch {
-    await window.patientPingPanel.playAlertSound?.({
+    await window.pipPanel.playAlertSound?.({
       sound: messageSound,
       volume: messageVolume,
     }).catch(() => {});
@@ -2318,7 +2318,7 @@ function startConfigRefresh() {
       await fetchChatMessages().catch(() => {});
 
       if (wasUninitialized) {
-        await window.patientPingPanel.updateSettings({
+        await window.pipPanel.updateSettings({
           serverUrl: serverInput.value.trim(),
           serverAccessKey: getServerAccessKeyValue(),
           roomId: roomSelect.value,
@@ -2453,13 +2453,13 @@ async function init() {
 
   if (isRoleWindow) {
     rolePanel?.classList.remove("hidden");
-    const roleState = await window.patientPingPanel.getRoleState?.().catch(() => null);
+    const roleState = await window.pipPanel.getRoleState?.().catch(() => null);
     renderRoleView(roleState || {});
     return;
   }
 
   const savedState = loadSavedState();
-  const persistedSettings = await window.patientPingPanel.getSettings().catch(() => null);
+  const persistedSettings = await window.pipPanel.getSettings().catch(() => null);
 
   applyPersistedSettings(persistedSettings || {});
   panelDeviceId = getPanelDeviceId();
@@ -2469,19 +2469,19 @@ async function init() {
   await setPanelDisplayMode(panelDisplayMode, { persist: false, resize: false });
   setPanelDisplayModeMenuVisibility(false);
   setMessageThreadDrawerVisibility(false);
-  const hardwareStatus = await window.patientPingPanel.getHardwareStatus?.().catch(() => null);
+  const hardwareStatus = await window.pipPanel.getHardwareStatus?.().catch(() => null);
   preferredRoomId =
     persistedSettings?.roomId ||
     savedState.roomId ||
-    window.patientPingPanel.defaultRoomId;
+    window.pipPanel.defaultRoomId;
   serverInput.value =
     persistedSettings?.serverUrl ||
     savedState.serverUrl ||
-    window.patientPingPanel.defaultServerUrl;
+    window.pipPanel.defaultServerUrl;
   if (serverAccessKeyInput) {
     serverAccessKeyInput.value =
       persistedSettings?.serverAccessKey ||
-      window.patientPingPanel.defaultServerAccessKey ||
+      window.pipPanel.defaultServerAccessKey ||
       "";
   }
   setStatus("Connecting", "pending");
@@ -2492,10 +2492,10 @@ async function init() {
   if (alwaysOnTopInput) {
     alwaysOnTopInput.checked = Boolean(persistedSettings?.alwaysOnTop);
   }
-  window.patientPingPanel.onHardwareStatus?.((nextStatus) => {
+  window.pipPanel.onHardwareStatus?.((nextStatus) => {
     updateHardwareStatus(nextStatus);
   });
-  window.patientPingPanel.onSettingsUpdated?.((nextSettings) => {
+  window.pipPanel.onSettingsUpdated?.((nextSettings) => {
     applyPersistedSettings(nextSettings || {});
     setPanelDisplayMode(panelDisplayMode, { persist: false, resize: false }).catch(() => {});
     renderButtons();
@@ -2513,7 +2513,7 @@ async function init() {
     await fetchChatMessages().catch(() => {});
     await clearStartupNotifications();
     connectSocket();
-    await window.patientPingPanel.updateSettings({
+    await window.pipPanel.updateSettings({
       serverUrl: serverInput.value.trim(),
       serverAccessKey: getServerAccessKeyValue(),
       roomId: roomSelect.value,
@@ -2620,7 +2620,7 @@ roomSelect.addEventListener("change", async () => {
   renderSelectedRoomVolumeControl();
   renderMessageGroupSettings();
   renderMessagingUi();
-  await window.patientPingPanel.updateSettings({
+  await window.pipPanel.updateSettings({
     serverUrl: serverInput.value.trim(),
     serverAccessKey: getServerAccessKeyValue(),
     roomId: roomSelect.value,
@@ -2630,11 +2630,11 @@ roomSelect.addEventListener("change", async () => {
 });
 
 serverToggleButton?.addEventListener("click", () => {
-  window.patientPingPanel.openSettingsWindow?.().catch(() => {});
+  window.pipPanel.openSettingsWindow?.().catch(() => {});
 });
 
 panelMinimizeButton?.addEventListener("click", () => {
-  window.patientPingPanel.minimizeWindow?.().catch(() => {});
+  window.pipPanel.minimizeWindow?.().catch(() => {});
 });
 
 panelCloseButton?.addEventListener("click", () => {
@@ -2643,7 +2643,7 @@ panelCloseButton?.addEventListener("click", () => {
     return;
   }
 
-  window.patientPingPanel.hideWindow?.().catch(() => {});
+  window.pipPanel.hideWindow?.().catch(() => {});
 });
 
 roleOptionList?.addEventListener("click", async (event) => {
@@ -2665,31 +2665,31 @@ roleOptionList?.addEventListener("click", async (event) => {
     return;
   }
 
-  const nextRoleState = await window.patientPingPanel.updateSettings({
+  const nextRoleState = await window.pipPanel.updateSettings({
     runtimeRole,
     runtimeRoleConfirmed: true,
   }).catch(() => null);
 
   renderRoleView(nextRoleState || { runtimeRole });
-  await window.patientPingPanel.closeRoleWindow?.().catch(() => {});
+  await window.pipPanel.closeRoleWindow?.().catch(() => {});
 });
 
 roleCloseButton?.addEventListener("click", () => {
-  window.patientPingPanel.closeRoleWindow?.().catch(() => {});
+  window.pipPanel.closeRoleWindow?.().catch(() => {});
 });
 
 openRoleWindowButton?.addEventListener("click", () => {
-  window.patientPingPanel.openRoleWindow?.().catch(() => {});
+  window.pipPanel.openRoleWindow?.().catch(() => {});
 });
 
 showPanelAtStartupInput?.addEventListener("change", async () => {
-  await window.patientPingPanel.updateSettings({
+  await window.pipPanel.updateSettings({
     showPanelAtStartup: showPanelAtStartupInput.checked,
   }).catch(() => {});
 });
 
 alwaysOnTopInput?.addEventListener("change", async () => {
-  await window.patientPingPanel.updateSettings({
+  await window.pipPanel.updateSettings({
     alwaysOnTop: alwaysOnTopInput.checked,
   }).catch(() => {});
 });
@@ -3086,7 +3086,7 @@ selectedRoomVolume?.addEventListener("click", async (event) => {
 });
 
 serverInput.addEventListener("change", async () => {
-  await window.patientPingPanel.updateSettings({
+  await window.pipPanel.updateSettings({
     serverUrl: serverInput.value.trim(),
     serverAccessKey: getServerAccessKeyValue(),
     roomId: roomSelect.value,
@@ -3107,7 +3107,7 @@ serverInput.addEventListener("change", async () => {
 });
 
 serverAccessKeyInput?.addEventListener("change", async () => {
-  await window.patientPingPanel.updateSettings({
+  await window.pipPanel.updateSettings({
     serverUrl: serverInput.value.trim(),
     serverAccessKey: getServerAccessKeyValue(),
     roomId: roomSelect.value,
