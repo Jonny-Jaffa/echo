@@ -236,6 +236,8 @@ export function normalizeConfig(config) {
       notificationSound: normalizeAudioNotificationSound(
         config.audio?.notificationSound ?? config.rooms?.[0]?.receptionSound?.sound,
       ),
+      messageVolume: clampVolume(config.audio?.messageVolume),
+      messageSound: normalizeAudioNotificationSound(config.audio?.messageSound),
     },
     rooms: normalizedRooms,
     actions: legacyCompatibleNotifications.map(stripNotificationToAction),
@@ -360,6 +362,10 @@ export function validateConfig(config) {
 
   if (!Number.isFinite(Number(normalized.audio?.masterVolume))) {
     errors.push("The master volume is invalid.");
+  }
+
+  if (!Number.isFinite(Number(normalized.audio?.messageVolume))) {
+    errors.push("The message volume is invalid.");
   }
 
   return {

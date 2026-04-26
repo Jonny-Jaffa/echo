@@ -190,6 +190,42 @@
                 <span>Always on top</span>
               </label>
             </div>
+            <div class="selected-room-volume-card message-sound-card">
+              <div class="selected-room-volume-header">
+                <div class="selected-room-volume-title">Message Sound</div>
+              </div>
+              <div class="selected-room-volume-controls">
+                <label class="selected-room-sound-field">
+                  <span class="selected-room-control-label">Select Sound</span>
+                  <div class="selected-room-sound-row">
+                    <select class="selected-room-sound-select" id="message-sound-input"></select>
+                    <button
+                      class="selected-room-sound-test"
+                      id="message-sound-test-button"
+                      type="button"
+                      aria-label="Play message sound"
+                      title="Play message sound"
+                    >
+                      Play
+                    </button>
+                  </div>
+                </label>
+                <label class="selected-room-slider-field">
+                  <span class="selected-room-control-label">Volume</span>
+                  <div class="selected-room-slider-row">
+                    <input
+                      class="selected-room-volume-slider"
+                      id="message-volume-input"
+                      type="range"
+                      min="0"
+                      max="100"
+                      step="1"
+                    />
+                    <span class="selected-room-volume-value" id="message-volume-value">80%</span>
+                  </div>
+                </label>
+              </div>
+            </div>
             <div class="role-launch-card">
               <div class="role-launch-copy">
                 <strong>Device role</strong>

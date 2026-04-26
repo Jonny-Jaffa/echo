@@ -14,7 +14,9 @@
   },
   "audio": {
     "masterVolume": 80,
-    "notificationSound": "ping"
+    "notificationSound": "ping",
+    "messageVolume": 80,
+    "messageSound": "notification_sound_01"
   },
   "hardware": {
     "leftAuxButton": {

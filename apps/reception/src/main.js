@@ -623,8 +623,29 @@ function playReceptionChatSound(message) {
     return;
   }
 
-  playReceptionNotificationSound({
-    roomId: message.senderRoomId || null,
+  const messageVolume = clampReceptionVolume(configState?.audio?.messageVolume);
+  const selectedSound = normalizeBundledReceptionSound(
+    String(configState?.audio?.messageSound || DEFAULT_RECEPTION_SOUND),
+  );
+
+  if (messageVolume <= 0) {
+    return;
+  }
+
+  const command = buildReceptionSoundCommand(selectedSound, messageVolume);
+
+  if (!command) {
+    return;
+  }
+
+  exec(command, (error) => {
+    if (error) {
+      logStartup("Reception message sound playback failed", {
+        roomId: message.senderRoomId || null,
+        sound: selectedSound,
+        message: error.message,
+      });
+    }
   });
 }
 

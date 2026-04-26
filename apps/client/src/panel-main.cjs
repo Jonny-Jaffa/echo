@@ -114,6 +114,8 @@ let clientSettings = {
   launchAtStartup: true,
   showPanelAtStartup: true,
   alwaysOnTop: false,
+  messageSound: DEFAULT_SURGERY_SOUND,
+  messageVolume: 80,
   roomAlertVolumes: {},
   roomAlertSounds: {},
   roomButtonAppearances: {},
@@ -638,6 +640,8 @@ function loadClientSettings() {
         typeof parsed.alwaysOnTop === "boolean"
           ? parsed.alwaysOnTop
           : clientSettings.alwaysOnTop,
+      messageSound: normalizeSurgerySound(parsed.messageSound),
+      messageVolume: clampSurgeryVolume(parsed.messageVolume, clientSettings.messageVolume),
       roomAlertVolumes:
         parsed.roomAlertVolumes && typeof parsed.roomAlertVolumes === "object"
           ? parsed.roomAlertVolumes
@@ -1333,6 +1337,14 @@ app.whenReady().then(async () => {
         typeof patch.alwaysOnTop === "boolean"
           ? patch.alwaysOnTop
           : clientSettings.alwaysOnTop,
+      messageSound:
+        typeof patch.messageSound === "string"
+          ? normalizeSurgerySound(patch.messageSound)
+          : clientSettings.messageSound,
+      messageVolume:
+        typeof patch.messageVolume === "number" || typeof patch.messageVolume === "string"
+          ? clampSurgeryVolume(patch.messageVolume, clientSettings.messageVolume)
+          : clientSettings.messageVolume,
       roomAlertVolumes:
         patch.roomAlertVolumes && typeof patch.roomAlertVolumes === "object"
           ? patch.roomAlertVolumes
@@ -1496,6 +1508,16 @@ function normalizeSurgerySound(sound) {
     .toLowerCase();
   const mapped = LEGACY_SURGERY_SOUND_ALIASES[normalized] || normalized;
   return SURGERY_SOUND_FILE_MAP[mapped] ? mapped : DEFAULT_SURGERY_SOUND;
+}
+
+function clampSurgeryVolume(volume, fallback = 80) {
+  const parsed = Number(volume);
+
+  if (!Number.isFinite(parsed)) {
+    return Math.max(0, Math.min(100, Math.round(Number(fallback) || 80)));
+  }
+
+  return Math.max(0, Math.min(100, Math.round(parsed)));
 }
 
 function resolveSurgerySoundPath(sound) {

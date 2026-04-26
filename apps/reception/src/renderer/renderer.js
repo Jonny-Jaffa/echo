@@ -30,6 +30,10 @@ const audioNotificationSoundInput = document.querySelector("#audio-notification-
 const audioPlayTestButton = document.querySelector("#audio-play-test-button");
 const audioMasterVolumeInput = document.querySelector("#audio-master-volume-input");
 const audioMasterVolumeValue = document.querySelector("#audio-master-volume-value");
+const audioMessageSoundInput = document.querySelector("#audio-message-sound-input");
+const audioMessagePlayTestButton = document.querySelector("#audio-message-play-test-button");
+const audioMessageVolumeInput = document.querySelector("#audio-message-volume-input");
+const audioMessageVolumeValue = document.querySelector("#audio-message-volume-value");
 const requestedWindowView = String(new URLSearchParams(window.location.search).get("view") || "").trim().toLowerCase();
 const windowView = requestedWindowView === "settings"
   ? "settings"
@@ -116,6 +120,16 @@ function populateReceptionSoundSelectOptions(selectedValue) {
   }
 
   audioNotificationSoundInput.innerHTML = renderReceptionSoundOptions(
+    normalizeReceptionSound(selectedValue),
+  );
+}
+
+function populateMessageSoundSelectOptions(selectedValue) {
+  if (!audioMessageSoundInput) {
+    return;
+  }
+
+  audioMessageSoundInput.innerHTML = renderReceptionSoundOptions(
     normalizeReceptionSound(selectedValue),
   );
 }
@@ -456,8 +470,11 @@ function populateEditor(config) {
   launchAtStartupInput.checked = draftConfig.display?.launchAtStartup !== false;
   alwaysOnTopInput.checked = Boolean(draftConfig.display.alwaysOnTop);
   populateReceptionSoundSelectOptions(draftConfig.audio?.notificationSound);
+  populateMessageSoundSelectOptions(draftConfig.audio?.messageSound);
   audioMasterVolumeInput.value = String(draftConfig.audio?.masterVolume ?? 80);
   updateMasterVolumeLabel(audioMasterVolumeInput.value);
+  audioMessageVolumeInput.value = String(draftConfig.audio?.messageVolume ?? 80);
+  updateMessageVolumeLabel(audioMessageVolumeInput.value);
   syncRoomNotifications();
   renderRooms();
 }
@@ -553,6 +570,10 @@ function updateMasterVolumeLabel(value) {
   audioMasterVolumeValue.textContent = `${value}%`;
 }
 
+function updateMessageVolumeLabel(value) {
+  audioMessageVolumeValue.textContent = `${value}%`;
+}
+
 function escapeHtml(value) {
   return String(value ?? "")
     .replaceAll("&", "&amp;")
@@ -641,6 +662,8 @@ function buildConfigFromForm() {
       notificationSound:
         normalizeReceptionSound(audioNotificationSoundInput.value),
       masterVolume: Number(audioMasterVolumeInput.value),
+      messageSound: normalizeReceptionSound(audioMessageSoundInput.value),
+      messageVolume: Number(audioMessageVolumeInput.value),
     },
     hardware: {
       ...draftConfig.hardware,
@@ -784,6 +807,10 @@ document.body.addEventListener("input", (event) => {
     updateMasterVolumeLabel(target.value);
   }
 
+  if (target === audioMessageVolumeInput) {
+    updateMessageVolumeLabel(target.value);
+  }
+
   if (target.dataset.entity) {
     updateDraftField(target);
   }
@@ -793,6 +820,13 @@ audioPlayTestButton?.addEventListener("click", async () => {
   await window.patientPing.playReceptionTestSound({
     sound: normalizeReceptionSound(audioNotificationSoundInput.value),
     volume: Number(audioMasterVolumeInput.value),
+  }).catch(() => {});
+});
+
+audioMessagePlayTestButton?.addEventListener("click", async () => {
+  await window.patientPing.playReceptionTestSound({
+    sound: normalizeReceptionSound(audioMessageSoundInput.value),
+    volume: Number(audioMessageVolumeInput.value),
   }).catch(() => {});
 });
 

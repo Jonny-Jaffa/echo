@@ -281,6 +281,15 @@
 - The handoff still launches the trusted existing role apps as separate development processes
 - The next migration step is to host the full role-specific windows directly from the unified `apps/echo` process, then consolidate packaging around one `Echo` app identity
 
+### Session 2
+
+- Fixed the surgery panel `Both` display mode so the message section matches the `Messages` view height without adding excess space between buttons and messages
+- Added separate message sound settings from action/reception-alert sound settings:
+  - Reception settings now include a dedicated `Message Sound` selector and volume slider
+  - Surgery settings now include a dedicated `Message Sound` selector and volume slider
+  - Existing surgery room sound controls are labelled as alert sound/volume to distinguish action/reception-alert audio from message audio
+  - Incoming chat messages now use the message sound settings, while action buttons and reception alerts continue using the alert sound settings
+
 ## 2026-04-25
 
 ### Session 1

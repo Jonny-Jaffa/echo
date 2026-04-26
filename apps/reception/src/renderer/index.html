@@ -119,6 +119,24 @@
 	                  </div>
 	                </div>
 	              </div>
+	              <div class="field full-width-field reception-sound-field">
+	                <span>Message Sound</span>
+	                <div class="reception-sound-card">
+                  <div class="reception-sound-controls">
+                    <div class="reception-sound-row">
+                      <select id="audio-message-sound-input" name="audio.messageSound"></select>
+                      <button class="small-button reception-sound-play-button" id="audio-message-play-test-button" type="button" aria-label="Play message sound" title="Play message sound">Play</button>
+                    </div>
+                    <div class="reception-volume-row">
+                      <span class="reception-volume-label">Volume</span>
+                      <div class="reception-volume-slider-wrap">
+                        <input id="audio-message-volume-input" name="audio.messageVolume" type="range" min="0" max="100" step="1" />
+                        <strong id="audio-message-volume-value">80%</strong>
+                      </div>
+                    </div>
+	                  </div>
+	                </div>
+	              </div>
 	              <label class="field checkbox-field">
 	                <input id="launch-at-startup-input" name="display.launchAtStartup" type="checkbox" />
 	                <span>Run at startup</span>

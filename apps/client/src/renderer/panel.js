@@ -33,6 +33,10 @@ const roleCloseButton = document.querySelector("#role-close-button");
 const openRoleWindowButton = document.querySelector("#open-role-window-button");
 const showPanelAtStartupInput = document.querySelector("#show-panel-at-startup-input");
 const alwaysOnTopInput = document.querySelector("#always-on-top-input");
+const messageSoundInput = document.querySelector("#message-sound-input");
+const messageSoundTestButton = document.querySelector("#message-sound-test-button");
+const messageVolumeInput = document.querySelector("#message-volume-input");
+const messageVolumeValue = document.querySelector("#message-volume-value");
 const selectedRoomVolume = document.querySelector("#selected-room-volume");
 const requestedWindowView = String(new URLSearchParams(window.location.search).get("view") || "").trim().toLowerCase();
 const windowView = requestedWindowView === "settings"
@@ -122,6 +126,8 @@ let areQuickActionsVisible = false;
 let isMessageThreadDrawerVisible = false;
 let panelDisplayMode = "messages";
 let isPanelDisplayModeMenuVisible = false;
+let messageSound = DEFAULT_ROOM_ALERT_SOUND;
+let messageVolume = 80;
 const activeNotificationsByButtonId = new Map();
 const activeLocalAlertPlayers = new Set();
 
@@ -701,7 +707,7 @@ function connectSocket() {
       }
 
       if (shouldPlayIncomingChatSound(message.payload)) {
-        playRoomAlertSound(getCurrentMessageRoomId()).catch(() => {});
+        playRoomMessageSound().catch(() => {});
       }
       chatMessages = [...chatMessages, message.payload].slice(-200);
       renderMessagingUi();
@@ -1539,6 +1545,29 @@ function renderRoomAlertSoundOptions(selectedValue) {
     .join("");
 }
 
+function updateMessageVolumeLabel(value) {
+  if (messageVolumeValue) {
+    messageVolumeValue.textContent = `${value}%`;
+  }
+}
+
+function normalizeMessageVolume(value) {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? Math.max(0, Math.min(100, Math.round(parsed))) : 80;
+}
+
+function renderMessageSoundSettings() {
+  if (messageSoundInput) {
+    messageSoundInput.innerHTML = renderRoomAlertSoundOptions(messageSound);
+  }
+
+  if (messageVolumeInput) {
+    messageVolumeInput.value = String(messageVolume);
+  }
+
+  updateMessageVolumeLabel(messageVolume);
+}
+
 function renderRoomActionRows(roomId) {
   return getRoomActionEditorRows(roomId)
     .map(
@@ -1631,7 +1660,7 @@ function renderSelectedRoomVolumeControl() {
       </div>
       <div class="selected-room-volume-controls">
         <label class="selected-room-sound-field">
-          <span class="selected-room-control-label">Select Sound</span>
+          <span class="selected-room-control-label">Alert Sound</span>
           <div class="selected-room-sound-row">
             <select class="selected-room-sound-select" data-room-sound-id="${escapeHtml(room.id)}">
               ${renderRoomAlertSoundOptions(sound)}
@@ -1648,7 +1677,7 @@ function renderSelectedRoomVolumeControl() {
           </div>
         </label>
         <label class="selected-room-slider-field">
-          <span class="selected-room-control-label">Volume</span>
+          <span class="selected-room-control-label">Alert Volume</span>
           <div class="selected-room-slider-row">
             <input
               class="selected-room-volume-slider"
@@ -1977,6 +2006,19 @@ async function persistRoomSettings() {
   }).catch(() => {});
 }
 
+async function persistMessageSoundSettings() {
+  panelSettings = {
+    ...(panelSettings || {}),
+    messageSound,
+    messageVolume,
+  };
+
+  await window.patientPingPanel.updateSettings({
+    messageSound,
+    messageVolume,
+  }).catch(() => {});
+}
+
 function getServerAccessKeyValue() {
   return serverAccessKeyInput?.value.trim() || "";
 }
@@ -2021,6 +2063,24 @@ async function playRoomAlertSound(roomId) {
     await window.patientPingPanel.playAlertSound?.({
       sound,
       volume,
+    }).catch(() => {});
+  }
+}
+
+async function playRoomMessageSound() {
+  if (messageVolume <= 0) {
+    return;
+  }
+
+  try {
+    await playLocalAlertSound({
+      sound: messageSound,
+      volume: messageVolume,
+    });
+  } catch {
+    await window.patientPingPanel.playAlertSound?.({
+      sound: messageSound,
+      volume: messageVolume,
     }).catch(() => {});
   }
 }
@@ -2363,6 +2423,8 @@ function getSelectedRoom() {
 
 function applyPersistedSettings(nextSettings = {}) {
   panelSettings = nextSettings || {};
+  messageSound = getValidatedRoomAlertSound(panelSettings.messageSound);
+  messageVolume = normalizeMessageVolume(panelSettings.messageVolume);
   roomAlertVolumes = normalizeRoomAlertVolumes(panelSettings.roomAlertVolumes);
   roomAlertSounds = normalizeRoomAlertSounds(panelSettings.roomAlertSounds);
   roomButtonAppearances = normalizeRoomButtonAppearances(panelSettings.roomButtonAppearances);
@@ -2372,6 +2434,7 @@ function applyPersistedSettings(nextSettings = {}) {
   roomMessageGroups = normalizeRoomMessageGroups(panelSettings.roomMessageGroups);
   roomPinnedMessageThreads = normalizeRoomPinnedMessageThreads(panelSettings.roomPinnedMessageThreads);
   panelDisplayMode = normalizePanelDisplayMode(panelSettings.panelDisplayMode);
+  renderMessageSoundSettings();
 }
 
 async function init() {
@@ -2617,6 +2680,28 @@ alwaysOnTopInput?.addEventListener("change", async () => {
   await window.patientPingPanel.updateSettings({
     alwaysOnTop: alwaysOnTopInput.checked,
   }).catch(() => {});
+});
+
+messageVolumeInput?.addEventListener("input", () => {
+  const nextVolume = normalizeMessageVolume(messageVolumeInput.value);
+  messageVolume = nextVolume;
+  updateMessageVolumeLabel(nextVolume);
+});
+
+messageVolumeInput?.addEventListener("change", async () => {
+  const nextVolume = normalizeMessageVolume(messageVolumeInput.value);
+  messageVolume = nextVolume;
+  updateMessageVolumeLabel(nextVolume);
+  await persistMessageSoundSettings();
+});
+
+messageSoundInput?.addEventListener("change", async () => {
+  messageSound = getValidatedRoomAlertSound(messageSoundInput.value);
+  await persistMessageSoundSettings();
+});
+
+messageSoundTestButton?.addEventListener("click", async () => {
+  await playRoomMessageSound().catch(() => {});
 });
 
 addMessageGroupButton?.addEventListener("click", async () => {
