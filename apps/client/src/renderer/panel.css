@@ -131,7 +131,9 @@ body[data-window-view="settings"] .panel-card {
   -webkit-app-region: no-drag;
   min-height: calc(100vh - 10px);
   max-height: calc(100vh - 10px);
-  overflow: auto;
+  grid-template-rows: auto minmax(0, 1fr);
+  align-content: stretch;
+  overflow: hidden;
 }
 
 body[data-view="waiting"] .panel-card {
@@ -501,15 +503,84 @@ body[data-view="waiting"] .waiting-state {
 .server-panel {
   display: grid;
   gap: 10px;
+  min-height: 0;
+}
+
+.settings-layout {
+  display: grid;
+  gap: 14px;
+}
+
+.settings-sidebar {
+  display: none;
+}
+
+.settings-content {
+  display: grid;
+  gap: 20px;
+  min-width: 0;
+}
+
+body[data-window-view="settings"] .server-panel {
+  height: 100%;
+  min-height: 0;
+}
+
+body[data-window-view="settings"] .settings-layout {
+  grid-template-columns: 164px minmax(0, 1fr);
+  align-items: start;
+  min-height: 0;
+  height: 100%;
+}
+
+body[data-window-view="settings"] .settings-sidebar {
+  position: sticky;
+  top: 0;
+  display: grid;
+  gap: 6px;
+  align-self: start;
+  padding: 8px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.86);
+}
+
+.settings-sidebar-link {
+  min-height: 36px;
+  display: flex;
+  align-items: center;
+  padding: 0 12px;
+  border-radius: 12px;
+  color: var(--muted);
+  text-decoration: none;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.settings-sidebar-link:hover,
+.settings-sidebar-link.is-active,
+.settings-sidebar-link:focus-visible {
+  outline: none;
+  background: color-mix(in srgb, var(--accent) 12%, white);
+  color: var(--text);
+}
+
+body[data-window-view="settings"] .settings-content {
+  height: calc(100vh - 92px);
+  overflow: auto;
+  padding-right: 6px;
+  scroll-behavior: smooth;
+  scrollbar-gutter: stable;
 }
 
 .settings-section {
   display: grid;
   gap: 10px;
+  scroll-margin-top: 8px;
 }
 
 .settings-section + .settings-section {
-  margin-top: 20px;
+  margin-top: 0;
 }
 
 .settings-section-head {
@@ -1133,6 +1204,20 @@ body[data-view="waiting"] .waiting-state {
   color: var(--text);
   font: inherit;
   font-size: 12px;
+}
+
+.field input:focus,
+.field select:focus,
+.message-group-name-input:focus,
+.room-action-input:focus,
+.selected-room-mode-select:focus,
+.selected-room-sound-select:focus,
+.selected-room-colour-picker:focus,
+.selected-room-volume-slider:focus,
+.message-compose-input:focus {
+  outline: none;
+  border-color: var(--field-focus);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--field-focus) 24%, transparent);
 }
 
 .checkbox-toggle-field {

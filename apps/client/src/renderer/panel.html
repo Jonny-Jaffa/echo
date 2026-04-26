@@ -148,7 +148,34 @@
         </section>
 
         <div class="server-panel hidden push-down" id="server-panel">
-          <section class="settings-section">
+          <div class="settings-layout">
+            <aside class="settings-sidebar" aria-label="Settings sections">
+              <a class="settings-sidebar-link is-active" href="#settings-connection" data-settings-section-link="settings-connection">Connection</a>
+              <a class="settings-sidebar-link" href="#settings-buttons" data-settings-section-link="settings-buttons">Buttons</a>
+              <a class="settings-sidebar-link" href="#settings-message-groups" data-settings-section-link="settings-message-groups">Message Groups</a>
+              <a class="settings-sidebar-link" href="#settings-general" data-settings-section-link="settings-general">General</a>
+            </aside>
+            <div class="settings-content">
+          <section class="settings-section" id="settings-connection">
+            <div class="settings-section-head">
+              <div>
+                <h3>Connection</h3>
+              </div>
+            </div>
+            <div class="server-connection-row">
+              <label class="field server-field">
+                <span>Reception Address</span>
+                <input id="server-input" type="text" />
+                <div class="hardware-status connection-hardware-status" id="hardware-status">Neo: Starting</div>
+              </label>
+              <label class="field server-field">
+                <span>Pairing Code</span>
+                <input id="server-access-key-input" type="text" autocomplete="off" spellcheck="false" />
+              </label>
+            </div>
+          </section>
+
+          <section class="settings-section" id="settings-buttons">
             <div class="settings-section-head">
               <div>
                 <h3>Buttons</h3>
@@ -164,7 +191,7 @@
             <div class="selected-room-volume" id="selected-room-volume"></div>
           </section>
 
-          <section class="settings-section">
+          <section class="settings-section" id="settings-message-groups">
             <div class="settings-section-head">
               <div>
                 <h3>Message Groups</h3>
@@ -174,7 +201,7 @@
             <div class="message-group-list" id="message-group-list"></div>
           </section>
 
-          <section class="settings-section">
+          <section class="settings-section" id="settings-general">
             <div class="settings-section-head">
               <div>
                 <h3>General</h3>
@@ -234,25 +261,8 @@
               <button class="settings-add-button role-launch-button" id="open-role-window-button" type="button">Change device role</button>
             </div>
           </section>
-
-          <section class="settings-section">
-            <div class="settings-section-head">
-              <div>
-                <h3>Connection</h3>
-              </div>
             </div>
-            <div class="server-connection-row">
-              <label class="field server-field">
-                <span>Reception Address</span>
-                <input id="server-input" type="text" />
-                <div class="hardware-status connection-hardware-status" id="hardware-status">Neo: Starting</div>
-              </label>
-              <label class="field server-field">
-                <span>Pairing Code</span>
-                <input id="server-access-key-input" type="text" autocomplete="off" spellcheck="false" />
-              </label>
-            </div>
-          </section>
+          </div>
         </div>
       </section>
     </main>

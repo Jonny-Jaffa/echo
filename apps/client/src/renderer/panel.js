@@ -38,6 +38,7 @@ const messageSoundTestButton = document.querySelector("#message-sound-test-butto
 const messageVolumeInput = document.querySelector("#message-volume-input");
 const messageVolumeValue = document.querySelector("#message-volume-value");
 const selectedRoomVolume = document.querySelector("#selected-room-volume");
+const settingsSidebarLinks = [...document.querySelectorAll("[data-settings-section-link]")];
 const requestedWindowView = String(new URLSearchParams(window.location.search).get("view") || "").trim().toLowerCase();
 const windowView = requestedWindowView === "settings"
   ? "settings"
@@ -524,6 +525,15 @@ function setPanelDisplayModeMenuVisibility(visible) {
   if (quickActionsToggleButton) {
     quickActionsToggleButton.setAttribute("aria-expanded", isPanelDisplayModeMenuVisible ? "true" : "false");
   }
+}
+
+function setActiveSettingsSidebarLink(sectionId) {
+  settingsSidebarLinks.forEach((link) => {
+    link.classList.toggle(
+      "is-active",
+      String(link.getAttribute("data-settings-section-link") || "") === sectionId,
+    );
+  });
 }
 
 function renderPanelDisplayModeMenu() {
@@ -2702,6 +2712,12 @@ messageSoundInput?.addEventListener("change", async () => {
 
 messageSoundTestButton?.addEventListener("click", async () => {
   await playRoomMessageSound().catch(() => {});
+});
+
+settingsSidebarLinks.forEach((link) => {
+  link.addEventListener("click", () => {
+    setActiveSettingsSidebarLink(String(link.getAttribute("data-settings-section-link") || ""));
+  });
 });
 
 addMessageGroupButton?.addEventListener("click", async () => {
