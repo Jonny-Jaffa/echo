@@ -1,0 +1,163 @@
+{
+  "version": 1,
+  "lastUpdated": "2026-04-18T18:37:58.303Z",
+  "network": {
+    "host": "0.0.0.0",
+    "port": 3210
+  },
+  "display": {
+    "alwaysOnTop": false,
+    "autoHideMs": 0,
+    "compactMode": true,
+    "minimized": false,
+    "adminMode": false
+  },
+  "audio": {
+    "masterVolume": 80,
+    "notificationSound": "ping"
+  },
+  "hardware": {
+    "leftAuxButton": {
+      "enabled": true,
+      "mode": "party"
+    },
+    "buttonAppearance": {
+      "defaultBackground": "#FDD905",
+      "activeBackground": "#000000"
+    }
+  },
+  "rooms": [
+    {
+      "id": "surgery-1",
+      "name": "Surgery 1",
+      "color": "#d0069a",
+      "icon": "🦷",
+      "receptionSound": {
+        "enabled": false,
+        "sound": "ping"
+      }
+    },
+    {
+      "id": "surgery-2",
+      "name": "Surgery 2",
+      "color": "#e07c0b",
+      "icon": "🩺",
+      "receptionSound": {
+        "enabled": false,
+        "sound": "ping"
+      }
+    },
+    {
+      "id": "surgery-3",
+      "name": "Surgery 3",
+      "color": "#0bc120",
+      "icon": "🩺",
+      "receptionSound": {
+        "enabled": false,
+        "sound": "ping"
+      }
+    },
+    {
+      "id": "surgery-4",
+      "name": "Surgery 4",
+      "color": "#1997e6",
+      "icon": "🩺",
+      "receptionSound": {
+        "enabled": false,
+        "sound": "ping"
+      }
+    }
+  ],
+  "actions": [
+    {
+      "id": "available-15",
+      "label": "Finished in 15mins",
+      "message": "Finished in 15mins",
+      "color": "#2563eb",
+      "icon": "15MIN"
+    },
+    {
+      "id": "available-30",
+      "label": "Finished in 30mins",
+      "message": "Finished in 30mins",
+      "color": "#2563eb",
+      "icon": "30MIN"
+    },
+    {
+      "id": "rebook-patient",
+      "label": "Rebook the patient",
+      "message": "Rebook Patient",
+      "color": "#2563eb",
+      "icon": "REBOOK"
+    },
+    {
+      "id": "send-next-patient",
+      "label": "Send next patient",
+      "message": "Send next patient",
+      "color": "#2563eb",
+      "icon": "NEXT"
+    },
+    {
+      "id": "action-5",
+      "label": "Send nurse",
+      "message": "Send nurse",
+      "color": "#2563eb",
+      "icon": "NURSE"
+    },
+    {
+      "id": "action-6",
+      "label": "Come up",
+      "message": "Come up",
+      "color": "#2563eb",
+      "icon": "COMEUP"
+    },
+    {
+      "id": "action-7",
+      "label": "Coffee please",
+      "message": "Coffee please",
+      "color": "#2563eb",
+      "icon": "COFFEE"
+    },
+    {
+      "id": "action-8",
+      "label": "Tea please",
+      "message": "Tea please",
+      "color": "#2563eb",
+      "icon": "TEA"
+    }
+  ],
+  "buttonMappings": [
+    {
+      "deviceButton": 0,
+      "actionId": "available-15"
+    },
+    {
+      "deviceButton": 1,
+      "actionId": "available-30"
+    },
+    {
+      "deviceButton": 2,
+      "actionId": "rebook-patient"
+    },
+    {
+      "deviceButton": 3,
+      "actionId": "send-next-patient"
+    },
+    {
+      "deviceButton": 4,
+      "actionId": "action-5"
+    },
+    {
+      "deviceButton": 5,
+      "actionId": "action-6"
+    },
+    {
+      "deviceButton": 6,
+      "actionId": "action-7"
+    },
+    {
+      "deviceButton": 7,
+      "actionId": "action-8"
+    }
+  ]
+}

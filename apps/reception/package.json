@@ -1,0 +1,63 @@
+{
+  "name": "@patient-ping/reception",
+  "version": "0.2.2",
+  "private": true,
+  "author": "Blackworks",
+  "main": "src/main.js",
+  "scripts": {
+    "dev": "env -u ELECTRON_RUN_AS_NODE electron .",
+    "start": "env -u ELECTRON_RUN_AS_NODE electron ."
+  },
+  "dependencies": {
+    "@patient-ping/shared": "0.2.2",
+    "ws": "^8.18.3"
+  },
+  "devDependencies": {
+    "electron": "37.2.1"
+  },
+  "build": {
+    "appId": "com.echo.reception",
+    "productName": "Echo Reception",
+    "icon": "build/icon.png",
+    "copyright": "Copyright Blackworks",
+    "directories": {
+      "output": "../../dist/reception"
+    },
+    "extraResources": [
+      {
+        "from": "../../config/config.json",
+        "to": "config/config.json"
+      }
+    ],
+    "asarUnpack": [
+      "src/assets/sounds/**/*.wav"
+    ],
+    "files": [
+      "src/**/*",
+      "package.json"
+    ],
+    "mac": {
+      "category": "public.app-category.medical",
+      "gatekeeperAssess": false,
+      "hardenedRuntime": false,
+      "target": [
+        "dmg",
+        "zip"
+      ]
+    },
+    "win": {
+      "target": [
+        "nsis",
+        "zip"
+      ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "installerSidebar": "build/installerSidebar.bmp",
+      "uninstallerSidebar": "build/installerSidebar.bmp",
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true
+    }
+  }
+}

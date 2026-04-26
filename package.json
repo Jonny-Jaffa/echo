@@ -1,0 +1,36 @@
+{
+  "name": "patient-ping",
+  "version": "0.2.2",
+  "private": true,
+  "author": "Blackworks",
+  "description": "Cross-platform dental/doctor surgery room notification system",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev:echo": "npm run dev -w @patient-ping/echo",
+    "dev:reception": "npm run dev -w @patient-ping/reception",
+    "dev:client": "npm run dev -w @patient-ping/client",
+    "dev:client-panel": "npm run dev:panel -w @patient-ping/client",
+    "test:surgeries": "npm run test:surgeries -w @patient-ping/client",
+    "start:echo": "npm run start -w @patient-ping/echo",
+    "start:reception": "npm run start -w @patient-ping/reception",
+    "start:reception:mac-test": "./scripts/run-reception-mac-test.sh",
+    "start:client": "npm run start -w @patient-ping/client",
+    "build:reception:mac": "electron-builder --projectDir apps/reception --mac dmg zip",
+    "build:surgery:mac": "electron-builder --projectDir apps/client --mac dmg zip",
+    "build:reception:win": "electron-builder --projectDir apps/reception --win nsis zip --x64",
+    "build:surgery:win": "electron-builder --projectDir apps/client --win nsis zip --x64",
+    "build:reception:win:x64": "electron-builder --projectDir apps/reception --win nsis zip --x64",
+    "build:surgery:win:x64": "electron-builder --projectDir apps/client --win nsis zip --x64",
+    "lint": "npm run lint --workspaces --if-present",
+    "test": "npm run test --workspaces --if-present"
+  },
+  "devDependencies": {
+    "electron-builder": "^26.0.12"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

@@ -1,0 +1,494 @@
+import fs from "node:fs";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+export const RUNTIME_ROLE_RECEPTION = "reception";
+export const RUNTIME_ROLE_ROOM = "room";
+export const RUNTIME_ROLE_OPTIONS = [
+  RUNTIME_ROLE_RECEPTION,
+  RUNTIME_ROLE_ROOM,
+];
+
+// Keep config-path resolution lazy so packaged surgery clients can import
+// shared helpers without requiring a local writable config file.
+export const DEFAULT_CONFIG_PATH = null;
+const DEFAULT_BUTTON_APPEARANCE = {
+  defaultBackground: "#FDD905",
+  activeBackground: "#000000",
+};
+
+export function normalizeRuntimeRole(
+  runtimeRole,
+  fallback = RUNTIME_ROLE_ROOM,
+) {
+  const normalizedRuntimeRole = String(runtimeRole || "")
+    .trim()
+    .toLowerCase();
+
+  return RUNTIME_ROLE_OPTIONS.includes(normalizedRuntimeRole)
+    ? normalizedRuntimeRole
+    : fallback;
+}
+
+export function resolveConfigPath() {
+  if (process.env.PATIENT_PING_CONFIG_PATH && fs.existsSync(process.env.PATIENT_PING_CONFIG_PATH)) {
+    return process.env.PATIENT_PING_CONFIG_PATH;
+  }
+
+  const candidates = [
+    path.resolve(process.resourcesPath || "", "config", "config.json"),
+    path.resolve(process.cwd(), "config", "config.json"),
+    path.resolve(process.cwd(), "..", "config", "config.json"),
+    path.resolve(process.cwd(), "..", "..", "config", "config.json"),
+    path.resolve(__dirname, "..", "..", "..", "config", "config.json"),
+  ];
+
+  const match = candidates.find((candidate) => fs.existsSync(candidate));
+
+  if (!match) {
+    throw new Error(
+      `Unable to locate config.json. Checked: ${candidates.join(", ")}`,
+    );
+  }
+
+  return match;
+}
+
+export function loadConfig(configPath = DEFAULT_CONFIG_PATH) {
+  const resolvedConfigPath = configPath || resolveConfigPath();
+  const raw = fs.readFileSync(resolvedConfigPath, "utf8");
+  return JSON.parse(raw);
+}
+
+export function saveConfig(config, configPath = DEFAULT_CONFIG_PATH) {
+  const resolvedConfigPath = configPath || resolveConfigPath();
+  const nextConfig = {
+    ...normalizeConfig(config),
+    lastUpdated: new Date().toISOString(),
+  };
+  const serializedConfig = JSON.stringify(nextConfig, null, 2);
+  const configDirectory = path.dirname(resolvedConfigPath);
+  const tempConfigPath = path.join(
+    configDirectory,
+    `${path.basename(resolvedConfigPath)}.${process.pid}.tmp`,
+  );
+  const backupConfigPath = `${resolvedConfigPath}.bak`;
+
+  fs.mkdirSync(configDirectory, { recursive: true });
+  fs.writeFileSync(tempConfigPath, serializedConfig);
+
+  if (fs.existsSync(resolvedConfigPath)) {
+    fs.copyFileSync(resolvedConfigPath, backupConfigPath);
+  }
+
+  try {
+    fs.renameSync(tempConfigPath, resolvedConfigPath);
+  } catch {
+    fs.copyFileSync(tempConfigPath, resolvedConfigPath);
+    fs.unlinkSync(tempConfigPath);
+  }
+
+  return nextConfig;
+}
+
+export function buildNotificationPayload(config, roomId, actionId, overrides = {}) {
+  const room = config.rooms.find((item) => item.id === roomId);
+  const action = room?.notifications?.find((item) => item.id === actionId);
+
+  if (!room) {
+    throw new Error(`Unknown roomId: ${roomId}`);
+  }
+
+  if (!action) {
+    throw new Error(`Unknown actionId: ${actionId}`);
+  }
+
+  return {
+    type: "notification",
+    roomId: room.id,
+    roomName: room.name,
+    actionType: action.id,
+    message: action.message,
+    roomColor: room.color,
+    icon: room.icon || action.icon || "",
+    timestamp: new Date().toISOString(),
+    ...overrides,
+  };
+}
+
+export function parseJsonBody(req, options = {}) {
+  const maxBytes = Math.max(1024, Number(options.maxBytes) || 32 * 1024);
+
+  return new Promise((resolve, reject) => {
+    let body = "";
+    let bodyBytes = 0;
+    let settled = false;
+
+    req.on("data", (chunk) => {
+      if (settled) {
+        return;
+      }
+
+      bodyBytes += Buffer.byteLength(chunk);
+
+      if (bodyBytes > maxBytes) {
+        const error = new Error(`Request body exceeds ${maxBytes} bytes`);
+        error.code = "BODY_TOO_LARGE";
+        settled = true;
+        reject(error);
+        return;
+      }
+
+      body += chunk;
+    });
+
+    req.on("end", () => {
+      if (settled) {
+        return;
+      }
+
+      if (!body) {
+        settled = true;
+        resolve({});
+        return;
+      }
+
+      try {
+        settled = true;
+        resolve(JSON.parse(body));
+      } catch (error) {
+        settled = true;
+        reject(error);
+      }
+    });
+
+    req.on("error", reject);
+  });
+}
+
+export function formatTime(isoString) {
+  return new Intl.DateTimeFormat("en-GB", {
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+  }).format(new Date(isoString));
+}
+
+export function normalizeConfig(config) {
+  const normalizedActions = normalizeLegacyActions(config.actions);
+  const normalizedMappings = normalizeLegacyMappings(config.buttonMappings);
+  const fallbackNotifications = buildFallbackNotifications(normalizedActions, normalizedMappings);
+  const normalizedRooms = Array.isArray(config.rooms)
+    ? config.rooms.map((room, index) => ({
+        id: String(room.id || `room-${index + 1}`).trim(),
+        name: String(room.name || `Room ${index + 1}`).trim().slice(0, 10),
+        color: String(room.color || "#0f766e").trim(),
+        icon: String(room.icon || "").trim(),
+        receptionSound: normalizeReceptionSound(room.receptionSound),
+        notifications: normalizeNotifications(
+          Array.isArray(room.notifications) ? room.notifications : fallbackNotifications,
+        ),
+      }))
+    : [];
+
+  const legacyCompatibleNotifications =
+    normalizedRooms[0]?.notifications?.length > 0
+      ? normalizedRooms[0].notifications
+      : fallbackNotifications;
+
+  return {
+    version: Number(config.version) || 1,
+    lastUpdated: config.lastUpdated || new Date().toISOString(),
+    network: {
+      host: config.network?.host || "0.0.0.0",
+      port: Number(config.network?.port) || 3210,
+    },
+    auth: {
+      accessKey: normalizeAccessKey(config.auth?.accessKey),
+    },
+    display: {
+      alwaysOnTop: Boolean(config.display?.alwaysOnTop),
+      autoHideMs: Math.max(0, Number(config.display?.autoHideMs) || 0),
+      compactMode: config.display?.compactMode !== false,
+      minimized: Boolean(config.display?.minimized),
+      adminMode: Boolean(config.display?.adminMode),
+      launchAtStartup:
+        typeof config.display?.launchAtStartup === "boolean"
+          ? config.display.launchAtStartup
+          : true,
+      windowPosition: normalizeWindowPosition(config.display?.windowPosition),
+    },
+    hardware: {
+      leftAuxButton: {
+        enabled: config.hardware?.leftAuxButton?.enabled !== false,
+        mode:
+          String(config.hardware?.leftAuxButton?.mode || "party")
+            .trim()
+            .toLowerCase() || "party",
+      },
+      buttonAppearance: normalizeButtonAppearance(config.hardware?.buttonAppearance),
+    },
+    audio: {
+      masterVolume: clampVolume(config.audio?.masterVolume),
+      notificationSound: normalizeAudioNotificationSound(
+        config.audio?.notificationSound ?? config.rooms?.[0]?.receptionSound?.sound,
+      ),
+    },
+    rooms: normalizedRooms,
+    actions: legacyCompatibleNotifications.map(stripNotificationToAction),
+    buttonMappings: legacyCompatibleNotifications.map((notification, index) => ({
+      deviceButton: Number.isFinite(Number(notification.deviceButton))
+        ? Number(notification.deviceButton)
+        : index,
+      actionId: notification.id,
+    })),
+  };
+}
+
+function normalizeButtonAppearance(buttonAppearance) {
+  return {
+    defaultBackground: normalizeHexColor(
+      buttonAppearance?.defaultBackground,
+      DEFAULT_BUTTON_APPEARANCE.defaultBackground,
+    ),
+    activeBackground: normalizeHexColor(
+      buttonAppearance?.activeBackground,
+      DEFAULT_BUTTON_APPEARANCE.activeBackground,
+    ),
+  };
+}
+
+function normalizeAccessKey(accessKey) {
+  return String(accessKey || "").trim();
+}
+
+function normalizeHexColor(value, fallback) {
+  const normalized = String(value || "")
+    .trim()
+    .replace(/^#/, "");
+
+  if (/^[\da-f]{3}$/i.test(normalized) || /^[\da-f]{6}$/i.test(normalized)) {
+    return `#${normalized.toUpperCase()}`;
+  }
+
+  return fallback;
+}
+
+function normalizeWindowPosition(windowPosition) {
+  const x = Number(windowPosition?.x);
+  const y = Number(windowPosition?.y);
+
+  if (!Number.isFinite(x) || !Number.isFinite(y)) {
+    return null;
+  }
+
+  return {
+    x: Math.round(x),
+    y: Math.round(y),
+  };
+}
+
+export function validateConfig(config) {
+  const normalized = normalizeConfig(config);
+  const errors = [];
+  const roomIds = new Set();
+
+  if (normalized.rooms.length === 0) {
+    errors.push("At least one room is required.");
+  }
+
+  for (const room of normalized.rooms) {
+    if (!room.id) {
+      errors.push("Each room needs an ID.");
+    } else if (roomIds.has(room.id)) {
+      errors.push(`Duplicate room ID: ${room.id}`);
+    } else {
+      roomIds.add(room.id);
+    }
+
+    if (!room.name) {
+      errors.push("Each surgery room needs a name.");
+    }
+
+    if (!VALID_RECEPTION_SOUNDS.has(room.receptionSound?.sound)) {
+      errors.push(`Room "${room.name}" has an invalid reception sound.`);
+    }
+
+    if (!Array.isArray(room.notifications) || room.notifications.length === 0) {
+      errors.push(`Room "${room.name}" needs at least one notification.`);
+      continue;
+    }
+
+    const notificationIds = new Set();
+    const deviceButtons = new Set();
+
+    for (const notification of room.notifications) {
+      if (!notification.id) {
+        errors.push(`Each notification in "${room.name}" needs an ID.`);
+      } else if (notificationIds.has(notification.id)) {
+        errors.push(`Duplicate notification ID in "${room.name}": ${notification.id}`);
+      } else {
+        notificationIds.add(notification.id);
+      }
+
+      if (!notification.label) {
+        errors.push(`Each notification in "${room.name}" needs a message.`);
+      }
+
+      if (!Number.isFinite(Number(notification.deviceButton))) {
+        errors.push(`Each notification in "${room.name}" needs a button number.`);
+      } else if (deviceButtons.has(Number(notification.deviceButton))) {
+        errors.push(
+          `Duplicate button ${notification.deviceButton} in "${room.name}".`,
+        );
+      } else {
+        deviceButtons.add(Number(notification.deviceButton));
+      }
+    }
+  }
+
+  if (!normalized.hardware?.leftAuxButton?.mode) {
+    errors.push("The auxiliary button mode is required.");
+  }
+
+  if (!["party", "cancel"].includes(normalized.hardware?.leftAuxButton?.mode)) {
+    errors.push("The auxiliary button mode is invalid.");
+  }
+
+  if (!Number.isFinite(Number(normalized.audio?.masterVolume))) {
+    errors.push("The master volume is invalid.");
+  }
+
+  return {
+    valid: errors.length === 0,
+    errors,
+    normalized,
+  };
+}
+
+function normalizeLegacyActions(actions) {
+  return Array.isArray(actions)
+    ? actions.map((action, index) => {
+        const fallbackLabel = `Action ${index + 1}`;
+        const label = String(action.label || action.message || fallbackLabel).trim();
+
+        return {
+          id: String(action.id || `action-${index + 1}`).trim(),
+          label,
+          message: String(action.message || label || fallbackLabel).trim(),
+          color: String(action.color || "#2563eb").trim(),
+          icon: String(action.icon || "").trim(),
+        };
+      })
+    : [];
+}
+
+function normalizeLegacyMappings(buttonMappings) {
+  return Array.isArray(buttonMappings)
+    ? buttonMappings.map((mapping, index) => ({
+        deviceButton: Number.isFinite(Number(mapping.deviceButton))
+          ? Number(mapping.deviceButton)
+          : index,
+        actionId: String(mapping.actionId || "").trim(),
+      }))
+    : [];
+}
+
+function buildFallbackNotifications(actions, buttonMappings) {
+  return actions.map((action, index) => {
+    const mapping = buttonMappings.find((item) => item.actionId === action.id);
+
+    return normalizeNotification(
+      {
+        ...action,
+        deviceButton: Number.isFinite(Number(mapping?.deviceButton))
+          ? Number(mapping.deviceButton)
+          : index,
+      },
+      index,
+    );
+  });
+}
+
+function normalizeNotifications(notifications) {
+  return Array.isArray(notifications)
+    ? notifications.map((notification, index) => normalizeNotification(notification, index))
+    : [];
+}
+
+function normalizeNotification(notification, index) {
+  const fallbackLabel = `Action ${index + 1}`;
+  const label = String(notification.label || notification.message || fallbackLabel).trim();
+
+  return {
+    id: String(notification.id || `action-${index + 1}`).trim(),
+    label,
+    message: String(notification.message || label || fallbackLabel).trim(),
+    color: String(notification.color || "#2563eb").trim(),
+    icon: String(notification.icon || "").trim(),
+    deviceButton: Number.isFinite(Number(notification.deviceButton))
+      ? Number(notification.deviceButton)
+      : index,
+  };
+}
+
+export const DEFAULT_RECEPTION_SOUND = "notification_sound_01";
+export const RECEPTION_SOUND_OPTIONS = Array.from({ length: 17 }, (_value, index) => {
+  const soundNumber = String(index + 1).padStart(2, "0");
+  return {
+    value: `notification_sound_${soundNumber}`,
+    label: `Sound ${soundNumber}`,
+    fileName: `Notification_sound_${soundNumber}.wav`,
+  };
+});
+
+const LEGACY_RECEPTION_SOUND_ALIASES = new Map([
+  ["ping", "notification_sound_01"],
+  ["glass", "notification_sound_02"],
+  ["hero", "notification_sound_03"],
+  ["funk", "notification_sound_04"],
+  ["pop", "notification_sound_05"],
+]);
+const VALID_RECEPTION_SOUNDS = new Set(RECEPTION_SOUND_OPTIONS.map((option) => option.value));
+
+function normalizeReceptionSoundValue(value) {
+  const normalized = String(value || DEFAULT_RECEPTION_SOUND)
+    .trim()
+    .toLowerCase();
+  const mapped = LEGACY_RECEPTION_SOUND_ALIASES.get(normalized) || normalized;
+  return VALID_RECEPTION_SOUNDS.has(mapped) ? mapped : DEFAULT_RECEPTION_SOUND;
+}
+
+function normalizeReceptionSound(receptionSound) {
+  return {
+    enabled: Boolean(receptionSound?.enabled),
+    sound: normalizeReceptionSoundValue(receptionSound?.sound),
+  };
+}
+
+function normalizeAudioNotificationSound(value) {
+  return normalizeReceptionSoundValue(value);
+}
+
+function clampVolume(volume) {
+  const parsed = Number(volume);
+
+  if (!Number.isFinite(parsed)) {
+    return 80;
+  }
+
+  return Math.max(0, Math.min(100, Math.round(parsed)));
+}
+
+function stripNotificationToAction(notification) {
+  return {
+    id: notification.id,
+    label: notification.label,
+    message: notification.message,
+    color: notification.color,
+    icon: notification.icon,
+  };
+}

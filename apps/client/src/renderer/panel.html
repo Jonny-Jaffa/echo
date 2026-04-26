@@ -1,0 +1,226 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Echo Surgery</title>
+    <link rel="stylesheet" href="./panel.css" />
+  </head>
+  <body>
+    <main class="panel-shell">
+      <section class="waiting-state" id="waiting-state" aria-live="polite" role="button" tabindex="0" aria-label="Open surgery panel controls">
+        <img class="waiting-logo" src="../assets/echo-logo-colour.png" alt="Echo" />
+        <div class="waiting-status">
+          <span class="status-dot" data-tone="offline"></span>
+          <span class="waiting-status-label">Offline</span>
+        </div>
+        <p class="waiting-message">Waiting to connect to reception</p>
+      </section>
+
+      <section class="role-panel hidden" id="role-panel">
+        <div class="role-card">
+          <img class="role-logo" src="../assets/echo-logo-colour.png" alt="Echo" />
+          <div class="role-copy-block">
+            <h1 class="role-title">Choose device role</h1>
+            <p class="role-copy">
+              Save whether this computer should act as Reception or Room in the future unified Echo app.
+            </p>
+          </div>
+          <div class="role-option-list" id="role-option-list">
+            <button class="role-option-button" data-runtime-role="reception" type="button">
+              <strong>Reception</strong>
+              <span>Runs the front-desk host and reception controls.</span>
+            </button>
+            <button class="role-option-button" data-runtime-role="room" type="button">
+              <strong>Room</strong>
+              <span>Runs the surgery/room panel, Neo controls, and room messaging.</span>
+            </button>
+          </div>
+          <div class="role-current-label" id="role-current-label"></div>
+          <div class="role-actions">
+            <button class="role-secondary-button" id="role-close-button" type="button">Close</button>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel-card">
+        <div class="status-row drag-region">
+          <div class="brand-lockup">
+            <img class="brand-logo" src="../assets/echo-logo-colour.png" alt="Echo" />
+          </div>
+          <div class="toolbar no-drag">
+            <div class="status-block" id="status-indicator" title="Connecting" aria-label="Connecting">
+              <span class="status-dot" id="status-dot" aria-hidden="true"></span>
+            </div>
+            <div class="panel-display-mode no-drag">
+              <button
+                class="panel-icon-button panel-quick-actions-button"
+                id="quick-actions-toggle-button"
+                type="button"
+                aria-label="Display options"
+                aria-expanded="false"
+                title="Display options"
+              >
+                Display options
+              </button>
+              <div class="panel-display-mode-menu hidden" id="panel-display-mode-menu">
+                <button class="panel-display-mode-option" data-panel-mode="messages" type="button">Messages</button>
+                <button class="panel-display-mode-option" data-panel-mode="buttons" type="button">Buttons</button>
+                <button class="panel-display-mode-option" data-panel-mode="both" type="button">Both</button>
+              </div>
+            </div>
+          <button
+              class="panel-icon-button panel-settings-button"
+              id="server-toggle-button"
+              type="button"
+              aria-label="Show settings"
+              aria-expanded="false"
+              title="Settings"
+            >
+              Settings
+            </button>
+            <button
+              class="panel-icon-button panel-minimize-button"
+              id="panel-minimize-button"
+              type="button"
+              aria-label="Minimise window"
+              title="Minimise window"
+            >
+              Minimise window
+            </button>
+            <button
+              class="panel-icon-button panel-close-button"
+              id="panel-close-button"
+              type="button"
+              aria-label="Close panel"
+              title="Close panel"
+            >
+              Close
+            </button>
+          </div>
+        </div>
+
+        <section class="quick-actions hidden" id="quick-actions">
+          <div class="panel-actions quick-action-grid" id="quick-action-grid"></div>
+        </section>
+        <div class="panel-section-divider hidden" id="panel-section-divider" aria-hidden="true"></div>
+
+        <section class="message-shell">
+          <div class="message-thread-bar">
+            <button
+              class="message-thread-drawer-button"
+              id="message-thread-drawer-button"
+              type="button"
+              aria-label="Show recipients"
+              aria-expanded="false"
+              title="Recipients"
+            >
+              Recipients
+            </button>
+            <div class="message-thread-list" id="message-thread-list"></div>
+          </div>
+          <aside class="message-thread-drawer hidden" id="message-thread-drawer">
+            <div class="message-thread-drawer-head">
+              <div class="message-thread-drawer-title">Recipients</div>
+              <button
+                class="message-thread-drawer-close"
+                id="message-thread-drawer-close"
+                type="button"
+                aria-label="Close recipients"
+                title="Close"
+              >
+                Close
+              </button>
+            </div>
+            <div class="message-thread-drawer-list" id="message-thread-drawer-list"></div>
+          </aside>
+          <div class="message-list" id="message-list"></div>
+          <div class="message-compose">
+            <textarea
+              class="message-compose-input"
+              id="message-compose-input"
+              rows="1"
+              maxlength="500"
+              placeholder="message"
+            ></textarea>
+            <button class="message-send-button" id="message-send-button" type="button" aria-label="Send message" title="Send message">Send</button>
+          </div>
+        </section>
+
+        <div class="server-panel hidden push-down" id="server-panel">
+          <section class="settings-section">
+            <div class="settings-section-head">
+              <div>
+                <h3>Buttons</h3>
+              </div>
+            </div>
+            <div class="room-row">
+              <label class="field inline-field">
+                <span>Room</span>
+                <select id="room-select"></select>
+              </label>
+            </div>
+            <div class="panel-actions" id="button-grid"></div>
+            <div class="selected-room-volume" id="selected-room-volume"></div>
+          </section>
+
+          <section class="settings-section">
+            <div class="settings-section-head">
+              <div>
+                <h3>Message Groups</h3>
+              </div>
+              <button class="settings-add-button" id="add-message-group-button" type="button">Add group</button>
+            </div>
+            <div class="message-group-list" id="message-group-list"></div>
+          </section>
+
+          <section class="settings-section">
+            <div class="settings-section-head">
+              <div>
+                <h3>General</h3>
+              </div>
+            </div>
+            <div class="checkbox-toggle-field">
+              <label class="checkbox-toggle">
+                <input id="show-panel-at-startup-input" type="checkbox" />
+                <span>Show panel on startup</span>
+              </label>
+              <label class="checkbox-toggle">
+                <input id="always-on-top-input" type="checkbox" />
+                <span>Always on top</span>
+              </label>
+            </div>
+            <div class="role-launch-card">
+              <div class="role-launch-copy">
+                <strong>Device role</strong>
+                <span>Open the role chooser if this computer needs to switch between Room and Reception during setup or support.</span>
+              </div>
+              <button class="settings-add-button role-launch-button" id="open-role-window-button" type="button">Change device role</button>
+            </div>
+          </section>
+
+          <section class="settings-section">
+            <div class="settings-section-head">
+              <div>
+                <h3>Connection</h3>
+              </div>
+            </div>
+            <div class="server-connection-row">
+              <label class="field server-field">
+                <span>Reception Address</span>
+                <input id="server-input" type="text" />
+                <div class="hardware-status connection-hardware-status" id="hardware-status">Neo: Starting</div>
+              </label>
+              <label class="field server-field">
+                <span>Pairing Code</span>
+                <input id="server-access-key-input" type="text" autocomplete="off" spellcheck="false" />
+              </label>
+            </div>
+          </section>
+        </div>
+      </section>
+    </main>
+
+    <script type="module" src="./panel.js"></script>
+  </body>
+</html>

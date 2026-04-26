@@ -1,0 +1,17 @@
+{
+  "name": "@patient-ping/echo",
+  "version": "0.2.2",
+  "private": true,
+  "author": "Blackworks",
+  "main": "src/main.js",
+  "scripts": {
+    "dev": "env -u ELECTRON_RUN_AS_NODE electron .",
+    "start": "env -u ELECTRON_RUN_AS_NODE electron ."
+  },
+  "dependencies": {
+    "@patient-ping/shared": "0.2.2"
+  },
+  "devDependencies": {
+    "electron": "37.2.1"
+  }
+}

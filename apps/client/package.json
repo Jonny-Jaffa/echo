@@ -1,0 +1,64 @@
+{
+  "name": "@patient-ping/client",
+  "version": "0.2.2",
+  "private": true,
+  "author": "Blackworks",
+  "type": "module",
+  "main": "src/panel-main.cjs",
+  "scripts": {
+    "dev": "node src/index.js",
+    "dev:panel": "env -u ELECTRON_RUN_AS_NODE electron src/panel-main.cjs",
+    "start": "node src/index.js",
+    "start:panel": "env -u ELECTRON_RUN_AS_NODE electron src/panel-main.cjs",
+    "test:surgeries": "node src/test-all-surgeries.js"
+  },
+  "dependencies": {
+    "@elgato-stream-deck/node": "^7.6.2",
+    "@patient-ping/shared": "0.2.2",
+    "@resvg/resvg-wasm": "^2.6.2",
+    "ws": "^8.18.3"
+  },
+  "devDependencies": {
+    "electron": "37.2.1"
+  },
+  "build": {
+    "appId": "com.echo.surgery",
+    "productName": "Echo Surgery",
+    "icon": "build/icon.png",
+    "copyright": "Copyright Blackworks",
+    "directories": {
+      "output": "../../dist/surgery"
+    },
+    "npmRebuild": false,
+    "files": [
+      "src/**/*",
+      "package.json"
+    ],
+    "asarUnpack": [
+      "**/*.node",
+      "**/*.wasm",
+      "src/assets/sounds/**/*.wav"
+    ],
+    "mac": {
+      "category": "public.app-category.medical",
+      "target": [
+        "dmg",
+        "zip"
+      ]
+    },
+    "win": {
+      "target": [
+        "nsis",
+        "zip"
+      ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "installerSidebar": "build/installerSidebar.bmp",
+      "uninstallerSidebar": "build/installerSidebar.bmp",
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true
+    }
+  }
+}
