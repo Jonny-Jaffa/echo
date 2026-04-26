@@ -31,6 +31,7 @@ const roleOptionList = document.querySelector("#role-option-list");
 const roleCurrentLabel = document.querySelector("#role-current-label");
 const roleCloseButton = document.querySelector("#role-close-button");
 const openRoleWindowButton = document.querySelector("#open-role-window-button");
+const selectedDeviceRoleLabel = document.querySelector("#selected-device-role-label");
 const showPanelAtStartupInput = document.querySelector("#show-panel-at-startup-input");
 const alwaysOnTopInput = document.querySelector("#always-on-top-input");
 const messageSoundInput = document.querySelector("#message-sound-input");
@@ -134,6 +135,14 @@ const activeLocalAlertPlayers = new Set();
 
 function formatRuntimeRoleLabel(runtimeRole) {
   return runtimeRole === "reception" ? "Reception" : "Room";
+}
+
+function renderSelectedDeviceRole(settings = panelSettings) {
+  if (!selectedDeviceRoleLabel) {
+    return;
+  }
+
+  selectedDeviceRoleLabel.textContent = `Selected role: ${formatRuntimeRoleLabel(settings?.runtimeRole || "room")}`;
 }
 
 function renderRoleView(roleState = {}) {
@@ -2424,6 +2433,7 @@ function getSelectedRoom() {
 
 function applyPersistedSettings(nextSettings = {}) {
   panelSettings = nextSettings || {};
+  renderSelectedDeviceRole(panelSettings);
   messageSound = getValidatedRoomAlertSound(panelSettings.messageSound);
   messageVolume = normalizeMessageVolume(panelSettings.messageVolume);
   roomAlertVolumes = normalizeRoomAlertVolumes(panelSettings.roomAlertVolumes);

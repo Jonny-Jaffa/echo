@@ -1298,6 +1298,21 @@ body[data-window-view="settings"] .settings-content {
   white-space: nowrap;
 }
 
+.room-select-field {
+  width: min(100%, 360px);
+}
+
+.settings-subsection-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.message-group-settings-block {
+  display: grid;
+  gap: 10px;
+}
+
 .inline-field {
   grid-template-columns: 48px minmax(0, 1fr);
   align-items: center;

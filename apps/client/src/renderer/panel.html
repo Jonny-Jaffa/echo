@@ -181,12 +181,6 @@
                 <h3>Buttons</h3>
               </div>
             </div>
-            <div class="room-row">
-              <label class="field inline-field">
-                <span>Room</span>
-                <select id="room-select"></select>
-              </label>
-            </div>
             <div class="panel-actions" id="button-grid"></div>
             <div class="selected-room-volume" id="selected-room-volume"></div>
           </section>
@@ -197,6 +191,10 @@
                 <h3>Messaging</h3>
               </div>
               <button class="settings-add-button" id="add-message-group-button" type="button">Add group</button>
+            </div>
+            <div class="message-group-settings-block">
+              <div class="settings-subsection-title">Message Groups</div>
+              <div class="message-group-list" id="message-group-list"></div>
             </div>
             <div class="selected-room-volume-card message-sound-card">
               <div class="selected-room-volume-header">
@@ -234,7 +232,6 @@
                 </label>
               </div>
             </div>
-            <div class="message-group-list" id="message-group-list"></div>
           </section>
 
           <section class="settings-section settings-tab-section" id="settings-general" data-settings-section="settings-general">
@@ -243,6 +240,17 @@
                 <h3>General</h3>
               </div>
             </div>
+            <div class="role-launch-card">
+              <div class="role-launch-copy">
+                <strong>Device role</strong>
+                <span id="selected-device-role-label">Selected role: Room</span>
+              </div>
+              <button class="settings-add-button role-launch-button" id="open-role-window-button" type="button">Change device role</button>
+            </div>
+            <label class="field room-select-field">
+              <span>Room</span>
+              <select id="room-select"></select>
+            </label>
             <div class="checkbox-toggle-field">
               <label class="checkbox-toggle">
                 <input id="show-panel-at-startup-input" type="checkbox" />
@@ -252,13 +260,6 @@
                 <input id="always-on-top-input" type="checkbox" />
                 <span>Always on top</span>
               </label>
-            </div>
-            <div class="role-launch-card">
-              <div class="role-launch-copy">
-                <strong>Device role</strong>
-                <span>Open the role chooser if this computer needs to switch between Room and Reception during setup or support.</span>
-              </div>
-              <button class="settings-add-button role-launch-button" id="open-role-window-button" type="button">Change device role</button>
             </div>
           </section>
             </div>
