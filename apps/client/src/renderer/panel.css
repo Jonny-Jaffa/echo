@@ -518,6 +518,8 @@ body[data-view="waiting"] .waiting-state {
 .settings-content {
   display: grid;
   gap: 20px;
+  align-content: start;
+  align-items: start;
   min-width: 0;
 }
 
@@ -581,6 +583,8 @@ body[data-window-view="settings"] .settings-content {
 .settings-section {
   display: grid;
   gap: 10px;
+  align-content: start;
+  align-items: start;
   scroll-margin-top: 8px;
 }
 
@@ -1189,6 +1193,7 @@ body[data-window-view="settings"] .settings-content {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 6px;
+  align-items: start;
 }
 
 .server-field {
@@ -1206,6 +1211,8 @@ body[data-window-view="settings"] .settings-content {
 .field input,
 .field select {
   width: 100%;
+  min-height: 42px;
+  height: 42px;
   border: 1px solid var(--line);
   border-radius: 14px;
   padding: 11px 12px;
