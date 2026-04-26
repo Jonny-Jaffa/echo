@@ -1,6 +1,7 @@
 const path = require("node:path");
 const fs = require("node:fs");
 const os = require("node:os");
+const { spawn } = require("node:child_process");
 const { pathToFileURL } = require("node:url");
 const { app, BrowserWindow, ipcMain, Menu, Tray, nativeImage } = require("electron");
 const { createReceptionServer } = require("../../reception/src/server.js");
@@ -29,6 +30,8 @@ let isQuitting = false;
 let receptionServer = null;
 let receptionConfigState = null;
 let roomServiceModulePromise = null;
+let roleExperienceProcess = null;
+let roleExperienceRole = "";
 let bootstrapState = {
   runtimeRole: "",
   runtimeRoleConfirmed: false,
@@ -41,6 +44,11 @@ let runtimeServiceState = {
   detail: "Choose a role to begin",
   receptionStatus: null,
   roomStatus: null,
+};
+let roleExperienceState = {
+  activeRole: "",
+  state: "idle",
+  detail: "Full role workspace has not been opened",
 };
 
 function normalizeRuntimeRole(runtimeRole, fallback = "") {
@@ -113,6 +121,7 @@ function buildBootstrapPayload() {
     implementationStage: "runtime-handoff-foundation",
     roomRuntimeSettings: bootstrapState.roomRuntimeSettings,
     runtimeServiceState,
+    roleExperienceState,
   };
 }
 
@@ -222,6 +231,14 @@ function setRuntimeServiceState(nextState = {}) {
   emitBootstrapState();
 }
 
+function setRoleExperienceState(nextState = {}) {
+  roleExperienceState = {
+    ...roleExperienceState,
+    ...nextState,
+  };
+  emitBootstrapState();
+}
+
 async function loadSharedModule() {
   return import("@patient-ping/shared");
 }
@@ -296,6 +313,148 @@ async function stopActiveRuntime() {
     receptionStatus: null,
     roomStatus: null,
   });
+}
+
+function getWorkspaceRoot() {
+  return path.join(__dirname, "..", "..", "..");
+}
+
+function getNpmCommand() {
+  return process.platform === "win32" ? "npm.cmd" : "npm";
+}
+
+function isRoleExperienceRunning() {
+  return Boolean(roleExperienceProcess && roleExperienceProcess.exitCode === null);
+}
+
+function stopRoleExperience() {
+  if (!isRoleExperienceRunning()) {
+    roleExperienceProcess = null;
+    roleExperienceRole = "";
+    setRoleExperienceState({
+      activeRole: "",
+      state: "idle",
+      detail: "Full role workspace has not been opened",
+    });
+    return;
+  }
+
+  const stoppedRole = roleExperienceRole;
+  if (process.platform === "win32") {
+    roleExperienceProcess.kill();
+  } else {
+    try {
+      process.kill(-roleExperienceProcess.pid);
+    } catch {
+      roleExperienceProcess.kill();
+    }
+  }
+  roleExperienceProcess = null;
+  roleExperienceRole = "";
+  setRoleExperienceState({
+    activeRole: stoppedRole,
+    state: "stopped",
+    detail: "Full role workspace was closed by Echo",
+  });
+}
+
+async function openRoleExperience() {
+  const runtimeRole = normalizeRuntimeRole(bootstrapState.runtimeRole, "");
+
+  if (!bootstrapState.runtimeRoleConfirmed || !runtimeRole) {
+    setRoleExperienceState({
+      activeRole: "",
+      state: "error",
+      detail: "Choose Reception or Room before opening the workspace",
+    });
+    return buildBootstrapPayload();
+  }
+
+  if (isRoleExperienceRunning() && roleExperienceRole === runtimeRole) {
+    setRoleExperienceState({
+      activeRole: runtimeRole,
+      state: "running",
+      detail: `${formatRuntimeRole(runtimeRole)} workspace is already open`,
+    });
+    return buildBootstrapPayload();
+  }
+
+  if (isRoleExperienceRunning()) {
+    stopRoleExperience();
+  }
+
+  await stopActiveRuntime();
+
+  const script = runtimeRole === RUNTIME_ROLE_RECEPTION ? "dev:reception" : "dev:client-panel";
+  const child = spawn(getNpmCommand(), ["run", script], {
+    cwd: getWorkspaceRoot(),
+    env: {
+      ...process.env,
+      ELECTRON_RUN_AS_NODE: "",
+    },
+    detached: process.platform !== "win32",
+    stdio: "ignore",
+  });
+
+  roleExperienceProcess = child;
+  roleExperienceRole = runtimeRole;
+  child.unref();
+  setRoleExperienceState({
+    activeRole: runtimeRole,
+    state: "starting",
+    detail: `Opening ${formatRuntimeRole(runtimeRole)} workspace`,
+  });
+
+  child.once("spawn", () => {
+    if (roleExperienceProcess !== child) {
+      return;
+    }
+
+    setRoleExperienceState({
+      activeRole: runtimeRole,
+      state: "running",
+      detail: `${formatRuntimeRole(runtimeRole)} workspace is open`,
+    });
+  });
+
+  child.once("error", (error) => {
+    if (roleExperienceProcess === child) {
+      roleExperienceProcess = null;
+      roleExperienceRole = "";
+    }
+
+    setRoleExperienceState({
+      activeRole: runtimeRole,
+      state: "error",
+      detail: error?.message || `Could not open ${formatRuntimeRole(runtimeRole)} workspace`,
+    });
+  });
+
+  child.once("exit", (code, signal) => {
+    if (roleExperienceProcess === child) {
+      roleExperienceProcess = null;
+      roleExperienceRole = "";
+    }
+
+    setRoleExperienceState({
+      activeRole: runtimeRole,
+      state: code === 0 || signal ? "stopped" : "error",
+      detail:
+        code === 0 || signal
+          ? `${formatRuntimeRole(runtimeRole)} workspace closed`
+          : `${formatRuntimeRole(runtimeRole)} workspace exited with code ${code}`,
+    });
+  });
+
+  return buildBootstrapPayload();
+}
+
+function formatRuntimeRole(runtimeRole) {
+  return runtimeRole === RUNTIME_ROLE_RECEPTION
+    ? "Reception"
+    : runtimeRole === RUNTIME_ROLE_ROOM
+      ? "Room"
+      : "Echo";
 }
 
 async function startReceptionRuntime() {
@@ -538,6 +697,11 @@ function registerIpcHandlers() {
     await stopActiveRuntime();
     return startSelectedRuntime();
   });
+  ipcMain.handle("echo:openRoleExperience", async () => openRoleExperience());
+  ipcMain.handle("echo:stopRoleExperience", () => {
+    stopRoleExperience();
+    return buildBootstrapPayload();
+  });
 }
 
 app.whenReady().then(() => {
@@ -568,6 +732,7 @@ app.on("window-all-closed", () => {
 
 app.on("before-quit", () => {
   isQuitting = true;
+  stopRoleExperience();
   stopActiveRuntime().catch(() => {});
 });
 

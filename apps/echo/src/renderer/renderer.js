@@ -10,6 +10,8 @@ const runtimeDetail = document.querySelector("#runtime-detail");
 const runtimeStatusGrid = document.querySelector("#runtime-status-grid");
 const stopRuntimeButton = document.querySelector("#stop-runtime-button");
 const restartRuntimeButton = document.querySelector("#restart-runtime-button");
+const openRoleExperienceButton = document.querySelector("#open-role-experience-button");
+const roleExperienceDetail = document.querySelector("#role-experience-detail");
 const roomSettingsCard = document.querySelector("#room-settings-card");
 const roomServerUrlInput = document.querySelector("#room-server-url-input");
 const roomAccessKeyInput = document.querySelector("#room-access-key-input");
@@ -177,6 +179,12 @@ function renderBootstrapState(state = {}) {
     runtimeDetail.textContent = runtimeServiceState.detail || "Choose a role to begin";
   }
 
+  if (roleExperienceDetail) {
+    const roleExperienceState = state.roleExperienceState || {};
+    roleExperienceDetail.textContent = roleExperienceState.detail || "Full role workspace has not been opened";
+    roleExperienceDetail.dataset.state = String(roleExperienceState.state || "idle").trim().toLowerCase();
+  }
+
   if (runtimeStatusGrid) {
     runtimeStatusGrid.innerHTML = renderStatusRows(buildRuntimeStatusItems(state));
   }
@@ -207,6 +215,13 @@ function renderBootstrapState(state = {}) {
 
   if (roomDeviceIdInput) {
     roomDeviceIdInput.value = roomRuntimeSettings.deviceId || "";
+  }
+
+  if (openRoleExperienceButton) {
+    openRoleExperienceButton.disabled = !roleConfirmed || !runtimeRole;
+    openRoleExperienceButton.textContent = runtimeRole
+      ? `Open ${formatRuntimeRoleLabel(runtimeRole)} workspace`
+      : "Open workspace";
   }
 }
 
@@ -264,6 +279,9 @@ stopRuntimeButton?.addEventListener("click", () => {
 });
 restartRuntimeButton?.addEventListener("click", () => {
   window.echoBootstrap.restartRuntime?.().catch(() => {});
+});
+openRoleExperienceButton?.addEventListener("click", () => {
+  window.echoBootstrap.openRoleExperience?.().catch(() => {});
 });
 minimizeWindowButton?.addEventListener("click", () => {
   window.echoBootstrap.minimizeWindow?.().catch(() => {});

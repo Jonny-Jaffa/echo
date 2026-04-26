@@ -322,6 +322,12 @@ button {
   cursor: pointer;
 }
 
+.primary-button:disabled,
+.secondary-button:disabled {
+  cursor: default;
+  opacity: 0.45;
+}
+
 .primary-button {
   border: 0;
   background: var(--accent);
@@ -332,6 +338,23 @@ button {
   border: 1px solid var(--line);
   background: white;
   color: var(--text);
+}
+
+.role-experience-detail {
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: #f8fbfb;
+}
+
+.role-experience-detail[data-state="running"] {
+  border-color: rgba(32, 179, 87, 0.24);
+  background: rgba(32, 179, 87, 0.08);
+}
+
+.role-experience-detail[data-state="error"] {
+  border-color: rgba(180, 35, 24, 0.22);
+  background: rgba(180, 35, 24, 0.08);
 }
 
 .field-grid {

@@ -6,6 +6,8 @@ contextBridge.exposeInMainWorld("echoBootstrap", {
   startRuntime: () => ipcRenderer.invoke("echo:startRuntime"),
   stopRuntime: () => ipcRenderer.invoke("echo:stopRuntime"),
   restartRuntime: () => ipcRenderer.invoke("echo:restartRuntime"),
+  openRoleExperience: () => ipcRenderer.invoke("echo:openRoleExperience"),
+  stopRoleExperience: () => ipcRenderer.invoke("echo:stopRoleExperience"),
   minimizeWindow: () => ipcRenderer.invoke("echo:minimizeWindow"),
   confirmQuit: () => ipcRenderer.invoke("echo:confirmQuit"),
   onBootstrapUpdate: (callback) => {

@@ -259,6 +259,28 @@
 
 - The current docs/install flow should assume a one-time pairing-code setup, not a user login
 
+## 2026-04-26
+
+### Session 1
+
+- Initialized a new Git repository for the working Echo folder after the previous session crash
+- Added a `.gitignore` that keeps generated dependencies, build outputs, local backup folders, and OS metadata out of source control
+- Created and pushed the initial working baseline to `git@github.com:Jonny-Jaffa/echo.git`
+- Corrected the README quick start to use the confirmed local desktop smoke-test pair:
+  - `npm run dev:reception`
+  - `npm run dev:client-panel`
+- Refreshed the npm workspace install so the new `apps/echo` workspace can resolve the root Electron binary
+- Confirmed `npm run dev:echo` now launches instead of failing with `env: electron: No such file or directory`
+- Added the first transitional unified-app handoff from `apps/echo`:
+  - selected `Reception` role can open the existing full reception app
+  - selected `Room` role can open the existing full room/client panel
+  - the in-process transitional runtime stops before handoff so it does not conflict with the full app over LAN ports or Neo hardware
+
+### Notes
+
+- The handoff still launches the trusted existing role apps as separate development processes
+- The next migration step is to host the full role-specific windows directly from the unified `apps/echo` process, then consolidate packaging around one `Echo` app identity
+
 ## 2026-04-25
 
 ### Session 1

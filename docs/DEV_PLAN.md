@@ -79,13 +79,17 @@ Phase 6: Unified Product and Role Selection
   - root launch scripts:
     - `npm run dev:echo`
     - `npm run start:echo`
+- The unified bootstrap can now hand off from the selected saved role into the existing full role workspace:
+  - `Reception` opens the current reception app
+  - `Room` opens the current client panel
+  - the transitional in-process runtime is stopped before handoff to avoid port/hardware conflicts
 
 ### In Progress
 
 - Windows packaging hardening and installer validation
 - Final multi-machine deployment validation on physical reception/surgery PCs
 - Architecture planning for a single packaged `Echo` product with role-based startup
-- Full unified bootstrap-to-window handoff for the future `Echo` app
+- Full direct in-app hosting of the role-specific Reception and Room windows from the future `Echo` app
 
 ### Next
 
@@ -154,6 +158,7 @@ Phase 6: Unified Product and Role Selection
 - [x] Support guarded role-compatible startup in the current separate builds
 - [x] Add a dedicated unified `apps/echo` bootstrap scaffold
 - [x] Start the transitional role service stack from `apps/echo`
+- [x] Add a transitional handoff from `apps/echo` to the existing full Reception/Room workspaces
 - [ ] Support full explicit runtime modes from one packaged app:
   - `Reception`
   - `Room`
