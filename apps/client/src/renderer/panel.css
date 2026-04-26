@@ -87,7 +87,7 @@ body[data-window-view="main"] .panel-card {
 }
 
 body[data-window-view="main"][data-quick-actions-visible="true"] .panel-card {
-  grid-template-rows: auto auto minmax(0, 1fr);
+  grid-template-rows: auto auto auto minmax(0, 1fr);
 }
 
 body[data-window-view="main"] .status-row,
