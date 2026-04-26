@@ -37,13 +37,15 @@ npm install
 npm run dev:reception
 ```
 
-3. In another terminal, start the surgery/room app:
+3. In another terminal, start the surgery/room panel:
 
 ```bash
-npm run dev:client
+npm run dev:client-panel
 ```
 
-The room app will fetch config from reception, connect over LAN, and expose the surgery-side panel/runtime.
+The room panel will fetch config from reception, connect over LAN, and expose the surgery-side desktop UI/runtime.
+
+For background-service-only testing, `npm run dev:client` starts the room client without the desktop panel.
 
 4. If you want to inspect the future unified bootstrap shell:
 
