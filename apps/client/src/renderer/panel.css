@@ -549,12 +549,17 @@ body[data-window-view="settings"] .settings-sidebar {
   min-height: 36px;
   display: flex;
   align-items: center;
+  border: 0;
   padding: 0 12px;
   border-radius: 12px;
+  background: transparent;
   color: var(--muted);
   text-decoration: none;
   font-size: 12px;
   font-weight: 700;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
 }
 
 .settings-sidebar-link:hover,
@@ -577,6 +582,10 @@ body[data-window-view="settings"] .settings-content {
   display: grid;
   gap: 10px;
   scroll-margin-top: 8px;
+}
+
+.settings-tab-section[hidden] {
+  display: none;
 }
 
 .settings-section + .settings-section {

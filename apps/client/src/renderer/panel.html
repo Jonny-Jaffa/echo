@@ -150,13 +150,13 @@
         <div class="server-panel hidden push-down" id="server-panel">
           <div class="settings-layout">
             <aside class="settings-sidebar" aria-label="Settings sections">
-              <a class="settings-sidebar-link is-active" href="#settings-connection" data-settings-section-link="settings-connection">Connection</a>
-              <a class="settings-sidebar-link" href="#settings-buttons" data-settings-section-link="settings-buttons">Buttons</a>
-              <a class="settings-sidebar-link" href="#settings-message-groups" data-settings-section-link="settings-message-groups">Message Groups</a>
-              <a class="settings-sidebar-link" href="#settings-general" data-settings-section-link="settings-general">General</a>
+              <button class="settings-sidebar-link is-active" type="button" data-settings-section-link="settings-general">General</button>
+              <button class="settings-sidebar-link" type="button" data-settings-section-link="settings-buttons">Button Actions</button>
+              <button class="settings-sidebar-link" type="button" data-settings-section-link="settings-message-groups">Message Groups</button>
+              <button class="settings-sidebar-link" type="button" data-settings-section-link="settings-connection">Connection</button>
             </aside>
             <div class="settings-content">
-          <section class="settings-section" id="settings-connection">
+          <section class="settings-section settings-tab-section" id="settings-connection" data-settings-section="settings-connection" hidden>
             <div class="settings-section-head">
               <div>
                 <h3>Connection</h3>
@@ -175,10 +175,10 @@
             </div>
           </section>
 
-          <section class="settings-section" id="settings-buttons">
+          <section class="settings-section settings-tab-section" id="settings-buttons" data-settings-section="settings-buttons" hidden>
             <div class="settings-section-head">
               <div>
-                <h3>Buttons</h3>
+                <h3>Button Actions</h3>
               </div>
             </div>
             <div class="room-row">
@@ -191,7 +191,7 @@
             <div class="selected-room-volume" id="selected-room-volume"></div>
           </section>
 
-          <section class="settings-section" id="settings-message-groups">
+          <section class="settings-section settings-tab-section" id="settings-message-groups" data-settings-section="settings-message-groups" hidden>
             <div class="settings-section-head">
               <div>
                 <h3>Message Groups</h3>
@@ -201,7 +201,7 @@
             <div class="message-group-list" id="message-group-list"></div>
           </section>
 
-          <section class="settings-section" id="settings-general">
+          <section class="settings-section settings-tab-section" id="settings-general" data-settings-section="settings-general">
             <div class="settings-section-head">
               <div>
                 <h3>General</h3>

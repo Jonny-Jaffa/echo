@@ -39,6 +39,7 @@ const messageVolumeInput = document.querySelector("#message-volume-input");
 const messageVolumeValue = document.querySelector("#message-volume-value");
 const selectedRoomVolume = document.querySelector("#selected-room-volume");
 const settingsSidebarLinks = [...document.querySelectorAll("[data-settings-section-link]")];
+const settingsTabSections = [...document.querySelectorAll("[data-settings-section]")];
 const requestedWindowView = String(new URLSearchParams(window.location.search).get("view") || "").trim().toLowerCase();
 const windowView = requestedWindowView === "settings"
   ? "settings"
@@ -528,11 +529,17 @@ function setPanelDisplayModeMenuVisibility(visible) {
 }
 
 function setActiveSettingsSidebarLink(sectionId) {
+  const nextSectionId = sectionId || "settings-general";
+
   settingsSidebarLinks.forEach((link) => {
     link.classList.toggle(
       "is-active",
-      String(link.getAttribute("data-settings-section-link") || "") === sectionId,
+      String(link.getAttribute("data-settings-section-link") || "") === nextSectionId,
     );
+  });
+
+  settingsTabSections.forEach((section) => {
+    section.hidden = String(section.getAttribute("data-settings-section") || "") !== nextSectionId;
   });
 }
 
@@ -2464,6 +2471,7 @@ async function init() {
   panelDeviceId = getPanelDeviceId();
   setPanelView("waiting");
   setServerPanelVisibility(isSettingsWindow);
+  setActiveSettingsSidebarLink("settings-general");
   await setPanelDisplayMode(panelDisplayMode, { persist: false, resize: false });
   setPanelDisplayModeMenuVisibility(false);
   setMessageThreadDrawerVisibility(false);
