@@ -52,6 +52,8 @@ const isRoleWindow = windowView === "role";
 
 const STORAGE_KEY = "pip-panel";
 const PANEL_DEVICE_ID_STORAGE_KEY = "pip-panel-device-id";
+const LEGACY_STORAGE_KEY = "patient-ping-panel";
+const LEGACY_PANEL_DEVICE_ID_STORAGE_KEY = "patient-ping-panel-device-id";
 const CONFIG_REFRESH_MS = 3000;
 const DEFAULT_BUTTON_APPEARANCE = {
   defaultBackground: "#FDD905",
@@ -174,7 +176,20 @@ function setPanelView(view) {
 
 function loadSavedState() {
   try {
-    return JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}");
+    const savedState = localStorage.getItem(STORAGE_KEY);
+
+    if (savedState) {
+      return JSON.parse(savedState);
+    }
+
+    const legacySavedState = localStorage.getItem(LEGACY_STORAGE_KEY);
+
+    if (legacySavedState) {
+      localStorage.setItem(STORAGE_KEY, legacySavedState);
+      return JSON.parse(legacySavedState);
+    }
+
+    return {};
   } catch {
     return {};
   }
@@ -453,9 +468,12 @@ function normalizeRoomPinnedMessageThreads(roomPinnedMessageThreadsMap) {
 }
 
 function getPanelDeviceId() {
-  const savedDeviceId = localStorage.getItem(PANEL_DEVICE_ID_STORAGE_KEY);
+  const savedDeviceId =
+    localStorage.getItem(PANEL_DEVICE_ID_STORAGE_KEY) ||
+    localStorage.getItem(LEGACY_PANEL_DEVICE_ID_STORAGE_KEY);
 
   if (savedDeviceId) {
+    localStorage.setItem(PANEL_DEVICE_ID_STORAGE_KEY, savedDeviceId);
     return savedDeviceId;
   }
 

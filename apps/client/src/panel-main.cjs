@@ -559,6 +559,13 @@ function getSettingsPath() {
   return path.join(app.getPath("userData"), "client-settings.json");
 }
 
+function getLegacySettingsPaths() {
+  return [
+    path.join(app.getPath("appData"), "@patient-ping", "client", "client-settings.json"),
+    path.join(app.getPath("appData"), "Echo Surgery", "client-settings.json"),
+  ];
+}
+
 function getClientServiceLogPath() {
   return path.join(app.getPath("userData"), "client-service.log");
 }
@@ -610,13 +617,20 @@ function broadcastPanelSettings() {
 
 function loadClientSettings() {
   const settingsPath = getSettingsPath();
+  const resolvedSettingsPath = fs.existsSync(settingsPath)
+    ? settingsPath
+    : getLegacySettingsPaths().find((legacyPath) => fs.existsSync(legacyPath));
 
-  if (!fs.existsSync(settingsPath)) {
+  if (!resolvedSettingsPath) {
     return;
   }
 
   try {
-    const parsed = JSON.parse(fs.readFileSync(settingsPath, "utf8"));
+    const parsed = JSON.parse(fs.readFileSync(resolvedSettingsPath, "utf8"));
+    if (resolvedSettingsPath !== settingsPath) {
+      fs.mkdirSync(path.dirname(settingsPath), { recursive: true });
+      fs.copyFileSync(resolvedSettingsPath, settingsPath);
+    }
     clientSettings = {
       ...clientSettings,
       runtimeRole: normalizeRuntimeRole(parsed.runtimeRole, RUNTIME_ROLE_ROOM),

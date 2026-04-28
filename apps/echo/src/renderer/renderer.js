@@ -238,7 +238,7 @@ async function handleRoleSelection(event) {
     return;
   }
 
-  const nextState = await window.echoBootstrap.updateBootstrapState({
+  const nextState = await window.pipBootstrap.updateBootstrapState({
     runtimeRole,
     runtimeRoleConfirmed: true,
   });
@@ -247,52 +247,52 @@ async function handleRoleSelection(event) {
 
 roleOptionList?.addEventListener("click", handleRoleSelection);
 roomServerUrlInput?.addEventListener("change", () => {
-  window.echoBootstrap.updateBootstrapState?.({
+  window.pipBootstrap.updateBootstrapState?.({
     roomRuntimeSettings: {
       serverUrl: roomServerUrlInput.value,
     },
   }).catch(() => {});
 });
 roomAccessKeyInput?.addEventListener("change", () => {
-  window.echoBootstrap.updateBootstrapState?.({
+  window.pipBootstrap.updateBootstrapState?.({
     roomRuntimeSettings: {
       serverAccessKey: roomAccessKeyInput.value,
     },
   }).catch(() => {});
 });
 roomIdInput?.addEventListener("change", () => {
-  window.echoBootstrap.updateBootstrapState?.({
+  window.pipBootstrap.updateBootstrapState?.({
     roomRuntimeSettings: {
       roomId: roomIdInput.value,
     },
   }).catch(() => {});
 });
 roomDeviceIdInput?.addEventListener("change", () => {
-  window.echoBootstrap.updateBootstrapState?.({
+  window.pipBootstrap.updateBootstrapState?.({
     roomRuntimeSettings: {
       deviceId: roomDeviceIdInput.value,
     },
   }).catch(() => {});
 });
 stopRuntimeButton?.addEventListener("click", () => {
-  window.echoBootstrap.stopRuntime?.().catch(() => {});
+  window.pipBootstrap.stopRuntime?.().catch(() => {});
 });
 restartRuntimeButton?.addEventListener("click", () => {
-  window.echoBootstrap.restartRuntime?.().catch(() => {});
+  window.pipBootstrap.restartRuntime?.().catch(() => {});
 });
 openRoleExperienceButton?.addEventListener("click", () => {
-  window.echoBootstrap.openRoleExperience?.().catch(() => {});
+  window.pipBootstrap.openRoleExperience?.().catch(() => {});
 });
 minimizeWindowButton?.addEventListener("click", () => {
-  window.echoBootstrap.minimizeWindow?.().catch(() => {});
+  window.pipBootstrap.minimizeWindow?.().catch(() => {});
 });
 quitAppButton?.addEventListener("click", () => {
-  window.echoBootstrap.confirmQuit?.().catch(() => {});
+  window.pipBootstrap.confirmQuit?.().catch(() => {});
 });
 
-window.echoBootstrap.onBootstrapUpdate?.((state) => {
+window.pipBootstrap.onBootstrapUpdate?.((state) => {
   renderBootstrapState(state);
 });
 
-const initialBootstrapState = await window.echoBootstrap.getBootstrapState?.().catch(() => null);
+const initialBootstrapState = await window.pipBootstrap.getBootstrapState?.().catch(() => null);
 renderBootstrapState(initialBootstrapState || {});

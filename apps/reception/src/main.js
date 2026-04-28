@@ -83,6 +83,13 @@ function getLocalAppStatePath() {
   return path.join(app.getPath("userData"), "app-state.json");
 }
 
+function getLegacyUserDataPaths() {
+  return [
+    path.join(app.getPath("appData"), "@patient-ping", "reception"),
+    path.join(app.getPath("appData"), "Echo Reception"),
+  ];
+}
+
 function normalizeRuntimeRole(runtimeRole, fallback = RUNTIME_ROLE_RECEPTION) {
   const normalizedRuntimeRole = String(runtimeRole || "").trim().toLowerCase();
 
@@ -105,13 +112,22 @@ function shouldOpenRoleWindowOnLaunch() {
 
 function loadLocalAppState() {
   const localAppStatePath = getLocalAppStatePath();
+  const resolvedAppStatePath = fs.existsSync(localAppStatePath)
+    ? localAppStatePath
+    : getLegacyUserDataPaths()
+      .map((legacyPath) => path.join(legacyPath, "app-state.json"))
+      .find((legacyPath) => fs.existsSync(legacyPath));
 
-  if (!fs.existsSync(localAppStatePath)) {
+  if (!resolvedAppStatePath) {
     return;
   }
 
   try {
-    const parsed = JSON.parse(fs.readFileSync(localAppStatePath, "utf8"));
+    const parsed = JSON.parse(fs.readFileSync(resolvedAppStatePath, "utf8"));
+    if (resolvedAppStatePath !== localAppStatePath) {
+      fs.mkdirSync(path.dirname(localAppStatePath), { recursive: true });
+      fs.copyFileSync(resolvedAppStatePath, localAppStatePath);
+    }
     localAppState = {
       ...localAppState,
       runtimeRole: normalizeRuntimeRole(parsed.runtimeRole, RUNTIME_ROLE_RECEPTION),
@@ -956,6 +972,21 @@ function initializeConfigPath() {
   if (fs.existsSync(userConfigPath)) {
     process.env.PIP_CONFIG_PATH = userConfigPath;
     logStartup("Using existing user config", userConfigPath);
+    return userConfigPath;
+  }
+
+  const legacyConfigPath = getLegacyUserDataPaths()
+    .map((legacyPath) => path.join(legacyPath, "config.json"))
+    .find((legacyPath) => fs.existsSync(legacyPath));
+
+  if (legacyConfigPath) {
+    fs.mkdirSync(path.dirname(userConfigPath), { recursive: true });
+    fs.copyFileSync(legacyConfigPath, userConfigPath);
+    process.env.PIP_CONFIG_PATH = userConfigPath;
+    logStartup("Migrated legacy user config", {
+      legacyConfigPath,
+      userConfigPath,
+    });
     return userConfigPath;
   }
 

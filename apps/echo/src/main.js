@@ -613,9 +613,9 @@ function createTray() {
 }
 
 function registerIpcHandlers() {
-  ipcMain.handle("echo:getBootstrapState", () => buildBootstrapPayload());
+  ipcMain.handle("pip:getBootstrapState", () => buildBootstrapPayload());
 
-  ipcMain.handle("echo:updateBootstrapState", async (_event, patch = {}) => {
+  ipcMain.handle("pip:updateBootstrapState", async (_event, patch = {}) => {
     const previousRuntimeRole = bootstrapState.runtimeRole;
     bootstrapState = {
       runtimeRole:
@@ -678,27 +678,27 @@ function registerIpcHandlers() {
     return buildBootstrapPayload();
   });
 
-  ipcMain.handle("echo:minimizeWindow", (event) => {
+  ipcMain.handle("pip:minimizeWindow", (event) => {
     const targetWindow = BrowserWindow.fromWebContents(event.sender);
     targetWindow?.minimize();
   });
 
-  ipcMain.handle("echo:confirmQuit", () => {
+  ipcMain.handle("pip:confirmQuit", () => {
     isQuitting = true;
     app.quit();
   });
 
-  ipcMain.handle("echo:startRuntime", async () => startSelectedRuntime());
-  ipcMain.handle("echo:stopRuntime", async () => {
+  ipcMain.handle("pip:startRuntime", async () => startSelectedRuntime());
+  ipcMain.handle("pip:stopRuntime", async () => {
     await stopActiveRuntime();
     return buildBootstrapPayload();
   });
-  ipcMain.handle("echo:restartRuntime", async () => {
+  ipcMain.handle("pip:restartRuntime", async () => {
     await stopActiveRuntime();
     return startSelectedRuntime();
   });
-  ipcMain.handle("echo:openRoleExperience", async () => openRoleExperience());
-  ipcMain.handle("echo:stopRoleExperience", () => {
+  ipcMain.handle("pip:openRoleExperience", async () => openRoleExperience());
+  ipcMain.handle("pip:stopRoleExperience", () => {
     stopRoleExperience();
     return buildBootstrapPayload();
   });
