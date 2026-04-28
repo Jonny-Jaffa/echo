@@ -1059,8 +1059,21 @@ body[data-admin-mode="true"] .admin-panel {
 }
 
 .role-launch-copy {
+  display: grid;
+  gap: 5px;
   font-size: 12px;
   line-height: 1.45;
+  color: var(--muted);
+}
+
+.role-launch-copy strong {
+  color: var(--text);
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.role-launch-copy span {
   color: var(--muted);
 }
 

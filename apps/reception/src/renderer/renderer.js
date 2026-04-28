@@ -30,6 +30,7 @@ const roomsEditor = document.querySelector("#rooms-editor");
 const networkPortInput = document.querySelector("#network-port-input");
 const authAccessKeyInput = document.querySelector("#auth-access-key-input");
 const detectedServerAddressOutput = document.querySelector("#detected-server-address");
+const selectedDeviceRoleLabel = document.querySelector("#selected-device-role-label");
 const launchAtStartupInput = document.querySelector("#launch-at-startup-input");
 const alwaysOnTopInput = document.querySelector("#always-on-top-input");
 const audioNotificationSoundInput = document.querySelector("#audio-notification-sound-input");
@@ -75,6 +76,14 @@ let isChatRecipientDrawerVisible = false;
 
 function formatRuntimeRoleLabel(runtimeRole) {
   return runtimeRole === "room" ? "Room" : "Reception";
+}
+
+function renderSelectedDeviceRole(roleState = appState?.app) {
+  if (!selectedDeviceRoleLabel) {
+    return;
+  }
+
+  selectedDeviceRoleLabel.textContent = `Selected role: ${formatRuntimeRoleLabel(roleState?.runtimeRole || "reception")}`;
 }
 
 function renderRoleView(roleState = {}) {
@@ -443,6 +452,7 @@ function applyState(state) {
     return;
   }
 
+  renderSelectedDeviceRole(state?.app || {});
   syncPendingPingRooms(state);
   adminModeButton?.setAttribute("aria-label", "Open settings");
   if (adminModeButton) {
