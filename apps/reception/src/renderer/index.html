@@ -54,9 +54,33 @@
 
         <section class="message-shell reception-message-shell" id="chat-card">
           <div class="message-recipient-bar">
-            <div class="message-recipient-label">Send message to</div>
+            <button
+              class="message-thread-drawer-button"
+              id="chat-recipient-drawer-button"
+              type="button"
+              aria-label="Show recipients"
+              aria-expanded="false"
+              title="Recipients"
+            >
+              Recipients
+            </button>
             <div class="message-recipient-list" id="chat-recipient-list"></div>
           </div>
+          <aside class="message-thread-drawer hidden" id="chat-recipient-drawer">
+            <div class="message-thread-drawer-head">
+              <div class="message-thread-drawer-title">Recipients</div>
+              <button
+                class="message-thread-drawer-close"
+                id="chat-recipient-drawer-close"
+                type="button"
+                aria-label="Close recipients"
+                title="Close"
+              >
+                Close
+              </button>
+            </div>
+            <div class="message-thread-drawer-list" id="chat-recipient-drawer-list"></div>
+          </aside>
           <div class="message-list reception-message-list" id="chat-message-list"></div>
           <div class="message-compose">
             <textarea

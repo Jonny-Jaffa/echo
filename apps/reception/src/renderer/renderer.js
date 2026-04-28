@@ -8,6 +8,10 @@ const openRoleWindowButton = document.querySelector("#open-role-window-button");
 const adminPanel = document.querySelector("#admin-panel");
 const gadgetPanel = document.querySelector(".gadget-panel");
 const chatRecipientList = document.querySelector("#chat-recipient-list");
+const chatRecipientDrawerButton = document.querySelector("#chat-recipient-drawer-button");
+const chatRecipientDrawer = document.querySelector("#chat-recipient-drawer");
+const chatRecipientDrawerClose = document.querySelector("#chat-recipient-drawer-close");
+const chatRecipientDrawerList = document.querySelector("#chat-recipient-drawer-list");
 const chatMessageList = document.querySelector("#chat-message-list");
 const chatComposeInput = document.querySelector("#chat-compose-input");
 const chatSendButton = document.querySelector("#chat-send-button");
@@ -57,12 +61,15 @@ const RECEPTION_SOUND_OPTIONS = Array.from({ length: 17 }, (_value, index) => {
     label: `Sound ${soundNumber}`,
   };
 });
+const PINNED_CHAT_ROOMS_STORAGE_KEY = "pip-reception-pinned-chat-rooms";
 
 let appState = null;
 let draftConfig = null;
 let lastReportedGadgetHeight = 0;
 const pendingPingRooms = new Map();
 const selectedChatRoomIds = new Set();
+let pinnedChatRoomIds = loadPinnedChatRoomIds();
+let isChatRecipientDrawerVisible = false;
 
 function formatRuntimeRoleLabel(runtimeRole) {
   return runtimeRole === "room" ? "Room" : "Reception";
@@ -92,6 +99,33 @@ function renderRoleView(roleState = {}) {
 }
 function clearNotification() {
   alertList.innerHTML = "";
+}
+
+function loadPinnedChatRoomIds() {
+  try {
+    const parsed = JSON.parse(localStorage.getItem(PINNED_CHAT_ROOMS_STORAGE_KEY) || "[]");
+    return Array.isArray(parsed)
+      ? parsed.map((roomId) => String(roomId || "").trim()).filter(Boolean)
+      : [];
+  } catch {
+    return [];
+  }
+}
+
+function savePinnedChatRoomIds() {
+  localStorage.setItem(
+    PINNED_CHAT_ROOMS_STORAGE_KEY,
+    JSON.stringify([...new Set(pinnedChatRoomIds)].filter(Boolean)),
+  );
+}
+
+function setChatRecipientDrawerVisibility(isVisible) {
+  isChatRecipientDrawerVisible = Boolean(isVisible);
+  chatRecipientDrawer?.classList.toggle("hidden", !isChatRecipientDrawerVisible);
+  chatRecipientDrawerButton?.setAttribute("aria-expanded", isChatRecipientDrawerVisible ? "true" : "false");
+  if (chatRecipientDrawerButton) {
+    chatRecipientDrawerButton.title = isChatRecipientDrawerVisible ? "Hide recipients" : "Recipients";
+  }
 }
 
 function normalizeReceptionSound(value) {
@@ -275,25 +309,27 @@ function renderChatRecipients(state) {
   }
 
   const rooms = state?.config?.rooms || [];
+  const roomIds = rooms.map((room) => room.id);
   for (const roomId of [...selectedChatRoomIds]) {
     if (!rooms.some((room) => room.id === roomId)) {
       selectedChatRoomIds.delete(roomId);
     }
   }
+  pinnedChatRoomIds = pinnedChatRoomIds.filter((roomId) => roomIds.includes(roomId));
+  savePinnedChatRoomIds();
 
   const allRoomsSelected =
     rooms.length > 0 && rooms.every((room) => selectedChatRoomIds.has(room.id));
+  const visibleRoomIds = [
+    ...pinnedChatRoomIds,
+    ...[...selectedChatRoomIds].filter((roomId) => !pinnedChatRoomIds.includes(roomId)),
+  ];
+  const visibleRooms = visibleRoomIds
+    .map((roomId) => rooms.find((room) => room.id === roomId))
+    .filter(Boolean);
 
-  chatRecipientList.innerHTML = `
-    <button
-      class="message-recipient-chip ${allRoomsSelected ? "is-selected" : ""}"
-      data-chat-all="true"
-      type="button"
-      ${rooms.length === 0 ? "disabled" : ""}
-    >
-      All
-    </button>
-    ${rooms.map((room) => `
+  chatRecipientList.innerHTML = visibleRooms
+    .map((room) => `
       <button
         class="message-recipient-chip ${selectedChatRoomIds.has(room.id) ? "is-selected" : ""}"
         data-chat-room-id="${escapeHtml(room.id)}"
@@ -301,8 +337,47 @@ function renderChatRecipients(state) {
       >
         ${escapeHtml(room.name)}
       </button>
-    `).join("")}
-  `;
+    `)
+    .join("");
+
+  if (chatRecipientDrawerList) {
+    chatRecipientDrawerList.innerHTML = `
+      <div class="message-thread-drawer-item ${allRoomsSelected ? "is-active" : ""}">
+        <button
+          class="message-thread-drawer-select"
+          data-chat-all="true"
+          type="button"
+          ${rooms.length === 0 ? "disabled" : ""}
+        >
+          All rooms
+        </button>
+        <span></span>
+      </div>
+      ${rooms.map((room) => {
+        const isPinned = pinnedChatRoomIds.includes(room.id);
+        return `
+          <div class="message-thread-drawer-item ${selectedChatRoomIds.has(room.id) ? "is-active" : ""}">
+            <button
+              class="message-thread-drawer-select"
+              data-chat-room-id="${escapeHtml(room.id)}"
+              type="button"
+            >
+              ${escapeHtml(room.name)}
+            </button>
+            <button
+              class="message-thread-pin-button ${isPinned ? "is-pinned" : ""}"
+              data-pin-chat-room-id="${escapeHtml(room.id)}"
+              type="button"
+              aria-label="${isPinned ? "Unpin room" : "Pin room"}"
+              title="${isPinned ? "Unpin" : "Pin"}"
+            >
+              ${isPinned ? "Unpin" : "Pin"}
+            </button>
+          </div>
+        `;
+      }).join("")}
+    `;
+  }
 }
 
 function renderChatMessages(state) {
@@ -320,19 +395,16 @@ function renderChatMessages(state) {
   chatMessageList.innerHTML = messages
     .map((message) => {
       const isOutgoing = message.senderType === "reception";
-      const recipientSummary = message.sendToReception
-        ? `To Reception${message.recipientLabels?.length ? `, ${message.recipientLabels.join(", ")}` : ""}`
-        : `To ${message.recipientLabels?.join(", ") || "Room"}`;
+      const text = String(message.text || "");
+      const timestamp = formatRelativeTime(message.timestamp);
+      const isSingleLine = text.length <= 34 && !text.includes("\n");
 
       return `
         <article class="message-item ${isOutgoing ? "is-outgoing" : "is-incoming"}">
           <div class="message-bubble">
-            <div class="message-bubble-body is-multi-line">
-              <p class="message-item-text">
-                <strong class="message-item-label">${escapeHtml(message.senderLabel || "Unknown")} · ${escapeHtml(recipientSummary)}</strong>
-                ${escapeHtml(message.text || "")}
-              </p>
-              <span class="message-item-time">${escapeHtml(formatRelativeTime(message.timestamp))}</span>
+            <div class="message-bubble-body ${isSingleLine ? "is-single-line" : "is-multi-line"}">
+              <p class="message-item-text">${escapeHtml(text)}</p>
+              <span class="message-item-time">${escapeHtml(timestamp)}</span>
             </div>
           </div>
         </article>
@@ -868,6 +940,23 @@ document.body.addEventListener("click", (event) => {
     return;
   }
 
+  const pinButton = target.closest("[data-pin-chat-room-id]");
+
+  if (pinButton) {
+    const roomId = String(pinButton.getAttribute("data-pin-chat-room-id") || "").trim();
+
+    if (!roomId) {
+      return;
+    }
+
+    pinnedChatRoomIds = pinnedChatRoomIds.includes(roomId)
+      ? pinnedChatRoomIds.filter((value) => value !== roomId)
+      : [...pinnedChatRoomIds, roomId];
+    savePinnedChatRoomIds();
+    renderChatRecipients(appState);
+    return;
+  }
+
   const chatAllChip = target.closest("[data-chat-all]");
 
   if (chatAllChip) {
@@ -913,6 +1002,14 @@ document.body.addEventListener("click", (event) => {
   if (removeType) {
     removeItem(removeType, Number(target.dataset.index));
   }
+});
+
+chatRecipientDrawerButton?.addEventListener("click", () => {
+  setChatRecipientDrawerVisibility(!isChatRecipientDrawerVisible);
+});
+
+chatRecipientDrawerClose?.addEventListener("click", () => {
+  setChatRecipientDrawerVisibility(false);
 });
 
 roleOptionList?.addEventListener("click", async (event) => {
