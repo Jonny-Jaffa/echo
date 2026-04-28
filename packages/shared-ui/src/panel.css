@@ -88,6 +88,16 @@
   position: relative;
 }
 
+.panel-section-divider {
+  height: 1px;
+  margin: 0 10px;
+  background: var(--line);
+}
+
+.panel-section-divider.hidden {
+  display: none;
+}
+
 .message-thread-bar,
 .message-recipient-bar {
   display: grid;
