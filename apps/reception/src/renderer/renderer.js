@@ -286,7 +286,7 @@ function renderChatRecipients(state) {
 
   chatRecipientList.innerHTML = `
     <button
-      class="chat-recipient-chip ${allRoomsSelected ? "is-selected" : ""}"
+      class="message-recipient-chip ${allRoomsSelected ? "is-selected" : ""}"
       data-chat-all="true"
       type="button"
       ${rooms.length === 0 ? "disabled" : ""}
@@ -295,7 +295,7 @@ function renderChatRecipients(state) {
     </button>
     ${rooms.map((room) => `
       <button
-        class="chat-recipient-chip ${selectedChatRoomIds.has(room.id) ? "is-selected" : ""}"
+        class="message-recipient-chip ${selectedChatRoomIds.has(room.id) ? "is-selected" : ""}"
         data-chat-room-id="${escapeHtml(room.id)}"
         type="button"
       >
@@ -325,13 +325,16 @@ function renderChatMessages(state) {
         : `To ${message.recipientLabels?.join(", ") || "Room"}`;
 
       return `
-        <article class="chat-message ${isOutgoing ? "is-outgoing" : "is-incoming"}">
-          <div class="chat-message-meta">
-            <strong>${escapeHtml(message.senderLabel || "Unknown")}</strong>
-            <span>${escapeHtml(recipientSummary)}</span>
-            <span>${escapeHtml(formatRelativeTime(message.timestamp))}</span>
+        <article class="message-item ${isOutgoing ? "is-outgoing" : "is-incoming"}">
+          <div class="message-bubble">
+            <div class="message-bubble-body is-multi-line">
+              <p class="message-item-text">
+                <strong class="message-item-label">${escapeHtml(message.senderLabel || "Unknown")} · ${escapeHtml(recipientSummary)}</strong>
+                ${escapeHtml(message.text || "")}
+              </p>
+              <span class="message-item-time">${escapeHtml(formatRelativeTime(message.timestamp))}</span>
+            </div>
           </div>
-          <p class="chat-message-text">${escapeHtml(message.text || "")}</p>
         </article>
       `;
     })

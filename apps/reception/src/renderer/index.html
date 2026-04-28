@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Pip Reception</title>
     <link rel="stylesheet" href="./styles.css" />
+    <link rel="stylesheet" href="./shared-panel.css" />
   </head>
   <body>
     <main class="shell">
@@ -34,7 +35,7 @@
         </div>
       </section>
 
-      <section class="gadget-panel drag-region">
+      <section class="gadget-panel panel-card drag-region">
         <div class="status-row drag-region">
           <div class="brand-lockup">
             <img class="brand-logo" src="../assets/pip-logo-colour.png" alt="Pip" />
@@ -51,20 +52,21 @@
           <div class="alert-list" id="alert-list"></div>
         </section>
 
-        <section class="card chat-card" id="chat-card">
-          <div class="chat-recipient-bar">
-            <div class="chat-recipient-label">Send message to</div>
-            <div class="chat-recipient-list" id="chat-recipient-list"></div>
+        <section class="message-shell reception-message-shell" id="chat-card">
+          <div class="message-recipient-bar">
+            <div class="message-recipient-label">Send message to</div>
+            <div class="message-recipient-list" id="chat-recipient-list"></div>
           </div>
-          <div class="chat-message-list" id="chat-message-list"></div>
-          <div class="chat-compose">
+          <div class="message-list reception-message-list" id="chat-message-list"></div>
+          <div class="message-compose">
             <textarea
-              class="chat-compose-input"
+              class="message-compose-input"
               id="chat-compose-input"
+              rows="1"
               maxlength="500"
-              placeholder="Type message"
+              placeholder="message"
             ></textarea>
-            <button class="small-button chat-send-button" id="chat-send-button" type="button" aria-label="Send message" title="Send message">Send</button>
+            <button class="message-send-button" id="chat-send-button" type="button" aria-label="Send message" title="Send message">Send</button>
           </div>
         </section>
       </section>
