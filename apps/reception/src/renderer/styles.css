@@ -39,7 +39,7 @@ body[data-window-view="role"] {
 }
 
 .shell {
-  padding: 5px;
+  padding: 0;
   display: grid;
   gap: 8px;
   align-items: start;
@@ -675,17 +675,18 @@ body[data-compact-mode="true"] .alert-list {
 }
 
 .admin-panel {
-  padding: 16px;
+  padding: 8px 14px 14px;
   overflow: hidden;
 }
 
 body[data-admin-mode="true"] {
-  overflow: auto;
+  overflow: hidden;
 }
 
 body[data-admin-mode="true"] .admin-panel {
+  min-height: calc(100vh - 10px);
   max-height: calc(100vh - 10px);
-  overflow: auto;
+  overflow: hidden;
 }
 
 .admin-header {
@@ -693,7 +694,8 @@ body[data-admin-mode="true"] .admin-panel {
   justify-content: space-between;
   align-items: center;
   gap: 16px;
-  margin-bottom: 6px;
+  min-height: 33px;
+  margin-bottom: 10px;
 }
 
 .admin-header > :first-child {
@@ -709,10 +711,52 @@ body[data-admin-mode="true"] .admin-panel {
   flex-wrap: nowrap;
 }
 
-.admin-grid {
+.settings-layout {
   display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  gap: 14px;
+  grid-template-columns: 164px minmax(0, 1fr);
+  gap: 16px;
+  min-height: 0;
+  height: calc(100vh - 72px);
+  overflow: hidden;
+}
+
+.settings-sidebar {
+  align-self: start;
+  display: grid;
+  gap: 10px;
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.86);
+}
+
+.settings-sidebar-link {
+  min-height: 38px;
+  border: 0;
+  border-radius: 12px;
+  padding: 0 12px;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  font: inherit;
+  font-size: 15px;
+  text-align: left;
+}
+
+.settings-sidebar-link.is-active {
+  background: color-mix(in srgb, var(--message-list-background) 72%, white);
+  color: var(--text);
+}
+
+.settings-content {
+  min-height: 0;
+  overflow: auto;
+  padding-right: 4px;
+  scrollbar-gutter: stable;
+}
+
+.settings-tab-section[hidden] {
+  display: none;
 }
 
 .editor-card {
@@ -727,7 +771,7 @@ body[data-admin-mode="true"] .admin-panel {
   justify-content: space-between;
   align-items: center;
   gap: 12px;
-  margin-bottom: 10px;
+  margin-bottom: 16px;
 }
 
 .editor-head h3,
@@ -738,7 +782,7 @@ body[data-admin-mode="true"] .admin-panel {
 }
 
 .push-down {
-  margin-top: 20px;
+  margin-top: 0;
 }
 
 .wide-card {
@@ -757,7 +801,7 @@ body[data-admin-mode="true"] .admin-panel {
 .danger-button {
   background: #fff;
   color: var(--danger);
-  border: 1px solid var(--line)
+  border: 1px solid var(--line);
 }
 
 .list-editor {
@@ -855,6 +899,17 @@ body[data-admin-mode="true"] .admin-panel {
   background: white;
   color: var(--text);
   font: inherit;
+}
+
+.field input:focus,
+.field select:focus,
+.readonly-output:focus,
+.settings-sidebar-link:focus-visible,
+.small-button:focus-visible,
+.danger-button:focus-visible {
+  outline: none;
+  border-color: var(--field-focus);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--field-focus) 24%, transparent);
 }
 
 
@@ -967,6 +1022,7 @@ body[data-admin-mode="true"] .admin-panel {
 
 .settings-grid {
   grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
 }
 
 .full-width-field {
@@ -1136,7 +1192,7 @@ body[data-admin-mode="true"] .shell {
     grid-template-columns: 1fr;
   }
 
-  .admin-grid,
+  .settings-layout,
   .room-grid,
   .action-grid,
   .settings-grid {

@@ -109,103 +109,121 @@
 
         <div class="admin-feedback hidden" id="admin-feedback"></div>
 
-        <div class="admin-grid">
-          <section class="editor-card wide-card">
-            <div class="editor-head">
-              <div>
-                <h3>Rooms</h3>
-              </div>
-              <button class="small-button" id="add-room-button" type="button">Add Room</button>
-            </div>
-            <div class="list-editor" id="rooms-editor"></div>
-          </section>
-
-	          <section class="editor-card wide-card">
-	            <div class="editor-head push-down">
-	              <div>
-	                <h3>General</h3>
-              </div>
-            </div>
-            <div class="settings-grid">
-	              <div class="field full-width-field reception-sound-field">
-	                <span>Reception Alert Sound</span>
-	                <div class="reception-sound-card">
-                  <div class="reception-sound-controls">
-                    <div class="reception-sound-row">
-                      <select id="audio-notification-sound-input" name="audio.notificationSound"></select>
-                      <button class="small-button reception-sound-play-button" id="audio-play-test-button" type="button" aria-label="Play sound" title="Play sound">Play</button>
-                    </div>
-                    <div class="reception-volume-row">
-                      <span class="reception-volume-label">Volume</span>
-                      <div class="reception-volume-slider-wrap">
-                        <input id="audio-master-volume-input" name="audio.masterVolume" type="range" min="0" max="100" step="1" />
-                        <strong id="audio-master-volume-value">80%</strong>
-                      </div>
-                    </div>
-	                  </div>
-	                </div>
-	              </div>
-	              <div class="field full-width-field reception-sound-field">
-	                <span>Message Sound</span>
-	                <div class="reception-sound-card">
-                  <div class="reception-sound-controls">
-                    <div class="reception-sound-row">
-                      <select id="audio-message-sound-input" name="audio.messageSound"></select>
-                      <button class="small-button reception-sound-play-button" id="audio-message-play-test-button" type="button" aria-label="Play message sound" title="Play message sound">Play</button>
-                    </div>
-                    <div class="reception-volume-row">
-                      <span class="reception-volume-label">Volume</span>
-                      <div class="reception-volume-slider-wrap">
-                        <input id="audio-message-volume-input" name="audio.messageVolume" type="range" min="0" max="100" step="1" />
-                        <strong id="audio-message-volume-value">80%</strong>
-                      </div>
-                    </div>
-	                  </div>
-	                </div>
-	              </div>
-	              <label class="field checkbox-field">
-	                <input id="launch-at-startup-input" name="display.launchAtStartup" type="checkbox" />
-	                <span>Run at startup</span>
-              </label>
-	              <label class="field checkbox-field">
-	                <input id="always-on-top-input" name="display.alwaysOnTop" type="checkbox" />
-	                <span>Always on top</span>
-	              </label>
-              <div class="field full-width-field role-launch-field">
-                <span>Device role</span>
-                <div class="role-launch-row">
-                  <div class="role-launch-copy">
-                    Open the role chooser if this computer needs to switch between Reception and Room during setup or support.
-                  </div>
-                  <button class="small-button role-launch-button" id="open-role-window-button" type="button">Change device role</button>
+        <div class="settings-layout">
+          <aside class="settings-sidebar" aria-label="Settings sections">
+            <button class="settings-sidebar-link is-active" type="button" data-settings-section-link="reception-settings-general">General</button>
+            <button class="settings-sidebar-link" type="button" data-settings-section-link="reception-settings-rooms">Rooms</button>
+            <button class="settings-sidebar-link" type="button" data-settings-section-link="reception-settings-sounds">Sounds</button>
+            <button class="settings-sidebar-link" type="button" data-settings-section-link="reception-settings-connection">Connection</button>
+          </aside>
+          <div class="settings-content">
+            <section class="editor-card settings-tab-section" id="reception-settings-general" data-settings-section="reception-settings-general">
+              <div class="editor-head">
+                <div>
+                  <h3>General</h3>
                 </div>
               </div>
-	            </div>
-	          </section>
+              <div class="settings-grid">
+                <div class="field full-width-field role-launch-field">
+                  <span>Device role</span>
+                  <div class="role-launch-row">
+                    <div class="role-launch-copy">
+                      Open the role chooser if this computer needs to switch between Reception and Room during setup or support.
+                    </div>
+                    <button class="small-button role-launch-button" id="open-role-window-button" type="button">Change device role</button>
+                  </div>
+                </div>
+                <label class="field checkbox-field">
+                  <input id="launch-at-startup-input" name="display.launchAtStartup" type="checkbox" />
+                  <span>Run at startup</span>
+                </label>
+                <label class="field checkbox-field">
+                  <input id="always-on-top-input" name="display.alwaysOnTop" type="checkbox" />
+                  <span>Always on top</span>
+                </label>
+              </div>
+            </section>
 
-	          <section class="editor-card wide-card">
-	            <div class="editor-head push-down">
-	              <div>
-	                <h3>Connection</h3>
-	              </div>
-	            </div>
-	            <div class="settings-grid">
-	              <label class="field">
-	                <span>Server Port</span>
-	                <input id="network-port-input" name="network.port" type="number" min="1" />
-	              </label>
-	              <div class="field">
-	                <span>Detected server address</span>
-	                <div class="readonly-output" id="detected-server-address">Detecting…</div>
-	              </div>
-	              <label class="field full-width-field">
-	                <span>Pairing Code</span>
-	                <input id="auth-access-key-input" name="auth.accessKey" type="text" autocomplete="off" spellcheck="false" />
-	              </label>
-	            </div>
-	          </section>
-	        </div>
-	      </section>
+            <section class="editor-card settings-tab-section" id="reception-settings-rooms" data-settings-section="reception-settings-rooms" hidden>
+              <div class="editor-head">
+                <div>
+                  <h3>Rooms</h3>
+                </div>
+                <button class="small-button" id="add-room-button" type="button">Add Room</button>
+              </div>
+              <div class="list-editor" id="rooms-editor"></div>
+            </section>
+
+            <section class="editor-card settings-tab-section" id="reception-settings-sounds" data-settings-section="reception-settings-sounds" hidden>
+              <div class="editor-head">
+                <div>
+                  <h3>Sounds</h3>
+                </div>
+              </div>
+              <div class="settings-grid">
+                <div class="field full-width-field reception-sound-field">
+                  <span>Reception Alert Sound</span>
+                  <div class="reception-sound-card">
+                    <div class="reception-sound-controls">
+                      <div class="reception-sound-row">
+                        <select id="audio-notification-sound-input" name="audio.notificationSound"></select>
+                        <button class="small-button reception-sound-play-button" id="audio-play-test-button" type="button" aria-label="Play sound" title="Play sound">Play</button>
+                      </div>
+                      <div class="reception-volume-row">
+                        <span class="reception-volume-label">Volume</span>
+                        <div class="reception-volume-slider-wrap">
+                          <input id="audio-master-volume-input" name="audio.masterVolume" type="range" min="0" max="100" step="1" />
+                          <strong id="audio-master-volume-value">80%</strong>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div class="field full-width-field reception-sound-field">
+                  <span>Message Sound</span>
+                  <div class="reception-sound-card">
+                    <div class="reception-sound-controls">
+                      <div class="reception-sound-row">
+                        <select id="audio-message-sound-input" name="audio.messageSound"></select>
+                        <button class="small-button reception-sound-play-button" id="audio-message-play-test-button" type="button" aria-label="Play message sound" title="Play message sound">Play</button>
+                      </div>
+                      <div class="reception-volume-row">
+                        <span class="reception-volume-label">Volume</span>
+                        <div class="reception-volume-slider-wrap">
+                          <input id="audio-message-volume-input" name="audio.messageVolume" type="range" min="0" max="100" step="1" />
+                          <strong id="audio-message-volume-value">80%</strong>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            <section class="editor-card settings-tab-section" id="reception-settings-connection" data-settings-section="reception-settings-connection" hidden>
+              <div class="editor-head">
+                <div>
+                  <h3>Connection</h3>
+                </div>
+              </div>
+              <div class="settings-grid">
+                <label class="field">
+                  <span>Server Port</span>
+                  <input id="network-port-input" name="network.port" type="number" min="1" />
+                </label>
+                <div class="field">
+                  <span>Detected server address</span>
+                  <div class="readonly-output" id="detected-server-address">Detecting...</div>
+                </div>
+                <label class="field full-width-field">
+                  <span>Pairing Code</span>
+                  <input id="auth-access-key-input" name="auth.accessKey" type="text" autocomplete="off" spellcheck="false" />
+                </label>
+              </div>
+            </section>
+          </div>
+        </div>
+      </section>
 	    </main>
 
     <script type="module" src="./renderer.js"></script>

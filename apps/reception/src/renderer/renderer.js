@@ -15,6 +15,8 @@ const chatRecipientDrawerList = document.querySelector("#chat-recipient-drawer-l
 const chatMessageList = document.querySelector("#chat-message-list");
 const chatComposeInput = document.querySelector("#chat-compose-input");
 const chatSendButton = document.querySelector("#chat-send-button");
+const settingsSidebarLinks = [...document.querySelectorAll("[data-settings-section-link]")];
+const settingsTabSections = [...document.querySelectorAll("[data-settings-section]")];
 const adminFeedback = document.querySelector("#admin-feedback");
 const adminModeButton = document.querySelector("#admin-mode-button");
 const compactModeButton = document.querySelector("#compact-mode-button");
@@ -126,6 +128,17 @@ function setChatRecipientDrawerVisibility(isVisible) {
   if (chatRecipientDrawerButton) {
     chatRecipientDrawerButton.title = isChatRecipientDrawerVisible ? "Hide recipients" : "Recipients";
   }
+}
+
+function setActiveSettingsSection(sectionId = "reception-settings-general") {
+  settingsSidebarLinks.forEach((link) => {
+    const isActive = String(link.getAttribute("data-settings-section-link") || "") === sectionId;
+    link.classList.toggle("is-active", isActive);
+  });
+
+  settingsTabSections.forEach((section) => {
+    section.hidden = String(section.getAttribute("data-settings-section") || "") !== sectionId;
+  });
 }
 
 function normalizeReceptionSound(value) {
@@ -760,6 +773,7 @@ async function init() {
   const config = await window.pip.getConfig();
   draftConfig = structuredClone(config);
   populateEditor(draftConfig);
+  setActiveSettingsSection("reception-settings-general");
   applyState(status);
 }
 
@@ -1010,6 +1024,12 @@ chatRecipientDrawerButton?.addEventListener("click", () => {
 
 chatRecipientDrawerClose?.addEventListener("click", () => {
   setChatRecipientDrawerVisibility(false);
+});
+
+settingsSidebarLinks.forEach((link) => {
+  link.addEventListener("click", () => {
+    setActiveSettingsSection(String(link.getAttribute("data-settings-section-link") || ""));
+  });
 });
 
 roleOptionList?.addEventListener("click", async (event) => {
