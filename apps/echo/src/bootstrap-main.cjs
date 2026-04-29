@@ -32,6 +32,7 @@ let receptionServerModule = null;
 let roomServiceModulePromise = null;
 let roleExperienceProcess = null;
 let roleExperienceRole = "";
+let packagedRoleExperienceRole = "";
 let bootstrapState = {
   runtimeRole: "",
   runtimeRoleConfirmed: false,
@@ -344,10 +345,21 @@ async function stopActiveRuntime() {
 }
 
 function isRoleExperienceRunning() {
-  return Boolean(roleExperienceProcess && roleExperienceProcess.exitCode === null);
+  return Boolean(packagedRoleExperienceRole || (roleExperienceProcess && roleExperienceProcess.exitCode === null));
 }
 
 function stopRoleExperience() {
+  if (packagedRoleExperienceRole) {
+    const stoppedRole = packagedRoleExperienceRole;
+    packagedRoleExperienceRole = "";
+    setRoleExperienceState({
+      activeRole: stoppedRole,
+      state: "stopped",
+      detail: `${formatRuntimeRole(stoppedRole)} workspace remains available until Pip is closed`,
+    });
+    return;
+  }
+
   if (!isRoleExperienceRunning()) {
     roleExperienceProcess = null;
     roleExperienceRole = "";
@@ -390,11 +402,23 @@ async function openRoleExperience() {
     return buildBootstrapPayload();
   }
 
-  if (isRoleExperienceRunning() && roleExperienceRole === runtimeRole) {
+  if (
+    (packagedRoleExperienceRole && packagedRoleExperienceRole === runtimeRole) ||
+    (isRoleExperienceRunning() && roleExperienceRole === runtimeRole)
+  ) {
     setRoleExperienceState({
       activeRole: runtimeRole,
       state: "running",
       detail: `${formatRuntimeRole(runtimeRole)} workspace is already open`,
+    });
+    return buildBootstrapPayload();
+  }
+
+  if (app.isPackaged && packagedRoleExperienceRole && packagedRoleExperienceRole !== runtimeRole) {
+    setRoleExperienceState({
+      activeRole: packagedRoleExperienceRole,
+      state: "error",
+      detail: `Close and reopen Pip to switch from ${formatRuntimeRole(packagedRoleExperienceRole)} workspace to ${formatRuntimeRole(runtimeRole)} workspace`,
     });
     return buildBootstrapPayload();
   }
@@ -404,6 +428,28 @@ async function openRoleExperience() {
   }
 
   await stopActiveRuntime();
+
+  if (app.isPackaged) {
+    try {
+      const entryFile = runtimeRole === RUNTIME_ROLE_RECEPTION ? "main.js" : "panel-main.cjs";
+      require(path.join(getRoleSourceRoot(runtimeRole), entryFile));
+      packagedRoleExperienceRole = runtimeRole;
+      setRoleExperienceState({
+        activeRole: runtimeRole,
+        state: "running",
+        detail: `${formatRuntimeRole(runtimeRole)} workspace is open`,
+      });
+    } catch (error) {
+      packagedRoleExperienceRole = "";
+      setRoleExperienceState({
+        activeRole: runtimeRole,
+        state: "error",
+        detail: error?.message || `Could not open ${formatRuntimeRole(runtimeRole)} workspace`,
+      });
+    }
+
+    return buildBootstrapPayload();
+  }
 
   const child = spawn(process.execPath, app.isPackaged ? [] : [path.join(__dirname, "..")], {
     env: {
