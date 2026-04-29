@@ -248,6 +248,25 @@
   align-items: center;
 }
 
+.message-thread-drawer-item[draggable="true"],
+.message-thread-chip[draggable="true"],
+.message-recipient-chip[draggable="true"] {
+  cursor: grab;
+}
+
+.message-thread-drawer-item.is-dragging,
+.message-thread-chip.is-dragging,
+.message-recipient-chip.is-dragging {
+  opacity: 0.55;
+}
+
+.message-thread-drawer-item.is-drag-over .message-thread-drawer-select,
+.message-thread-chip.is-drag-over,
+.message-recipient-chip.is-drag-over {
+  outline: 2px solid var(--field-focus);
+  outline-offset: 2px;
+}
+
 .message-thread-drawer-select {
   display: inline-flex;
   align-items: center;
@@ -345,6 +364,7 @@
   scrollbar-gutter: stable;
   align-content: start;
   background-color: var(--message-list-background);
+  border-radius: 20px;
 }
 
 .message-item {

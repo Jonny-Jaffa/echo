@@ -15,6 +15,7 @@ const chatRecipientDrawerList = document.querySelector("#chat-recipient-drawer-l
 const chatMessageList = document.querySelector("#chat-message-list");
 const chatComposeInput = document.querySelector("#chat-compose-input");
 const chatSendButton = document.querySelector("#chat-send-button");
+const messageSectionToggleButton = document.querySelector("#message-section-toggle-button");
 const settingsSidebarLinks = [...document.querySelectorAll("[data-settings-section-link]")];
 const settingsTabSections = [...document.querySelectorAll("[data-settings-section]")];
 const adminFeedback = document.querySelector("#admin-feedback");
@@ -65,6 +66,7 @@ const RECEPTION_SOUND_OPTIONS = Array.from({ length: 17 }, (_value, index) => {
   };
 });
 const PINNED_CHAT_ROOMS_STORAGE_KEY = "pip-reception-pinned-chat-rooms";
+const CHAT_ROOM_ORDER_STORAGE_KEY = "pip-reception-chat-room-order";
 
 let appState = null;
 let draftConfig = null;
@@ -72,7 +74,11 @@ let lastReportedGadgetHeight = 0;
 const pendingPingRooms = new Map();
 const selectedChatRoomIds = new Set();
 let pinnedChatRoomIds = loadPinnedChatRoomIds();
+let chatRoomOrderIds = loadChatRoomOrderIds();
 let isChatRecipientDrawerVisible = false;
+let isMessageSectionVisible = true;
+let draggedChatRoomId = "";
+let draggedChatRoomSource = "";
 
 function formatRuntimeRoleLabel(runtimeRole) {
   return runtimeRole === "room" ? "Room" : "Reception";
@@ -123,11 +129,56 @@ function loadPinnedChatRoomIds() {
   }
 }
 
+function loadChatRoomOrderIds() {
+  try {
+    const parsed = JSON.parse(localStorage.getItem(CHAT_ROOM_ORDER_STORAGE_KEY) || "[]");
+    return Array.isArray(parsed)
+      ? parsed.map((roomId) => String(roomId || "").trim()).filter(Boolean)
+      : [];
+  } catch {
+    return [];
+  }
+}
+
 function savePinnedChatRoomIds() {
   localStorage.setItem(
     PINNED_CHAT_ROOMS_STORAGE_KEY,
     JSON.stringify([...new Set(pinnedChatRoomIds)].filter(Boolean)),
   );
+}
+
+function saveChatRoomOrderIds() {
+  localStorage.setItem(
+    CHAT_ROOM_ORDER_STORAGE_KEY,
+    JSON.stringify([...new Set(chatRoomOrderIds)].filter(Boolean)),
+  );
+}
+
+function orderRoomsByIds(rooms = [], roomOrderIds = []) {
+  const roomMap = new Map(rooms.map((room) => [room.id, room]));
+  const orderedRooms = roomOrderIds
+    .map((roomId) => roomMap.get(roomId))
+    .filter(Boolean);
+  const orderedRoomIds = new Set(orderedRooms.map((room) => room.id));
+
+  return [
+    ...orderedRooms,
+    ...rooms.filter((room) => !orderedRoomIds.has(room.id)),
+  ];
+}
+
+function reorderIds(sourceIds = [], draggedId, targetId) {
+  const ids = [...new Set(sourceIds)].filter(Boolean);
+  const fromIndex = ids.indexOf(draggedId);
+  const toIndex = ids.indexOf(targetId);
+
+  if (fromIndex === -1 || toIndex === -1 || fromIndex === toIndex) {
+    return ids;
+  }
+
+  const [movedId] = ids.splice(fromIndex, 1);
+  ids.splice(toIndex, 0, movedId);
+  return ids;
 }
 
 function setChatRecipientDrawerVisibility(isVisible) {
@@ -338,10 +389,16 @@ function renderChatRecipients(state) {
     }
   }
   pinnedChatRoomIds = pinnedChatRoomIds.filter((roomId) => roomIds.includes(roomId));
+  chatRoomOrderIds = [
+    ...chatRoomOrderIds.filter((roomId) => roomIds.includes(roomId)),
+    ...roomIds.filter((roomId) => !chatRoomOrderIds.includes(roomId)),
+  ];
   savePinnedChatRoomIds();
+  saveChatRoomOrderIds();
 
   const allRoomsSelected =
     rooms.length > 0 && rooms.every((room) => selectedChatRoomIds.has(room.id));
+  const orderedRooms = orderRoomsByIds(rooms, chatRoomOrderIds);
   const visibleRoomIds = [
     ...pinnedChatRoomIds,
     ...[...selectedChatRoomIds].filter((roomId) => !pinnedChatRoomIds.includes(roomId)),
@@ -355,6 +412,8 @@ function renderChatRecipients(state) {
       <button
         class="message-recipient-chip ${selectedChatRoomIds.has(room.id) ? "is-selected" : ""}"
         data-chat-room-id="${escapeHtml(room.id)}"
+        data-chat-drag-source="pinned"
+        draggable="true"
         type="button"
       >
         ${escapeHtml(room.name)}
@@ -375,10 +434,15 @@ function renderChatRecipients(state) {
         </button>
         <span></span>
       </div>
-      ${rooms.map((room) => {
+      ${orderedRooms.map((room) => {
         const isPinned = pinnedChatRoomIds.includes(room.id);
         return `
-          <div class="message-thread-drawer-item ${selectedChatRoomIds.has(room.id) ? "is-active" : ""}">
+          <div
+            class="message-thread-drawer-item ${selectedChatRoomIds.has(room.id) ? "is-active" : ""}"
+            data-chat-room-id="${escapeHtml(room.id)}"
+            data-chat-drag-source="drawer"
+            draggable="true"
+          >
             <button
               class="message-thread-drawer-select"
               data-chat-room-id="${escapeHtml(room.id)}"
@@ -444,6 +508,19 @@ function syncChatComposerState() {
     selectedChatRoomIds.size === 0 || !String(chatComposeInput.value || "").trim();
 }
 
+function syncMessageSectionVisibility() {
+  document.body.dataset.messagesHidden = !isMessageSectionVisible ? "true" : "false";
+  messageSectionToggleButton?.classList.toggle("is-active", !isMessageSectionVisible);
+  messageSectionToggleButton?.setAttribute(
+    "aria-label",
+    isMessageSectionVisible ? "Hide messaging section" : "Show messaging section",
+  );
+  messageSectionToggleButton?.setAttribute("aria-pressed", String(!isMessageSectionVisible));
+  if (messageSectionToggleButton) {
+    messageSectionToggleButton.title = isMessageSectionVisible ? "Hide messaging section" : "Show messaging section";
+  }
+}
+
 function applyState(state) {
   appState = state;
 
@@ -470,6 +547,7 @@ function applyState(state) {
   document.body.dataset.minimized = !isSettingsWindow && state.config.display.minimized ? "true" : "false";
   document.body.dataset.adminMode = isSettingsWindow ? "true" : "false";
   document.body.dataset.compactMode = !isSettingsWindow && state.config.display.compactMode ? "true" : "false";
+  syncMessageSectionVisibility();
   adminPanel.classList.toggle("hidden", !isSettingsWindow);
 
   if (!draftConfig) {
@@ -834,6 +912,106 @@ compactModeButton?.addEventListener("click", async () => {
   await window.pip.updateDisplaySettings({
     compactMode: !appState.config.display.compactMode,
   });
+});
+
+messageSectionToggleButton?.addEventListener("click", () => {
+  isMessageSectionVisible = !isMessageSectionVisible;
+  syncMessageSectionVisibility();
+  reportGadgetHeight();
+});
+
+document.body.addEventListener("dragstart", (event) => {
+  const target = event.target;
+
+  if (!(target instanceof HTMLElement)) {
+    return;
+  }
+
+  const dragItem = target.closest("[data-chat-drag-source][data-chat-room-id]");
+
+  if (!dragItem) {
+    return;
+  }
+
+  draggedChatRoomId = String(dragItem.getAttribute("data-chat-room-id") || "").trim();
+  draggedChatRoomSource = String(dragItem.getAttribute("data-chat-drag-source") || "").trim();
+
+  if (!draggedChatRoomId || !draggedChatRoomSource) {
+    return;
+  }
+
+  dragItem.classList.add("is-dragging");
+  event.dataTransfer?.setData("text/plain", draggedChatRoomId);
+  if (event.dataTransfer) {
+    event.dataTransfer.effectAllowed = "move";
+  }
+});
+
+document.body.addEventListener("dragend", () => {
+  document.querySelectorAll(".is-dragging, .is-drag-over").forEach((item) => {
+    item.classList.remove("is-dragging", "is-drag-over");
+  });
+  draggedChatRoomId = "";
+  draggedChatRoomSource = "";
+});
+
+document.body.addEventListener("dragover", (event) => {
+  const target = event.target;
+
+  if (!(target instanceof HTMLElement) || !draggedChatRoomId) {
+    return;
+  }
+
+  const dropItem = target.closest("[data-chat-drag-source][data-chat-room-id]");
+
+  if (
+    !dropItem ||
+    String(dropItem.getAttribute("data-chat-drag-source") || "") !== draggedChatRoomSource
+  ) {
+    return;
+  }
+
+  event.preventDefault();
+  if (event.dataTransfer) {
+    event.dataTransfer.dropEffect = "move";
+  }
+  dropItem.classList.add("is-drag-over");
+});
+
+document.body.addEventListener("dragleave", (event) => {
+  const target = event.target;
+
+  if (target instanceof HTMLElement) {
+    target.closest("[data-chat-drag-source]")?.classList.remove("is-drag-over");
+  }
+});
+
+document.body.addEventListener("drop", (event) => {
+  const target = event.target;
+
+  if (!(target instanceof HTMLElement) || !draggedChatRoomId) {
+    return;
+  }
+
+  const dropItem = target.closest("[data-chat-drag-source][data-chat-room-id]");
+  const targetRoomId = String(dropItem?.getAttribute("data-chat-room-id") || "").trim();
+  const targetSource = String(dropItem?.getAttribute("data-chat-drag-source") || "").trim();
+
+  if (!targetRoomId || targetSource !== draggedChatRoomSource) {
+    return;
+  }
+
+  event.preventDefault();
+
+  if (draggedChatRoomSource === "pinned") {
+    pinnedChatRoomIds = reorderIds(pinnedChatRoomIds, draggedChatRoomId, targetRoomId);
+    savePinnedChatRoomIds();
+  } else if (draggedChatRoomSource === "drawer") {
+    chatRoomOrderIds = reorderIds(chatRoomOrderIds, draggedChatRoomId, targetRoomId);
+    saveChatRoomOrderIds();
+  }
+
+  renderChatRecipients(appState);
 });
 
 minimizeWindowButton?.addEventListener("click", async () => {

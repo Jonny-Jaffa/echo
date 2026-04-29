@@ -54,6 +54,7 @@ const STORAGE_KEY = "pip-panel";
 const PANEL_DEVICE_ID_STORAGE_KEY = "pip-panel-device-id";
 const LEGACY_STORAGE_KEY = "patient-ping-panel";
 const LEGACY_PANEL_DEVICE_ID_STORAGE_KEY = "patient-ping-panel-device-id";
+const MESSAGE_THREAD_ORDER_STORAGE_KEY = "pip-panel-message-thread-order";
 const CONFIG_REFRESH_MS = 3000;
 const DEFAULT_BUTTON_APPEARANCE = {
   defaultBackground: "#FDD905",
@@ -121,6 +122,7 @@ let roomRightAuxSettings = {};
 let roomActionSettings = {};
 let roomMessageGroups = {};
 let roomPinnedMessageThreads = {};
+let roomMessageThreadOrder = loadRoomMessageThreadOrder();
 let preferredRoomId = "";
 let roomSettingsInteractionLockUntil = 0;
 let chatMessages = [];
@@ -128,6 +130,8 @@ let activeMessageThreadKey = "";
 const unreadMessageThreadKeys = new Set();
 let areQuickActionsVisible = false;
 let isMessageThreadDrawerVisible = false;
+let draggedMessageThreadKey = "";
+let draggedMessageThreadSource = "";
 let panelDisplayMode = "messages";
 let isPanelDisplayModeMenuVisible = false;
 let messageSound = DEFAULT_ROOM_ALERT_SOUND;
@@ -465,6 +469,60 @@ function normalizeRoomPinnedMessageThreads(roomPinnedMessageThreadsMap) {
       })
       .filter(Boolean),
   );
+}
+
+function loadRoomMessageThreadOrder() {
+  try {
+    const parsed = JSON.parse(localStorage.getItem(MESSAGE_THREAD_ORDER_STORAGE_KEY) || "{}");
+
+    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+      return {};
+    }
+
+    return Object.fromEntries(
+      Object.entries(parsed)
+        .map(([roomId, threadKeys]) => {
+          const normalizedRoomId = String(roomId || "").trim();
+
+          if (!normalizedRoomId) {
+            return null;
+          }
+
+          return [
+            normalizedRoomId,
+            [...new Set(
+              Array.isArray(threadKeys)
+                ? threadKeys.map((threadKey) => String(threadKey || "").trim()).filter(Boolean)
+                : [],
+            )],
+          ];
+        })
+        .filter(Boolean),
+    );
+  } catch {
+    return {};
+  }
+}
+
+function saveRoomMessageThreadOrder() {
+  localStorage.setItem(
+    MESSAGE_THREAD_ORDER_STORAGE_KEY,
+    JSON.stringify(roomMessageThreadOrder || {}),
+  );
+}
+
+function reorderIds(sourceIds = [], draggedId, targetId) {
+  const ids = [...new Set(sourceIds)].filter(Boolean);
+  const fromIndex = ids.indexOf(draggedId);
+  const toIndex = ids.indexOf(targetId);
+
+  if (fromIndex === -1 || toIndex === -1 || fromIndex === toIndex) {
+    return ids;
+  }
+
+  const [movedId] = ids.splice(fromIndex, 1);
+  ids.splice(toIndex, 0, movedId);
+  return ids;
 }
 
 function getPanelDeviceId() {
@@ -881,6 +939,25 @@ function getCurrentRoomPinnedThreadKeys() {
   return currentRoomId ? roomPinnedMessageThreads?.[currentRoomId] || [] : [];
 }
 
+function getCurrentRoomMessageThreadOrder() {
+  const currentRoomId = getCurrentMessageRoomId();
+  return currentRoomId ? roomMessageThreadOrder?.[currentRoomId] || [] : [];
+}
+
+function orderMessageThreads(threads = []) {
+  const order = getCurrentRoomMessageThreadOrder();
+  const threadMap = new Map(threads.map((thread) => [thread.key, thread]));
+  const orderedThreads = order
+    .map((threadKey) => threadMap.get(threadKey))
+    .filter(Boolean);
+  const orderedThreadKeys = new Set(orderedThreads.map((thread) => thread.key));
+
+  return [
+    ...orderedThreads,
+    ...threads.filter((thread) => !orderedThreadKeys.has(thread.key)),
+  ];
+}
+
 function buildMessageGroupThread(group, currentRoomId) {
   if (!group?.id || !group?.name || !currentRoomId) {
     return null;
@@ -1128,12 +1205,29 @@ function renderMessageThreadDrawer(threads) {
 
   const currentRoomId = getCurrentMessageRoomId();
   const pinnedThreadKeys = currentRoomId ? getCurrentRoomPinnedThreadKeys() : [];
-  messageThreadDrawerList.innerHTML = threads
+  if (currentRoomId) {
+    const threadKeys = threads.map((thread) => thread.key);
+    roomMessageThreadOrder = {
+      ...roomMessageThreadOrder,
+      [currentRoomId]: [
+        ...getCurrentRoomMessageThreadOrder().filter((threadKey) => threadKeys.includes(threadKey)),
+        ...threadKeys.filter((threadKey) => !getCurrentRoomMessageThreadOrder().includes(threadKey)),
+      ],
+    };
+    saveRoomMessageThreadOrder();
+  }
+  const orderedThreads = orderMessageThreads(threads);
+  messageThreadDrawerList.innerHTML = orderedThreads
     .map((thread) => {
       const isPinned = pinnedThreadKeys.includes(thread.key);
 
       return `
-        <div class="message-thread-drawer-item ${thread.key === activeMessageThreadKey ? "is-active" : ""}">
+        <div
+          class="message-thread-drawer-item ${thread.key === activeMessageThreadKey ? "is-active" : ""}"
+          data-message-thread-key="${escapeHtml(thread.key)}"
+          data-message-thread-drag-source="drawer"
+          draggable="true"
+        >
           <button
             class="message-thread-drawer-select"
             data-message-thread-key="${escapeHtml(thread.key)}"
@@ -1169,6 +1263,8 @@ function renderMessageThreads() {
       <button
         class="message-thread-chip ${thread.key === activeMessageThreadKey ? "is-active" : ""}"
         data-message-thread-key="${escapeHtml(thread.key)}"
+        data-message-thread-drag-source="pinned"
+        draggable="true"
         type="button"
       >
         <span>${escapeHtml(thread.label)}</span>
@@ -2993,6 +3089,107 @@ selectedRoomVolume?.addEventListener("focusin", () => {
 
 selectedRoomVolume?.addEventListener("pointerdown", () => {
   lockRoomSettingsRefresh();
+});
+
+document.body.addEventListener("dragstart", (event) => {
+  const target = event.target;
+
+  if (!(target instanceof HTMLElement)) {
+    return;
+  }
+
+  const dragItem = target.closest("[data-message-thread-drag-source][data-message-thread-key]");
+
+  if (!dragItem) {
+    return;
+  }
+
+  draggedMessageThreadKey = String(dragItem.getAttribute("data-message-thread-key") || "").trim();
+  draggedMessageThreadSource = String(dragItem.getAttribute("data-message-thread-drag-source") || "").trim();
+
+  if (!draggedMessageThreadKey || !draggedMessageThreadSource) {
+    return;
+  }
+
+  dragItem.classList.add("is-dragging");
+  event.dataTransfer?.setData("text/plain", draggedMessageThreadKey);
+  if (event.dataTransfer) {
+    event.dataTransfer.effectAllowed = "move";
+  }
+});
+
+document.body.addEventListener("dragend", () => {
+  document.querySelectorAll(".is-dragging, .is-drag-over").forEach((item) => {
+    item.classList.remove("is-dragging", "is-drag-over");
+  });
+  draggedMessageThreadKey = "";
+  draggedMessageThreadSource = "";
+});
+
+document.body.addEventListener("dragover", (event) => {
+  const target = event.target;
+
+  if (!(target instanceof HTMLElement) || !draggedMessageThreadKey) {
+    return;
+  }
+
+  const dropItem = target.closest("[data-message-thread-drag-source][data-message-thread-key]");
+
+  if (
+    !dropItem ||
+    String(dropItem.getAttribute("data-message-thread-drag-source") || "") !== draggedMessageThreadSource
+  ) {
+    return;
+  }
+
+  event.preventDefault();
+  if (event.dataTransfer) {
+    event.dataTransfer.dropEffect = "move";
+  }
+  dropItem.classList.add("is-drag-over");
+});
+
+document.body.addEventListener("dragleave", (event) => {
+  const target = event.target;
+
+  if (target instanceof HTMLElement) {
+    target.closest("[data-message-thread-drag-source]")?.classList.remove("is-drag-over");
+  }
+});
+
+document.body.addEventListener("drop", async (event) => {
+  const target = event.target;
+
+  if (!(target instanceof HTMLElement) || !draggedMessageThreadKey) {
+    return;
+  }
+
+  const dropItem = target.closest("[data-message-thread-drag-source][data-message-thread-key]");
+  const targetThreadKey = String(dropItem?.getAttribute("data-message-thread-key") || "").trim();
+  const targetSource = String(dropItem?.getAttribute("data-message-thread-drag-source") || "").trim();
+  const currentRoomId = getCurrentMessageRoomId();
+
+  if (!currentRoomId || !targetThreadKey || targetSource !== draggedMessageThreadSource) {
+    return;
+  }
+
+  event.preventDefault();
+
+  if (draggedMessageThreadSource === "pinned") {
+    roomPinnedMessageThreads = {
+      ...roomPinnedMessageThreads,
+      [currentRoomId]: reorderIds(getCurrentRoomPinnedThreadKeys(), draggedMessageThreadKey, targetThreadKey),
+    };
+    renderMessagingUi();
+    await persistPinnedMessageThreads();
+  } else if (draggedMessageThreadSource === "drawer") {
+    roomMessageThreadOrder = {
+      ...roomMessageThreadOrder,
+      [currentRoomId]: reorderIds(getCurrentRoomMessageThreadOrder(), draggedMessageThreadKey, targetThreadKey),
+    };
+    saveRoomMessageThreadOrder();
+    renderMessagingUi();
+  }
 });
 
 messageThreadList?.addEventListener("click", (event) => {
