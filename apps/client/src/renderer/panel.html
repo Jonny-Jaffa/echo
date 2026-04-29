@@ -9,13 +9,40 @@
   </head>
   <body>
     <main class="panel-shell">
-      <section class="waiting-state" id="waiting-state" aria-live="polite" role="button" tabindex="0" aria-label="Open surgery panel controls">
+      <section class="waiting-state" id="waiting-state" aria-live="polite">
         <img class="waiting-logo" src="../assets/pip-logo-colour.png" alt="Pip" />
         <div class="waiting-status">
           <span class="status-dot" data-tone="offline"></span>
           <span class="waiting-status-label">Offline</span>
         </div>
-        <p class="waiting-message">Waiting to connect to reception</p>
+        <div class="waiting-setup-card">
+          <h1>Room setup</h1>
+          <p class="waiting-message">
+            Enter the Reception address and pairing code, then choose the room this computer belongs to.
+          </p>
+          <label class="waiting-field">
+            <span>Reception Address</span>
+            <input id="setup-server-input" type="text" autocomplete="off" spellcheck="false" />
+          </label>
+          <label class="waiting-field">
+            <span>Pairing Code</span>
+            <input id="setup-server-access-key-input" type="text" autocomplete="off" spellcheck="false" />
+          </label>
+          <label class="waiting-field">
+            <span>Room</span>
+            <select id="setup-room-select" disabled>
+              <option value="">Connect to load rooms</option>
+            </select>
+          </label>
+          <p class="waiting-help">
+            Pick a different room for each chairside computer. Using the same room on two computers can cause duplicate alerts.
+          </p>
+          <div class="waiting-actions">
+            <button class="waiting-secondary-button" id="setup-settings-button" type="button">Advanced settings</button>
+            <button class="waiting-primary-button" id="setup-connect-button" type="button">Connect</button>
+          </div>
+          <p class="waiting-feedback" id="setup-feedback">Waiting to connect to reception</p>
+        </div>
       </section>
 
       <section class="role-panel hidden" id="role-panel">

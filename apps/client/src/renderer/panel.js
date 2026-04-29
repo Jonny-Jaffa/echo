@@ -1,6 +1,12 @@
 const roomSelect = document.querySelector("#room-select");
 const serverInput = document.querySelector("#server-input");
 const serverAccessKeyInput = document.querySelector("#server-access-key-input");
+const setupServerInput = document.querySelector("#setup-server-input");
+const setupServerAccessKeyInput = document.querySelector("#setup-server-access-key-input");
+const setupRoomSelect = document.querySelector("#setup-room-select");
+const setupConnectButton = document.querySelector("#setup-connect-button");
+const setupSettingsButton = document.querySelector("#setup-settings-button");
+const setupFeedback = document.querySelector("#setup-feedback");
 const serverPanel = document.querySelector("#server-panel");
 const serverToggleButton = document.querySelector("#server-toggle-button");
 const panelMinimizeButton = document.querySelector("#panel-minimize-button");
@@ -556,6 +562,44 @@ function setStatus(label, tone) {
   }
 }
 
+function syncSetupFieldsFromSettings() {
+  if (setupServerInput && setupServerInput.value !== serverInput.value) {
+    setupServerInput.value = serverInput.value;
+  }
+
+  if (setupServerAccessKeyInput && serverAccessKeyInput) {
+    setupServerAccessKeyInput.value = serverAccessKeyInput.value;
+  }
+
+  if (setupRoomSelect && roomSelect.value) {
+    setupRoomSelect.value = roomSelect.value;
+  }
+}
+
+function syncSettingsFromSetupFields() {
+  if (setupServerInput) {
+    serverInput.value = setupServerInput.value.trim();
+  }
+
+  if (setupServerAccessKeyInput && serverAccessKeyInput) {
+    serverAccessKeyInput.value = setupServerAccessKeyInput.value.trim();
+  }
+
+  if (setupRoomSelect?.value) {
+    roomSelect.value = setupRoomSelect.value;
+    preferredRoomId = setupRoomSelect.value;
+  }
+}
+
+function setSetupFeedback(message, tone = "muted") {
+  if (!setupFeedback) {
+    return;
+  }
+
+  setupFeedback.textContent = message;
+  setupFeedback.dataset.tone = tone;
+}
+
 function updateHardwareStatus(status = {}) {
   if (!hardwareStatusLabel) {
     return;
@@ -676,7 +720,8 @@ async function setPanelDisplayMode(mode, options = {}) {
   }
 }
 
-async function fetchConfig() {
+async function fetchConfig(options = {}) {
+  const revealPanel = options.revealPanel !== false;
   const serverUrl = serverInput.value.trim();
   const selectedRoomId =
     preferredRoomId || roomSelect.value || window.pipPanel.defaultRoomId;
@@ -690,7 +735,9 @@ async function fetchConfig() {
 
   configState = await response.json();
   manualPanelReveal = false;
-  setPanelView("panel");
+  if (revealPanel) {
+    setPanelView("panel");
+  }
   renderRooms(selectedRoomId);
   renderButtons();
   if (shouldRenderSelectedRoomVolumeControl()) {
@@ -720,6 +767,112 @@ async function fetchChatMessages() {
   const messages = await response.json();
   chatMessages = Array.isArray(messages) ? messages : [];
   renderMessagingUi();
+}
+
+async function fetchRegisteredDevices() {
+  const serverUrl = serverInput.value.trim();
+
+  if (!serverUrl) {
+    return [];
+  }
+
+  const response = await fetch(`${serverUrl}/devices`, {
+    headers: buildAuthenticatedHeaders(),
+  });
+
+  if (!response.ok) {
+    return [];
+  }
+
+  const devices = await response.json();
+  return Array.isArray(devices) ? devices : [];
+}
+
+async function findSelectedRoomConflict() {
+  const selectedRoomId = roomSelect.value;
+
+  if (!selectedRoomId) {
+    return null;
+  }
+
+  const devices = await fetchRegisteredDevices().catch(() => []);
+  return devices.find((device) => {
+    const deviceRoomId = String(device?.roomId || "").trim();
+    const deviceId = String(device?.deviceId || "").trim();
+
+    return deviceRoomId === selectedRoomId && deviceId && deviceId !== panelDeviceId;
+  }) || null;
+}
+
+async function refreshSetupRooms() {
+  syncSettingsFromSetupFields();
+  setStatus("Connecting", "pending");
+  setSetupFeedback("Checking Reception details...");
+
+  await fetchConfig({ revealPanel: false });
+  syncSetupFieldsFromSettings();
+  setSetupFeedback("Reception found. Choose this computer's room, then connect.", "success");
+}
+
+async function completeRoomSetup() {
+  syncSettingsFromSetupFields();
+
+  if (!serverInput.value.trim()) {
+    setSetupFeedback("Enter the Reception address.", "error");
+    return;
+  }
+
+  if (!getServerAccessKeyValue()) {
+    setSetupFeedback("Enter the pairing code from Reception settings.", "error");
+    return;
+  }
+
+  try {
+    if (!configState || setupRoomSelect?.disabled) {
+      await refreshSetupRooms();
+    }
+
+    syncSettingsFromSetupFields();
+
+    if (!roomSelect.value) {
+      setSetupFeedback("Choose this computer's room.", "error");
+      return;
+    }
+
+    const roomConflict = await findSelectedRoomConflict();
+
+    if (roomConflict) {
+      const selectedRoomName = getSelectedRoom()?.name || roomSelect.value;
+      const shouldContinue = window.confirm(
+        `${selectedRoomName} already appears to be used by another computer. Continue only if you are replacing that machine.`,
+      );
+
+      if (!shouldContinue) {
+        setSetupFeedback("Choose a different room to avoid duplicate alerts.", "error");
+        return;
+      }
+    }
+
+    await window.pipPanel.updateSettings({
+      serverUrl: serverInput.value.trim(),
+      serverAccessKey: getServerAccessKeyValue(),
+      roomId: roomSelect.value,
+    }).catch(() => {});
+    saveState();
+    await fetchConfig();
+    connectSocket();
+    startConfigRefresh();
+    await fetchChatMessages().catch(() => {});
+    setSetupFeedback("Connected.", "success");
+  } catch (error) {
+    setStatus("Offline", "offline");
+    setPanelView("waiting");
+    syncSetupFieldsFromSettings();
+    setSetupFeedback(
+      "Could not connect. Check the Reception address and pairing code.",
+      "error",
+    );
+  }
 }
 
 function connectSocket() {
@@ -900,8 +1053,7 @@ function sendIdentify() {
 function renderRooms(preferredRoomId = "") {
   const currentValue =
     preferredRoomId || roomSelect.value || window.pipPanel.defaultRoomId;
-
-  roomSelect.innerHTML = (configState.rooms || [])
+  const roomOptions = (configState.rooms || [])
     .map(
       (room) => `
         <option value="${escapeHtml(room.id)}" ${room.id === currentValue ? "selected" : ""}>
@@ -911,11 +1063,19 @@ function renderRooms(preferredRoomId = "") {
     )
     .join("");
 
+  roomSelect.innerHTML = roomOptions;
+
+  if (setupRoomSelect) {
+    setupRoomSelect.innerHTML = roomOptions || '<option value="">No rooms found</option>';
+    setupRoomSelect.disabled = !roomOptions;
+  }
+
   if (![...roomSelect.options].some((option) => option.value === currentValue)) {
     roomSelect.value = configState.rooms?.[0]?.id || "";
   }
 
   preferredRoomId = roomSelect.value || currentValue || window.pipPanel.defaultRoomId;
+  syncSetupFieldsFromSettings();
 
   sendIdentify();
 }
@@ -2598,6 +2758,7 @@ async function init() {
       window.pipPanel.defaultServerAccessKey ||
       "";
   }
+  syncSetupFieldsFromSettings();
   setStatus("Connecting", "pending");
   updateHardwareStatus(hardwareStatus);
   if (showPanelAtStartupInput) {
@@ -2636,6 +2797,13 @@ async function init() {
   } catch (error) {
     setStatus("Offline", "offline");
     setPanelView("waiting");
+    syncSetupFieldsFromSettings();
+    setSetupFeedback(
+      getServerAccessKeyValue()
+        ? "Reception is offline or the pairing details are incorrect."
+        : "Enter the pairing code from Reception settings, then connect.",
+      "error",
+    );
   }
 }
 
@@ -2726,6 +2894,9 @@ messageSendButton?.addEventListener("click", async () => {
 
 roomSelect.addEventListener("change", async () => {
   preferredRoomId = roomSelect.value;
+  if (setupRoomSelect) {
+    setupRoomSelect.value = roomSelect.value;
+  }
   activeMessageThreadKey = "";
   unreadMessageThreadKeys.clear();
   setMessageThreadDrawerVisibility(false);
@@ -2741,6 +2912,16 @@ roomSelect.addEventListener("change", async () => {
   }).catch(() => {});
   saveState();
   sendIdentify();
+});
+
+setupRoomSelect?.addEventListener("change", () => {
+  if (!setupRoomSelect.value) {
+    return;
+  }
+
+  roomSelect.value = setupRoomSelect.value;
+  preferredRoomId = setupRoomSelect.value;
+  setSetupFeedback("Room selected. Click Connect to save it.", "success");
 });
 
 serverToggleButton?.addEventListener("click", () => {
@@ -3301,6 +3482,9 @@ selectedRoomVolume?.addEventListener("click", async (event) => {
 });
 
 serverInput.addEventListener("change", async () => {
+  if (setupServerInput) {
+    setupServerInput.value = serverInput.value.trim();
+  }
   await window.pipPanel.updateSettings({
     serverUrl: serverInput.value.trim(),
     serverAccessKey: getServerAccessKeyValue(),
@@ -3322,6 +3506,9 @@ serverInput.addEventListener("change", async () => {
 });
 
 serverAccessKeyInput?.addEventListener("change", async () => {
+  if (setupServerAccessKeyInput) {
+    setupServerAccessKeyInput.value = serverAccessKeyInput.value.trim();
+  }
   await window.pipPanel.updateSettings({
     serverUrl: serverInput.value.trim(),
     serverAccessKey: getServerAccessKeyValue(),
@@ -3340,20 +3527,36 @@ serverAccessKeyInput?.addEventListener("change", async () => {
   }
 });
 
-function openPanelFromWaitingState() {
+setupConnectButton?.addEventListener("click", () => {
+  completeRoomSetup();
+});
+
+setupSettingsButton?.addEventListener("click", () => {
   manualPanelReveal = true;
   setPanelView("panel");
   setServerPanelVisibility(true);
-}
-
-waitingState?.addEventListener("click", () => {
-  openPanelFromWaitingState();
+  setActiveSettingsSidebarLink("settings-connection");
 });
 
-waitingState?.addEventListener("keydown", (event) => {
-  if (event.key === "Enter" || event.key === " ") {
-    event.preventDefault();
-    openPanelFromWaitingState();
+setupServerInput?.addEventListener("change", () => {
+  syncSettingsFromSetupFields();
+  setSetupFeedback("Click Connect to check Reception.", "muted");
+});
+
+setupServerAccessKeyInput?.addEventListener("change", () => {
+  syncSettingsFromSetupFields();
+  setSetupFeedback("Click Connect to check Reception.", "muted");
+});
+
+setupServerInput?.addEventListener("keydown", (event) => {
+  if (event.key === "Enter") {
+    completeRoomSetup();
+  }
+});
+
+setupServerAccessKeyInput?.addEventListener("keydown", (event) => {
+  if (event.key === "Enter") {
+    completeRoomSetup();
   }
 });
 

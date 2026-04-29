@@ -75,6 +75,10 @@ body[data-window-view="main"] .panel-card {
   overflow: hidden;
 }
 
+body[data-window-view="main"][data-view="waiting"] .panel-shell {
+  overflow: auto;
+}
+
 body[data-window-view="main"] .panel-card {
   min-height: 100vh;
   max-height: 100vh;
@@ -145,7 +149,7 @@ body:not([data-view="waiting"]) .waiting-state {
 }
 
 body[data-view="waiting"] .waiting-state {
-  cursor: pointer;
+  cursor: default;
 }
 
 .waiting-state {
@@ -153,8 +157,9 @@ body[data-view="waiting"] .waiting-state {
   display: grid;
   align-content: center;
   justify-items: center;
-  gap: 12px;
+  gap: 10px;
   text-align: center;
+  padding: 12px;
 }
 
 .waiting-logo {
@@ -183,6 +188,98 @@ body[data-view="waiting"] .waiting-state {
   margin: 0;
   font-size: 14px;
   color: var(--muted);
+}
+
+.waiting-setup-card {
+  width: min(100%, 340px);
+  display: grid;
+  gap: 10px;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: white;
+  box-shadow: 0 16px 36px rgba(16, 35, 31, 0.1);
+  text-align: left;
+}
+
+.waiting-setup-card h1 {
+  margin: 0;
+  font-size: 19px;
+  line-height: 1.15;
+}
+
+.waiting-field {
+  display: grid;
+  gap: 5px;
+}
+
+.waiting-field span {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--muted);
+}
+
+.waiting-field input,
+.waiting-field select {
+  width: 100%;
+  min-height: 38px;
+  padding: 0 12px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: white;
+  color: var(--text);
+  font: inherit;
+  font-size: 14px;
+}
+
+.waiting-field input:focus,
+.waiting-field select:focus {
+  outline: 2px solid var(--field-focus);
+  outline-offset: 2px;
+}
+
+.waiting-help,
+.waiting-feedback {
+  margin: 0;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+.waiting-feedback[data-tone="error"] {
+  color: #b42318;
+}
+
+.waiting-feedback[data-tone="success"] {
+  color: #147d3f;
+}
+
+.waiting-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.waiting-primary-button,
+.waiting-secondary-button {
+  min-height: 38px;
+  padding: 0 12px;
+  border-radius: 999px;
+  cursor: pointer;
+  font: inherit;
+  font-size: 13px;
+}
+
+.waiting-primary-button {
+  border: 0;
+  background: var(--accent);
+  color: white;
+}
+
+.waiting-secondary-button {
+  border: 1px solid var(--line);
+  background: white;
+  color: var(--text);
 }
 
 .role-panel {
