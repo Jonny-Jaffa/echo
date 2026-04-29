@@ -1,6 +1,6 @@
 {
   "name": "@pip/reception",
-  "version": "0.2.7",
+  "version": "0.2.8",
   "private": true,
   "author": "Blackworks",
   "main": "src/main.js",
@@ -9,7 +9,7 @@
     "start": "env -u ELECTRON_RUN_AS_NODE electron ."
   },
   "dependencies": {
-    "@pip/shared": "0.2.7",
+    "@pip/shared": "0.2.8",
     "ws": "^8.18.3"
   },
   "devDependencies": {

@@ -57,6 +57,12 @@ function normalizeRuntimeRole(runtimeRole, fallback = "") {
   return ROLE_OPTIONS.includes(normalizedRuntimeRole) ? normalizedRuntimeRole : fallback;
 }
 
+function hasConfirmedRuntimeRole() {
+  return Boolean(
+    bootstrapState.runtimeRoleConfirmed && normalizeRuntimeRole(bootstrapState.runtimeRole, ""),
+  );
+}
+
 function getBootstrapStatePath() {
   return path.join(app.getPath("userData"), "bootstrap-state.json");
 }
@@ -184,7 +190,7 @@ function getTrayIcon() {
   return fallbackIcon.resize({ width: 16, height: 16 });
 }
 
-function createMainWindow() {
+function createMainWindow({ showInitially = true } = {}) {
   if (mainWindow && !mainWindow.isDestroyed()) {
     return mainWindow;
   }
@@ -215,8 +221,10 @@ function createMainWindow() {
 
   mainWindow.loadFile(path.join(__dirname, "renderer", "index.html"));
   mainWindow.once("ready-to-show", () => {
-    mainWindow?.show();
-    mainWindow?.focus();
+    if (showInitially) {
+      mainWindow?.show();
+      mainWindow?.focus();
+    }
     emitBootstrapState();
   });
   mainWindow.on("closed", () => {
@@ -224,6 +232,12 @@ function createMainWindow() {
   });
 
   return mainWindow;
+}
+
+function showBootstrapWindow() {
+  const targetWindow = createMainWindow({ showInitially: true });
+  targetWindow.show();
+  targetWindow.focus();
 }
 
 function setRuntimeServiceState(nextState = {}) {
@@ -439,6 +453,11 @@ async function openRoleExperience() {
         state: "running",
         detail: `${formatRuntimeRole(runtimeRole)} workspace is open`,
       });
+      refreshTrayMenu();
+
+      if (mainWindow && !mainWindow.isDestroyed()) {
+        mainWindow.hide();
+      }
     } catch (error) {
       packagedRoleExperienceRole = "";
       setRoleExperienceState({
@@ -642,6 +661,9 @@ function refreshTrayMenu() {
     return;
   }
 
+  const roleConfirmed = hasConfirmedRuntimeRole();
+  const roleLabel = formatRuntimeRole(bootstrapState.runtimeRole);
+
   tray.setContextMenu(
     Menu.buildFromTemplate([
       {
@@ -649,11 +671,23 @@ function refreshTrayMenu() {
         enabled: false,
       },
       {
-        label: "Open Pip",
+        label: `Open ${roleLabel} workspace`,
+        enabled: roleConfirmed,
         click: () => {
-          const targetWindow = createMainWindow();
-          targetWindow.show();
-          targetWindow.focus();
+          openRoleExperience().catch((error) => {
+            setRoleExperienceState({
+              activeRole: normalizeRuntimeRole(bootstrapState.runtimeRole, ""),
+              state: "error",
+              detail: error?.message || `Could not open ${roleLabel} workspace`,
+            });
+            showBootstrapWindow();
+          });
+        },
+      },
+      {
+        label: "Open Pip Setup",
+        click: () => {
+          showBootstrapWindow();
         },
       },
       {
@@ -671,9 +705,14 @@ function createTray() {
   tray = new Tray(getTrayIcon());
   tray.setToolTip(APP_NAME);
   tray.on("click", () => {
-    const targetWindow = createMainWindow();
-    targetWindow.show();
-    targetWindow.focus();
+    if (!hasConfirmedRuntimeRole()) {
+      showBootstrapWindow();
+      return;
+    }
+
+    openRoleExperience().catch(() => {
+      showBootstrapWindow();
+    });
   });
   refreshTrayMenu();
 }
@@ -741,6 +780,8 @@ function registerIpcHandlers() {
       emitBootstrapState();
     }
 
+    refreshTrayMenu();
+
     return buildBootstrapPayload();
   });
 
@@ -773,20 +814,42 @@ function registerIpcHandlers() {
 app.whenReady().then(() => {
   loadBootstrapState();
   registerIpcHandlers();
-  createMainWindow();
+  const shouldOpenWorkspace = hasConfirmedRuntimeRole();
+  createMainWindow({ showInitially: !shouldOpenWorkspace });
   createTray();
   startSelectedRuntime().catch(() => {});
 
+  if (shouldOpenWorkspace) {
+    openRoleExperience().catch((error) => {
+      setRoleExperienceState({
+        activeRole: normalizeRuntimeRole(bootstrapState.runtimeRole, ""),
+        state: "error",
+        detail: error?.message || "Could not open the saved workspace",
+      });
+      showBootstrapWindow();
+    });
+  }
+
   app.on("activate", () => {
     if (BrowserWindow.getAllWindows().length === 0) {
-      createMainWindow();
+      if (hasConfirmedRuntimeRole()) {
+        openRoleExperience().catch(() => {
+          showBootstrapWindow();
+        });
+      } else {
+        showBootstrapWindow();
+      }
       return;
     }
 
-    if (mainWindow && !mainWindow.isDestroyed()) {
-      mainWindow.show();
-      mainWindow.focus();
+    if (hasConfirmedRuntimeRole()) {
+      openRoleExperience().catch(() => {
+        showBootstrapWindow();
+      });
+      return;
     }
+
+    showBootstrapWindow();
   });
 });
 

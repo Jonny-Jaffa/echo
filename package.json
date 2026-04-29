@@ -1,6 +1,6 @@
 {
   "name": "pip",
-  "version": "0.2.7",
+  "version": "0.2.8",
   "private": true,
   "author": "Blackworks",
   "description": "Patient Pip cross-platform dental/doctor surgery room notification system",
