@@ -19,32 +19,6 @@
           </section>
         </header>
 
-        <section class="bootstrap-card hero-card">
-          <div class="eyebrow">Unified Pip Bootstrap</div>
-          <h1 class="hero-title">Choose what this computer should become.</h1>
-          <p class="hero-copy">
-            This new Pip app is the future single-installer entrypoint. It now stores the machine role and can start the matching transitional runtime service, while we keep the full Reception and Room UIs separate during the migration.
-          </p>
-          <div class="status-grid">
-            <article class="status-tile">
-              <span class="status-label">Saved role</span>
-              <strong class="status-value" id="saved-role-value">Not chosen yet</strong>
-            </article>
-            <article class="status-tile">
-              <span class="status-label">Role confirmed</span>
-              <strong class="status-value" id="role-confirmed-value">No</strong>
-            </article>
-            <article class="status-tile">
-              <span class="status-label">Implementation stage</span>
-              <strong class="status-value">Runtime foundation</strong>
-            </article>
-            <article class="status-tile">
-              <span class="status-label">Last updated</span>
-              <strong class="status-value" id="last-updated-value">Not saved yet</strong>
-            </article>
-          </div>
-        </section>
-
         <section class="bootstrap-card role-home-card" id="role-home-card">
           <div class="section-head">
             <div>
@@ -82,6 +56,50 @@
           </p>
         </section>
 
+        <section class="bootstrap-card runtime-card">
+          <div class="section-head">
+            <div>
+              <div class="eyebrow" id="runtime-card-eyebrow">Runtime</div>
+              <h2 class="section-title" id="runtime-card-title">Current role service</h2>
+            </div>
+            <div class="runtime-state-pill" id="runtime-state-pill">Idle</div>
+          </div>
+          <p class="support-copy" id="runtime-detail">Choose a role to begin</p>
+          <div class="status-grid runtime-status-grid" id="runtime-status-grid"></div>
+          <p class="support-copy role-experience-detail" id="role-experience-detail">Full role workspace has not been opened</p>
+          <div class="runtime-actions">
+            <button class="secondary-button" id="stop-runtime-button" type="button">Stop</button>
+            <button class="primary-button" id="restart-runtime-button" type="button">Restart</button>
+            <button class="primary-button" id="open-role-experience-button" type="button">Open workspace</button>
+          </div>
+        </section>
+
+        <section class="bootstrap-card hero-card">
+          <div class="eyebrow">Unified Pip Bootstrap</div>
+          <h1 class="hero-title">Choose what this computer should become.</h1>
+          <p class="hero-copy">
+            This Pip installer stores the machine role and opens the matching Reception or Room workspace from one installed app.
+          </p>
+          <div class="status-grid">
+            <article class="status-tile">
+              <span class="status-label">Saved role</span>
+              <strong class="status-value" id="saved-role-value">Not chosen yet</strong>
+            </article>
+            <article class="status-tile">
+              <span class="status-label">Role confirmed</span>
+              <strong class="status-value" id="role-confirmed-value">No</strong>
+            </article>
+            <article class="status-tile">
+              <span class="status-label">Implementation stage</span>
+              <strong class="status-value">Unified installer</strong>
+            </article>
+            <article class="status-tile">
+              <span class="status-label">Last updated</span>
+              <strong class="status-value" id="last-updated-value">Not saved yet</strong>
+            </article>
+          </div>
+        </section>
+
         <section class="bootstrap-card reception-card" id="reception-card" hidden>
           <div class="section-head">
             <div>
@@ -102,24 +120,6 @@
               <strong>Next migration step</strong>
               <span>The unified shell can now hand off to the full reception workspace while the direct in-app window migration continues.</span>
             </article>
-          </div>
-        </section>
-
-        <section class="bootstrap-card runtime-card">
-          <div class="section-head">
-            <div>
-              <div class="eyebrow" id="runtime-card-eyebrow">Runtime</div>
-              <h2 class="section-title" id="runtime-card-title">Current role service</h2>
-            </div>
-            <div class="runtime-state-pill" id="runtime-state-pill">Idle</div>
-          </div>
-          <p class="support-copy" id="runtime-detail">Choose a role to begin</p>
-          <div class="status-grid runtime-status-grid" id="runtime-status-grid"></div>
-          <p class="support-copy role-experience-detail" id="role-experience-detail">Full role workspace has not been opened</p>
-          <div class="runtime-actions">
-            <button class="secondary-button" id="stop-runtime-button" type="button">Stop</button>
-            <button class="primary-button" id="restart-runtime-button" type="button">Restart</button>
-            <button class="primary-button" id="open-role-experience-button" type="button">Open workspace</button>
           </div>
         </section>
 

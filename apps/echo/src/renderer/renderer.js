@@ -243,6 +243,11 @@ async function handleRoleSelection(event) {
     runtimeRoleConfirmed: true,
   });
   renderBootstrapState(nextState || { runtimeRole, runtimeRoleConfirmed: true });
+  const workspaceState = await window.pipBootstrap.openRoleExperience?.().catch(() => null);
+
+  if (workspaceState) {
+    renderBootstrapState(workspaceState);
+  }
 }
 
 roleOptionList?.addEventListener("click", handleRoleSelection);

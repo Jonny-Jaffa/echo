@@ -1,6 +1,6 @@
 {
   "name": "@pip/echo",
-  "version": "0.2.4",
+  "version": "0.2.5",
   "private": true,
   "author": "Blackworks",
   "main": "src/main.js",
@@ -10,7 +10,7 @@
   },
   "dependencies": {
     "@elgato-stream-deck/node": "^7.6.2",
-    "@pip/shared": "0.2.4",
+    "@pip/shared": "0.2.5",
     "@resvg/resvg-wasm": "^2.6.2",
     "ws": "^8.18.3"
   },
