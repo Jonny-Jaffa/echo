@@ -1,6 +1,6 @@
 {
   "name": "@pip/echo",
-  "version": "0.2.3",
+  "version": "0.2.4",
   "private": true,
   "author": "Blackworks",
   "main": "src/main.js",
@@ -9,9 +9,73 @@
     "start": "env -u ELECTRON_RUN_AS_NODE electron ."
   },
   "dependencies": {
-    "@pip/shared": "0.2.3"
+    "@elgato-stream-deck/node": "^7.6.2",
+    "@pip/shared": "0.2.4",
+    "@resvg/resvg-wasm": "^2.6.2",
+    "ws": "^8.18.3"
   },
   "devDependencies": {
     "electron": "37.2.1"
+  },
+  "build": {
+    "appId": "com.patientpip.app",
+    "productName": "Pip",
+    "icon": "build/icon.png",
+    "copyright": "Copyright Blackworks",
+    "directories": {
+      "output": "../../dist/pip"
+    },
+    "npmRebuild": false,
+    "extraResources": [
+      {
+        "from": "../../config/config.json",
+        "to": "config/config.json"
+      }
+    ],
+    "files": [
+      "src/**/*",
+      "package.json",
+      {
+        "from": "../reception/src",
+        "to": "reception-src",
+        "filter": [
+          "**/*"
+        ]
+      },
+      {
+        "from": "../client/src",
+        "to": "client-src",
+        "filter": [
+          "**/*"
+        ]
+      }
+    ],
+    "asarUnpack": [
+      "**/*.node",
+      "**/*.wasm",
+      "reception-src/assets/sounds/**/*.wav",
+      "client-src/assets/sounds/**/*.wav"
+    ],
+    "mac": {
+      "category": "public.app-category.medical",
+      "target": [
+        "dmg",
+        "zip"
+      ]
+    },
+    "win": {
+      "target": [
+        "nsis",
+        "zip"
+      ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "installerSidebar": "build/installerSidebar.bmp",
+      "uninstallerSidebar": "build/installerSidebar.bmp",
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true
+    }
   }
 }
