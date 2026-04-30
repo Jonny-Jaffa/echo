@@ -15,6 +15,7 @@ const chatRecipientDrawerClose = document.querySelector("#chat-recipient-drawer-
 const chatRecipientDrawerList = document.querySelector("#chat-recipient-drawer-list");
 const chatContextLabel = document.querySelector("#chat-context-label");
 const chatAllRoomsButton = document.querySelector("#chat-all-rooms-button");
+const chatAllHeaderButton = document.querySelector("#chat-all-header-button");
 const chatMessageList = document.querySelector("#chat-message-list");
 const chatComposeInput = document.querySelector("#chat-compose-input");
 const chatSendButton = document.querySelector("#chat-send-button");
@@ -79,6 +80,7 @@ const unreadChatRoomIds = new Set();
 let pinnedChatRoomIds = loadPinnedChatRoomIds();
 let chatRoomOrderIds = loadChatRoomOrderIds();
 let isChatRecipientDrawerVisible = false;
+let isMessageSectionVisible = false;
 let draggedChatRoomId = "";
 let draggedChatRoomSource = "";
 
@@ -460,6 +462,15 @@ function selectAllChatRooms(state = appState) {
   });
 }
 
+function showMessageSection() {
+  isMessageSectionVisible = true;
+  document.body.dataset.messagesHidden = "false";
+}
+
+function syncMessageSectionVisibility() {
+  document.body.dataset.messagesHidden = isMessageSectionVisible ? "false" : "true";
+}
+
 function syncMessageContext(state = appState) {
   const activeRoom = getActiveSingleChatRoom(state);
   const isAllRoomsSelected = areAllRoomsSelected(state);
@@ -519,7 +530,7 @@ function reconcileIncomingChatMessages(nextMessages = [], previousMessages = [])
     .filter(Boolean);
 
   if (newIncomingRoomIds.length === 0) {
-    return;
+    return [];
   }
 
   const hasActiveThread =
@@ -540,6 +551,8 @@ function reconcileIncomingChatMessages(nextMessages = [], previousMessages = [])
 
     unreadChatRoomIds.add(roomId);
   });
+
+  return newIncomingRoomIds;
 }
 
 function renderChatRecipients(state) {
@@ -713,6 +726,7 @@ function applyState(state) {
   document.body.dataset.minimized = !isSettingsWindow && state.config.display.minimized ? "true" : "false";
   document.body.dataset.adminMode = isSettingsWindow ? "true" : "false";
   document.body.dataset.compactMode = !isSettingsWindow && state.config.display.compactMode ? "true" : "false";
+  syncMessageSectionVisibility();
   adminPanel.classList.toggle("hidden", !isSettingsWindow);
 
   if (!draftConfig) {
@@ -1082,6 +1096,7 @@ alertList?.addEventListener("click", async (event) => {
     }
 
     selectChatRoom(roomId);
+    showMessageSection();
     renderAlertList(appState);
     renderChatRecipients(appState);
     renderChatMessages(appState);
@@ -1294,8 +1309,19 @@ chatComposeInput?.addEventListener("input", () => {
   syncChatComposerState();
 });
 
+chatAllHeaderButton?.addEventListener("click", () => {
+  selectAllChatRooms(appState);
+  showMessageSection();
+  renderAlertList(appState);
+  renderChatRecipients(appState);
+  renderChatMessages(appState);
+  syncChatComposerState();
+  reportGadgetHeight();
+});
+
 chatAllRoomsButton?.addEventListener("click", () => {
   selectAllChatRooms(appState);
+  showMessageSection();
   renderAlertList(appState);
   renderChatRecipients(appState);
   renderChatMessages(appState);
@@ -1460,7 +1486,11 @@ window.pip.onChatUpdate((messages) => {
 
   const previousMessages = Array.isArray(appState.chatMessages) ? appState.chatMessages : [];
   const nextMessages = Array.isArray(messages) ? messages : [];
-  reconcileIncomingChatMessages(nextMessages, previousMessages);
+  const newIncomingRoomIds = reconcileIncomingChatMessages(nextMessages, previousMessages);
+
+  if (newIncomingRoomIds.length > 0) {
+    showMessageSection();
+  }
 
   appState = {
     ...appState,
