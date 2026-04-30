@@ -16,6 +16,7 @@ const chatRecipientDrawerList = document.querySelector("#chat-recipient-drawer-l
 const chatContextLabel = document.querySelector("#chat-context-label");
 const chatAllRoomsButton = document.querySelector("#chat-all-rooms-button");
 const chatAllHeaderButton = document.querySelector("#chat-all-header-button");
+const chatCollapseButton = document.querySelector("#chat-collapse-button");
 const chatMessageList = document.querySelector("#chat-message-list");
 const chatComposeInput = document.querySelector("#chat-compose-input");
 const chatSendButton = document.querySelector("#chat-send-button");
@@ -465,6 +466,11 @@ function selectAllChatRooms(state = appState) {
 function showMessageSection() {
   isMessageSectionVisible = true;
   document.body.dataset.messagesHidden = "false";
+}
+
+function hideMessageSection() {
+  isMessageSectionVisible = false;
+  document.body.dataset.messagesHidden = "true";
 }
 
 function syncMessageSectionVisibility() {
@@ -1095,6 +1101,17 @@ alertList?.addEventListener("click", async (event) => {
       return;
     }
 
+    if (
+      isMessageSectionVisible &&
+      selectedChatRoomIds.size === 1 &&
+      selectedChatRoomIds.has(roomId)
+    ) {
+      hideMessageSection();
+      renderAlertList(appState);
+      reportGadgetHeight();
+      return;
+    }
+
     selectChatRoom(roomId);
     showMessageSection();
     renderAlertList(appState);
@@ -1316,6 +1333,12 @@ chatAllHeaderButton?.addEventListener("click", () => {
   renderChatRecipients(appState);
   renderChatMessages(appState);
   syncChatComposerState();
+  reportGadgetHeight();
+});
+
+chatCollapseButton?.addEventListener("click", () => {
+  hideMessageSection();
+  renderAlertList(appState);
   reportGadgetHeight();
 });
 
