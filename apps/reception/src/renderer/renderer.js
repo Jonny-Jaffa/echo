@@ -7,11 +7,14 @@ const roleCloseButton = document.querySelector("#role-close-button");
 const openRoleWindowButton = document.querySelector("#open-role-window-button");
 const adminPanel = document.querySelector("#admin-panel");
 const gadgetPanel = document.querySelector(".gadget-panel");
+const chatCard = document.querySelector("#chat-card");
 const chatRecipientList = document.querySelector("#chat-recipient-list");
 const chatRecipientDrawerButton = document.querySelector("#chat-recipient-drawer-button");
 const chatRecipientDrawer = document.querySelector("#chat-recipient-drawer");
 const chatRecipientDrawerClose = document.querySelector("#chat-recipient-drawer-close");
 const chatRecipientDrawerList = document.querySelector("#chat-recipient-drawer-list");
+const chatContextLabel = document.querySelector("#chat-context-label");
+const chatAllRoomsButton = document.querySelector("#chat-all-rooms-button");
 const chatMessageList = document.querySelector("#chat-message-list");
 const chatComposeInput = document.querySelector("#chat-compose-input");
 const chatSendButton = document.querySelector("#chat-send-button");
@@ -110,6 +113,10 @@ function getDefaultRoomShortLabel(roomName = "", roomId = "", index = 0) {
   }
 
   return words[0]?.slice(0, 3) || `R${index + 1}`;
+}
+
+function getRoomById(roomId, state = appState) {
+  return (state?.config?.rooms || []).find((room) => room.id === roomId) || null;
 }
 
 function renderSelectedDeviceRole(roleState = appState?.app) {
@@ -323,6 +330,9 @@ function renderAlertList(state) {
             <div class="action-slot icon-slot">
               <button class="dismiss secondary ping-button ${isWaitingForReply ? "is-pinging" : ""}" data-action="ping-room" data-room-id="${escapeHtml(room.id)}" type="button" aria-label="Ping room" title="Ping room">Ping</button>
             </div>
+            <div class="action-slot icon-slot">
+              <button class="dismiss secondary message-room-button ${unreadChatRoomIds.has(room.id) ? "is-unread" : ""}" data-action="message-room" data-room-id="${escapeHtml(room.id)}" type="button" aria-label="Message ${escapeHtml(room.name)}" title="Message ${escapeHtml(room.name)}">Message</button>
+            </div>
           </div>
         </article>
       `;
@@ -404,7 +414,7 @@ function getRelevantChatMessages(state) {
   );
 
   if (selectedChatRoomIds.size === 0) {
-    return messages;
+    return [];
   }
 
   return messages.filter((message) => {
@@ -418,6 +428,68 @@ function getRelevantChatMessages(state) {
 
     return selectedChatRoomIds.has(String(message?.senderRoomId || "").trim());
   });
+}
+
+function areAllRoomsSelected(state = appState) {
+  const roomIds = (state?.config?.rooms || []).map((room) => room.id);
+
+  return roomIds.length > 0 && roomIds.every((roomId) => selectedChatRoomIds.has(roomId));
+}
+
+function getActiveSingleChatRoom(state = appState) {
+  if (selectedChatRoomIds.size !== 1) {
+    return null;
+  }
+
+  return getRoomById([...selectedChatRoomIds][0], state);
+}
+
+function selectChatRoom(roomId) {
+  if (!roomId) {
+    return;
+  }
+
+  selectedChatRoomIds.clear();
+  selectedChatRoomIds.add(roomId);
+  unreadChatRoomIds.delete(roomId);
+}
+
+function selectAllChatRooms(state = appState) {
+  selectedChatRoomIds.clear();
+  (state?.config?.rooms || []).forEach((room) => {
+    selectedChatRoomIds.add(room.id);
+    unreadChatRoomIds.delete(room.id);
+  });
+}
+
+function syncMessageContext(state = appState) {
+  const activeRoom = getActiveSingleChatRoom(state);
+  const isAllRoomsSelected = areAllRoomsSelected(state);
+  const accent = activeRoom?.color || "var(--accent)";
+  const label = isAllRoomsSelected
+    ? "All rooms"
+    : activeRoom
+      ? activeRoom.name
+      : "Select a room";
+
+  if (chatContextLabel) {
+    chatContextLabel.textContent = label;
+  }
+
+  chatAllRoomsButton?.classList.toggle("is-active", isAllRoomsSelected);
+
+  if (!chatCard) {
+    return;
+  }
+
+  chatCard.style.setProperty("--active-room-accent", accent);
+  chatCard.style.setProperty(
+    "--message-list-background",
+    activeRoom
+      ? `linear-gradient(180deg, color-mix(in srgb, ${accent} 10%, white), color-mix(in srgb, ${accent} 4%, white))`
+      : "linear-gradient(180deg, #edfbff, #f8fdff)",
+  );
+  chatCard.style.setProperty("--message-bubble-incoming", activeRoom?.color || "#418191");
 }
 
 function getIncomingChatRoomId(message) {
@@ -473,10 +545,6 @@ function reconcileIncomingChatMessages(nextMessages = [], previousMessages = [])
 }
 
 function renderChatRecipients(state) {
-  if (!chatRecipientList) {
-    return;
-  }
-
   const rooms = state?.config?.rooms || [];
   const roomIds = rooms.map((room) => room.id);
   for (const roomId of [...selectedChatRoomIds]) {
@@ -503,24 +571,26 @@ function renderChatRecipients(state) {
     .map((roomId) => rooms.find((room) => room.id === roomId))
     .filter(Boolean);
 
-  chatRecipientList.innerHTML = visibleRooms
-    .map((room) => {
-      const isUnread = unreadChatRoomIds.has(room.id) && !selectedChatRoomIds.has(room.id);
+  if (chatRecipientList) {
+    chatRecipientList.innerHTML = visibleRooms
+      .map((room) => {
+        const isUnread = unreadChatRoomIds.has(room.id) && !selectedChatRoomIds.has(room.id);
 
-      return `
-        <button
-          class="message-recipient-chip ${selectedChatRoomIds.has(room.id) ? "is-selected" : ""} ${isUnread ? "is-unread" : ""}"
-          data-chat-room-id="${escapeHtml(room.id)}"
-          data-chat-drag-source="pinned"
-          draggable="true"
-          type="button"
-        >
-          <span title="${escapeHtml(room.name)}">${escapeHtml(getRoomShortLabel(room))}</span>
-          ${isUnread ? '<span class="message-recipient-dot" aria-hidden="true"></span>' : ""}
-        </button>
-      `;
-    })
-    .join("");
+        return `
+          <button
+            class="message-recipient-chip ${selectedChatRoomIds.has(room.id) ? "is-selected" : ""} ${isUnread ? "is-unread" : ""}"
+            data-chat-room-id="${escapeHtml(room.id)}"
+            data-chat-drag-source="pinned"
+            draggable="true"
+            type="button"
+          >
+            <span title="${escapeHtml(room.name)}">${escapeHtml(getRoomShortLabel(room))}</span>
+            ${isUnread ? '<span class="message-recipient-dot" aria-hidden="true"></span>' : ""}
+          </button>
+        `;
+      })
+      .join("");
+  }
 
   if (chatRecipientDrawerList) {
     chatRecipientDrawerList.innerHTML = `
@@ -567,6 +637,8 @@ function renderChatRecipients(state) {
       }).join("")}
     `;
   }
+
+  syncMessageContext(state);
 }
 
 function renderChatMessages(state) {
@@ -584,12 +656,13 @@ function renderChatMessages(state) {
   chatMessageList.innerHTML = messages
     .map((message) => {
       const isOutgoing = message.senderType === "reception";
+      const senderRoom = getRoomById(String(message.senderRoomId || "").trim(), state);
       const text = String(message.text || "");
       const timestamp = formatRelativeTime(message.timestamp);
       const isSingleLine = text.length <= 34 && !text.includes("\n");
 
       return `
-        <article class="message-item ${isOutgoing ? "is-outgoing" : "is-incoming"}">
+        <article class="message-item ${isOutgoing ? "is-outgoing" : "is-incoming"}" style="--message-bubble-incoming: ${escapeHtml(senderRoom?.color || "#418191")}">
           <div class="message-bubble">
             <div class="message-bubble-body ${isSingleLine ? "is-single-line" : "is-multi-line"}">
               <p class="message-item-text">${escapeHtml(text)}</p>
@@ -609,6 +682,11 @@ function syncChatComposerState() {
 
   chatSendButton.disabled =
     selectedChatRoomIds.size === 0 || !String(chatComposeInput.value || "").trim();
+  chatComposeInput.placeholder = areAllRoomsSelected()
+    ? "message all rooms"
+    : getActiveSingleChatRoom()?.name
+      ? `message ${getActiveSingleChatRoom().name}`
+      : "select a room";
 }
 
 function syncMessageSectionVisibility() {
@@ -1012,6 +1090,23 @@ alertList?.addEventListener("click", async (event) => {
     renderAlertList(appState);
   }
 
+  if (target.dataset.action === "message-room") {
+    const roomId = String(target.dataset.roomId || "").trim();
+
+    if (!roomId) {
+      return;
+    }
+
+    selectChatRoom(roomId);
+    isMessageSectionVisible = true;
+    syncMessageSectionVisibility();
+    renderAlertList(appState);
+    renderChatRecipients(appState);
+    renderChatMessages(appState);
+    syncChatComposerState();
+    reportGadgetHeight();
+  }
+
 });
 
 adminModeButton?.addEventListener("click", async () => {
@@ -1223,6 +1318,17 @@ chatComposeInput?.addEventListener("input", () => {
   syncChatComposerState();
 });
 
+chatAllRoomsButton?.addEventListener("click", () => {
+  selectAllChatRooms(appState);
+  isMessageSectionVisible = true;
+  syncMessageSectionVisibility();
+  renderAlertList(appState);
+  renderChatRecipients(appState);
+  renderChatMessages(appState);
+  syncChatComposerState();
+  reportGadgetHeight();
+});
+
 chatSendButton?.addEventListener("click", async () => {
   const text = String(chatComposeInput?.value || "").trim();
 
@@ -1386,6 +1492,7 @@ window.pip.onChatUpdate((messages) => {
     ...appState,
     chatMessages: nextMessages,
   };
+  renderAlertList(appState);
   renderChatRecipients(appState);
   renderChatMessages(appState);
   syncChatComposerState();

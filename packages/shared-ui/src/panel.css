@@ -389,7 +389,7 @@
   padding: 10px 0 0 2px;
   scrollbar-gutter: stable;
   align-content: start;
-  background-color: var(--message-list-background);
+  background: var(--message-list-background);
   border-radius: 20px;
 }
 

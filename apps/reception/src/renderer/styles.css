@@ -351,6 +351,53 @@ select {
 
 .reception-message-shell {
   padding: 0;
+  --active-room-accent: var(--accent);
+}
+
+.message-context-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  min-height: 34px;
+}
+
+.message-context-copy {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.message-context-label {
+  min-height: 30px;
+  padding: 0 13px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  background: color-mix(in srgb, var(--active-room-accent) 13%, white);
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.message-all-button {
+  min-height: 30px;
+  padding: 0 12px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: white;
+  color: var(--text);
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.message-all-button.is-active {
+  border-color: transparent;
+  background: var(--accent);
+  color: white;
 }
 
 .alert-list {
@@ -528,11 +575,11 @@ select {
 
 .action-row {
   display: grid;
-  grid-template-columns: 72px 48px 36px;
+  grid-template-columns: 72px 48px 36px 36px;
   align-items: center;
   gap: 4px;
   flex-shrink: 0;
-  min-width: 164px;
+  min-width: 204px;
 }
 
 .action-slot {
@@ -578,7 +625,8 @@ select {
 }
 
 .icon-confirm,
-.ping-button {
+.ping-button,
+.message-room-button {
   width: 36px;
   min-width: 36px;
   padding: 6px 0;
@@ -604,7 +652,8 @@ select {
 }
 
 .icon-confirm::before,
-.ping-button::before {
+.ping-button::before,
+.message-room-button::before {
   text-indent: 0;
   position: absolute;
   inset: 0;
@@ -635,9 +684,40 @@ select {
   font-size: 30px;
 }
 
+.message-room-button::before {
+  content: "";
+  width: 18px;
+  height: 18px;
+  margin: auto;
+  background-color: currentColor;
+  -webkit-mask-image: var(--icon-messages);
+  mask-image: var(--icon-messages);
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  -webkit-mask-position: center;
+  mask-position: center;
+  -webkit-mask-size: contain;
+  mask-size: contain;
+}
+
+.message-room-button.is-unread::after {
+  content: "";
+  position: absolute;
+  right: 5px;
+  top: 5px;
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+  background: var(--field-focus);
+  box-shadow: 0 0 0 2px white;
+}
+
 .dismiss.secondary.ping-button,
 .dismiss.secondary.ping-button:hover,
-.dismiss.secondary.ping-button:focus-visible {
+.dismiss.secondary.ping-button:focus-visible,
+.dismiss.secondary.message-room-button,
+.dismiss.secondary.message-room-button:hover,
+.dismiss.secondary.message-room-button:focus-visible {
   background: transparent;
   box-shadow: none;
   color: var(--row-accent, var(--accent));

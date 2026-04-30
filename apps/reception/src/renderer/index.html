@@ -55,34 +55,12 @@
         <div class="panel-section-divider" id="message-section-divider" aria-hidden="true"></div>
 
         <section class="message-shell reception-message-shell" id="chat-card">
-          <div class="message-recipient-bar">
-            <button
-              class="message-thread-drawer-button"
-              id="chat-recipient-drawer-button"
-              type="button"
-              aria-label="Show recipients"
-              aria-expanded="false"
-              title="Recipients"
-            >
-              Recipients
-            </button>
-            <div class="message-recipient-list" id="chat-recipient-list"></div>
-          </div>
-          <aside class="message-thread-drawer hidden" id="chat-recipient-drawer">
-            <div class="message-thread-drawer-head">
-              <div class="message-thread-drawer-title">Recipients</div>
-              <button
-                class="message-thread-drawer-close"
-                id="chat-recipient-drawer-close"
-                type="button"
-                aria-label="Close recipients"
-                title="Close"
-              >
-                Close
-              </button>
+          <div class="message-context-bar">
+            <div class="message-context-copy">
+              <span class="message-context-label" id="chat-context-label">Select a room</span>
             </div>
-            <div class="message-thread-drawer-list" id="chat-recipient-drawer-list"></div>
-          </aside>
+            <button class="message-all-button" id="chat-all-rooms-button" type="button">All rooms</button>
+          </div>
           <div class="message-list reception-message-list" id="chat-message-list"></div>
           <div class="message-compose">
             <textarea
