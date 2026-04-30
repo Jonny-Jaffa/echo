@@ -355,8 +355,8 @@ select {
 
 .alert-list {
   display: grid;
-  gap: 3px;
-  padding-left: 4px;
+  gap: 7px;
+  padding: 4px 6px 6px 4px;
 }
 
 .compact-layout {
@@ -455,13 +455,19 @@ select {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 14px;
-  padding: 7px 8px 7px 12px;
-  min-height: 33px;
-  border-left: 4px solid var(--row-accent, #0f766e);
-  border-right: 4px solid var(--row-accent, #0f766e);
-  border-radius: 8px;
-  background: color-mix(in srgb, var(--row-accent, var(--accent)) 6%, white)
+  gap: 12px;
+  min-height: 42px;
+  padding: 0 8px 0 0;
+  border-radius: 20px;
+  background:
+    linear-gradient(
+      90deg,
+      color-mix(in srgb, var(--row-accent, var(--accent)) 12%, white),
+      color-mix(in srgb, var(--row-accent, var(--accent)) 5%, white) 42%,
+      #ffffff
+    );
+  box-shadow: 0 10px 22px rgba(16, 35, 31, 0.12);
+  overflow: hidden;
 }
 
 .alert-row.is-idle .alert-message,
@@ -470,7 +476,8 @@ select {
 }
 
 .alert-row.is-idle {
-  border-left-color: color-mix(in srgb, var(--row-accent, #0f766e) 72%, white);
+  box-shadow: 0 8px 18px rgba(16, 35, 31, 0.08);
+  opacity: 0.88;
 }
 
 .alert-copy {
@@ -481,15 +488,25 @@ select {
 .alert-main-line {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 13px;
   min-width: 0;
   flex-wrap: nowrap;
 }
 
 .alert-room {
+  align-self: stretch;
+  min-width: 62px;
+  padding: 0 16px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   margin: 0;
-  font-size: 15px;
-  font-weight:700;
+  border-radius: 0 22px 22px 0;
+  background: var(--row-accent, #0f766e);
+  color: white;
+  box-shadow: 8px 0 18px color-mix(in srgb, var(--row-accent, #0f766e) 22%, transparent);
+  font-size: 17px;
+  font-weight: 800;
   line-height: 1.1;
   flex-shrink: 0;
 }
