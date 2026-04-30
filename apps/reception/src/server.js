@@ -511,6 +511,7 @@ async function createReceptionServer({
         payload: {
           roomId: room.id,
           roomName: room.name,
+          roomShortName: room.shortName,
           pingedAt: new Date().toISOString(),
         },
       });
@@ -519,6 +520,7 @@ async function createReceptionServer({
         transport: "local",
         roomId: room.id,
         roomName: room.name,
+        roomShortName: room.shortName,
       });
     },
     clearRoomPing(room) {
@@ -529,6 +531,7 @@ async function createReceptionServer({
       const payload = {
         roomId: room.id,
         roomName: room.name,
+        roomShortName: room.shortName,
         clearedAt: new Date().toISOString(),
       };
 
@@ -542,6 +545,7 @@ async function createReceptionServer({
         transport: "local",
         roomId: room.id,
         roomName: room.name,
+        roomShortName: room.shortName,
       });
     },
     clearAllNotifications(metadata = {}) {
@@ -703,6 +707,7 @@ async function createReceptionServer({
       .map((room) => ({
         roomId: room.id,
         roomName: room.name,
+        roomShortName: room.shortName,
       }));
 
     return {
@@ -712,8 +717,10 @@ async function createReceptionServer({
       senderType,
       senderRoomId: senderType === "room" ? senderRoomId : null,
       senderLabel: senderType === "room" ? senderRoom?.name || "Unknown Room" : "Reception",
+      senderShortLabel: senderType === "room" ? senderRoom?.shortName || senderRoom?.name || "Room" : "Rec",
       recipientRoomIds: recipients.map((recipient) => recipient.roomId),
       recipientLabels: recipients.map((recipient) => recipient.roomName),
+      recipientShortLabels: recipients.map((recipient) => recipient.roomShortName || recipient.roomName),
       sendToReception,
       messageGroupKey,
       messageGroupLabel,

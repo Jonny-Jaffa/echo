@@ -849,7 +849,7 @@ body[data-admin-mode="true"] .admin-panel {
 }
 
 .room-grid {
-  grid-template-columns: minmax(0, 1fr) 72px auto;
+  grid-template-columns: minmax(0, 1fr) 92px 72px auto;
   align-items: end;
 }
 

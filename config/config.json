@@ -32,6 +32,7 @@
     {
       "id": "surgery-1",
       "name": "Surgery 1",
+      "shortName": "S1",
       "color": "#d0069a",
       "icon": "🦷",
       "receptionSound": {
@@ -42,6 +43,7 @@
     {
       "id": "surgery-2",
       "name": "Surgery 2",
+      "shortName": "S2",
       "color": "#e07c0b",
       "icon": "🩺",
       "receptionSound": {
@@ -52,6 +54,7 @@
     {
       "id": "surgery-3",
       "name": "Surgery 3",
+      "shortName": "S3",
       "color": "#0bc120",
       "icon": "🩺",
       "receptionSound": {
@@ -62,6 +65,7 @@
     {
       "id": "surgery-4",
       "name": "Surgery 4",
+      "shortName": "S4",
       "color": "#1997e6",
       "icon": "🩺",
       "receptionSound": {

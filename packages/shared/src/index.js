@@ -112,6 +112,7 @@ export function buildNotificationPayload(config, roomId, actionId, overrides = {
     type: "notification",
     roomId: room.id,
     roomName: room.name,
+    roomShortName: room.shortName,
     actionType: action.id,
     message: action.message,
     roomColor: room.color,
@@ -187,6 +188,7 @@ export function normalizeConfig(config) {
     ? config.rooms.map((room, index) => ({
         id: String(room.id || `room-${index + 1}`).trim(),
         name: String(room.name || `Room ${index + 1}`).trim().slice(0, 10),
+        shortName: normalizeRoomShortName(room.shortName, room.name, room.id, index),
         color: String(room.color || "#0f766e").trim(),
         icon: String(room.icon || "").trim(),
         receptionSound: normalizeReceptionSound(room.receptionSound),
@@ -250,6 +252,46 @@ export function normalizeConfig(config) {
       actionId: notification.id,
     })),
   };
+}
+
+export function normalizeRoomShortName(value, roomName = "", roomId = "", index = 0) {
+  const explicitValue = String(value || "").trim();
+
+  if (explicitValue) {
+    return explicitValue.slice(0, 6);
+  }
+
+  return buildDefaultRoomShortName(roomName, roomId, index);
+}
+
+export function buildDefaultRoomShortName(roomName = "", roomId = "", index = 0) {
+  const labelSource = `${roomName || ""} ${roomId || ""}`.trim();
+  const surgeryMatch = labelSource.match(/surg(?:ery)?[\s-]*(\d+)/i);
+
+  if (surgeryMatch?.[1]) {
+    return `S${surgeryMatch[1]}`.slice(0, 6);
+  }
+
+  const roomMatch = labelSource.match(/room[\s-]*(\d+)/i);
+
+  if (roomMatch?.[1]) {
+    return `R${roomMatch[1]}`.slice(0, 6);
+  }
+
+  const words = String(roomName || "")
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean);
+
+  if (words.length >= 2) {
+    return words.map((word) => word[0]).join("").slice(0, 6).toUpperCase();
+  }
+
+  if (words[0]) {
+    return words[0].slice(0, 3);
+  }
+
+  return `R${index + 1}`;
 }
 
 function normalizeButtonAppearance(buttonAppearance) {

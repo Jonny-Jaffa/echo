@@ -149,6 +149,14 @@ function formatRuntimeRoleLabel(runtimeRole) {
   return runtimeRole === "reception" ? "Reception" : "Room";
 }
 
+function getRoomShortLabel(room) {
+  return String(room?.shortName || room?.name || "").trim();
+}
+
+function getThreadDisplayLabel(thread) {
+  return String(thread?.shortLabel || thread?.label || "").trim();
+}
+
 function renderSelectedDeviceRole(settings = panelSettings) {
   if (!selectedDeviceRoleLabel) {
     return;
@@ -1281,10 +1289,10 @@ function getMessageThreadItems() {
     });
   });
   const threads = [
-    { key: "reception", label: "Reception" },
+    { key: "reception", label: "Reception", shortLabel: "Rec" },
     { key: "all", label: "All" },
     ...groupThreadsByKey.values(),
-    ...rooms.map((room) => ({ key: room.id, label: room.name })),
+    ...rooms.map((room) => ({ key: room.id, label: room.name, shortLabel: getRoomShortLabel(room) })),
   ];
 
   return threads.map((thread) => {
@@ -1393,7 +1401,7 @@ function renderMessageThreadDrawer(threads) {
             data-message-thread-key="${escapeHtml(thread.key)}"
             type="button"
           >
-            <span>${escapeHtml(thread.label)}</span>
+            <span title="${escapeHtml(thread.label)}">${escapeHtml(getThreadDisplayLabel(thread))}</span>
             ${thread.unread ? '<span class="message-thread-dot" aria-hidden="true"></span>' : ""}
           </button>
           <button
@@ -1427,7 +1435,7 @@ function renderMessageThreads() {
         draggable="true"
         type="button"
       >
-        <span>${escapeHtml(thread.label)}</span>
+        <span title="${escapeHtml(thread.label)}">${escapeHtml(getThreadDisplayLabel(thread))}</span>
         ${thread.unread ? '<span class="message-thread-dot" aria-hidden="true"></span>' : ""}
       </button>
     `)
@@ -2640,6 +2648,7 @@ function buildPanelNotificationPayload(room, action, overrides = {}) {
     type: "notification",
     roomId: room.id,
     roomName: room.name,
+    roomShortName: room.shortName,
     actionType: action.id,
     message: action.message,
     roomColor: room.color,

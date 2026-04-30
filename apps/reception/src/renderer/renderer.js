@@ -84,6 +84,33 @@ function formatRuntimeRoleLabel(runtimeRole) {
   return runtimeRole === "room" ? "Room" : "Reception";
 }
 
+function getRoomShortLabel(room) {
+  return String(room?.shortName || room?.name || "").trim();
+}
+
+function getDefaultRoomShortLabel(roomName = "", roomId = "", index = 0) {
+  const labelSource = `${roomName || ""} ${roomId || ""}`.trim();
+  const surgeryMatch = labelSource.match(/surg(?:ery)?[\s-]*(\d+)/i);
+
+  if (surgeryMatch?.[1]) {
+    return `S${surgeryMatch[1]}`.slice(0, 6);
+  }
+
+  const roomMatch = labelSource.match(/room[\s-]*(\d+)/i);
+
+  if (roomMatch?.[1]) {
+    return `R${roomMatch[1]}`.slice(0, 6);
+  }
+
+  const words = String(roomName || "").trim().split(/\s+/).filter(Boolean);
+
+  if (words.length >= 2) {
+    return words.map((word) => word[0]).join("").slice(0, 6).toUpperCase();
+  }
+
+  return words[0]?.slice(0, 3) || `R${index + 1}`;
+}
+
 function renderSelectedDeviceRole(roleState = appState?.app) {
   if (!selectedDeviceRoleLabel) {
     return;
@@ -274,7 +301,7 @@ function renderAlertList(state) {
         >
           <div class="alert-copy">
             <div class="alert-main-line">
-              <h2 class="alert-room">${escapeHtml(room.name)}</h2>
+              <h2 class="alert-room" title="${escapeHtml(room.name)}">${escapeHtml(getRoomShortLabel(room))}</h2>
               <p class="alert-message ${alert ? "" : "is-empty"}">${escapeHtml(rowMessage)}</p>
             </div>
           </div>
@@ -309,7 +336,7 @@ function renderCompactAlertList(state, rooms, alerts) {
 
       return `
         <article class="compact-room-card" style="--row-accent: ${escapeHtml(room.color || "#0f766e")}">
-          <h3 class="compact-room-title">${escapeHtml(room.name)}</h3>
+          <h3 class="compact-room-title" title="${escapeHtml(room.name)}">${escapeHtml(getRoomShortLabel(room))}</h3>
           <button
             class="dismiss secondary ping-button compact-room-alert-button ${isWaitingForReply ? "is-pinging" : ""}"
             data-action="ping-room"
@@ -346,7 +373,7 @@ function renderCompactAlertList(state, rooms, alerts) {
           style="--row-accent: ${escapeHtml(room.color || "#0f766e")}"
         >
           <div class="compact-message-copy">
-            <p class="compact-message-room">${escapeHtml(room.name)}</p>
+            <p class="compact-message-room" title="${escapeHtml(room.name)}">${escapeHtml(getRoomShortLabel(room))}</p>
             <p class="compact-message-text">${escapeHtml(alert.message || "")}</p>
           </div>
           <div class="confirm-cluster compact-confirm-cluster">
@@ -416,7 +443,7 @@ function renderChatRecipients(state) {
         draggable="true"
         type="button"
       >
-        ${escapeHtml(room.name)}
+        <span title="${escapeHtml(room.name)}">${escapeHtml(getRoomShortLabel(room))}</span>
       </button>
     `)
     .join("");
@@ -448,7 +475,7 @@ function renderChatRecipients(state) {
               data-chat-room-id="${escapeHtml(room.id)}"
               type="button"
             >
-              ${escapeHtml(room.name)}
+              <span title="${escapeHtml(room.name)}">${escapeHtml(getRoomShortLabel(room))}</span>
             </button>
             <button
               class="message-thread-pin-button ${isPinned ? "is-pinned" : ""}"
@@ -677,6 +704,10 @@ function renderRooms() {
               <span>Name</span>
               <input data-entity="room" data-index="${index}" data-key="name" type="text" maxlength="10" value="${escapeHtml(room.name)}" />
             </label>
+            <label class="field">
+              <span>Short label</span>
+              <input data-entity="room" data-index="${index}" data-key="shortName" type="text" maxlength="6" value="${escapeHtml(room.shortName || getDefaultRoomShortLabel(room.name, room.id, index))}" />
+            </label>
             <label class="field colour-field">
               <span>Colour</span>
               <div class="colour-input-wrap compact-colour-input">
@@ -800,8 +831,12 @@ function updateDraftField(target) {
   const key = target.dataset.key;
 
   if (entity === "room") {
-    draftConfig.rooms[index][key] = key === "name" ? target.value.slice(0, 10) : target.value;
-    if (key === "name") {
+    const maxLength = key === "name" ? 10 : key === "shortName" ? 6 : Infinity;
+    draftConfig.rooms[index][key] = Number.isFinite(maxLength)
+      ? target.value.slice(0, maxLength)
+      : target.value;
+
+    if (key === "name" || key === "shortName") {
       target.value = draftConfig.rooms[index][key];
     }
   }
@@ -1065,6 +1100,7 @@ addRoomButton?.addEventListener("click", () => {
     ...baseRoom,
     id: `room-${nextRoomNumber}`,
     name: `Room ${nextRoomNumber}`,
+    shortName: getDefaultRoomShortLabel(`Room ${nextRoomNumber}`, `room-${nextRoomNumber}`, nextRoomNumber - 1),
     notifications: (baseRoom.notifications || []).map((notification, notificationIndex) => ({
       ...notification,
       id: `room-${nextRoomNumber}-action-${notificationIndex + 1}`,

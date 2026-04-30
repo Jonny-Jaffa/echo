@@ -2674,6 +2674,7 @@ function buildRoomNotificationPayload(room, action, overrides = {}) {
     type: "notification",
     roomId: room.id,
     roomName: room.name,
+    roomShortName: room.shortName,
     actionType: action.id,
     message: action.message,
     roomColor: room.color,
