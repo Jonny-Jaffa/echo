@@ -348,13 +348,14 @@ select {
 
 .reception-message-shell {
   padding: 0;
+  row-gap: 0;
   --active-room-accent: var(--accent);
   --message-bubble-outgoing: linear-gradient(180deg, #ffffff, #f7fbfb);
 }
 
 .message-context-bar {
   display: flex;
-  align-items: center;
+  align-items: flex-end;
   justify-content: space-between;
   gap: 10px;
   min-height: 34px;
@@ -377,7 +378,7 @@ select {
 .message-context-label {
   min-height: 30px;
   padding: 0 13px;
-  border-radius: 999px;
+  border-radius: 20px 20px 0 0;
   display: inline-flex;
   align-items: center;
   background: color-mix(in srgb, var(--active-room-accent) 13%, white);
@@ -435,6 +436,14 @@ select {
   mask-position: center;
   -webkit-mask-size: contain;
   mask-size: contain;
+}
+
+.reception-message-shell .message-list {
+  border-radius: 0 20px 20px 20px;
+}
+
+.reception-message-shell .message-compose {
+  margin-top: 10px;
 }
 
 .reception-message-shell .message-item.is-outgoing .message-item-text {
