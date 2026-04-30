@@ -346,7 +346,7 @@ select {
   color: var(--muted);
 }
 
-.reception-message-shell {
+.message-shell.reception-message-shell {
   padding: 0;
   gap: 0;
   row-gap: 0;
