@@ -352,6 +352,7 @@ select {
 .reception-message-shell {
   padding: 0;
   --active-room-accent: var(--accent);
+  --message-bubble-outgoing: linear-gradient(180deg, #ffffff, #f7fbfb);
 }
 
 .message-context-bar {
@@ -398,6 +399,14 @@ select {
   border-color: transparent;
   background: var(--accent);
   color: white;
+}
+
+.reception-message-shell .message-item.is-outgoing .message-item-text {
+  color: var(--text);
+}
+
+.reception-message-shell .message-item.is-outgoing .message-item-time {
+  color: var(--muted);
 }
 
 .alert-list {
