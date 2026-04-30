@@ -18,7 +18,6 @@ const chatAllRoomsButton = document.querySelector("#chat-all-rooms-button");
 const chatMessageList = document.querySelector("#chat-message-list");
 const chatComposeInput = document.querySelector("#chat-compose-input");
 const chatSendButton = document.querySelector("#chat-send-button");
-const messageSectionToggleButton = document.querySelector("#message-section-toggle-button");
 const settingsSidebarLinks = [...document.querySelectorAll("[data-settings-section-link]")];
 const settingsTabSections = [...document.querySelectorAll("[data-settings-section]")];
 const adminFeedback = document.querySelector("#admin-feedback");
@@ -80,7 +79,6 @@ const unreadChatRoomIds = new Set();
 let pinnedChatRoomIds = loadPinnedChatRoomIds();
 let chatRoomOrderIds = loadChatRoomOrderIds();
 let isChatRecipientDrawerVisible = false;
-let isMessageSectionVisible = true;
 let draggedChatRoomId = "";
 let draggedChatRoomSource = "";
 
@@ -689,19 +687,6 @@ function syncChatComposerState() {
       : "select a room";
 }
 
-function syncMessageSectionVisibility() {
-  document.body.dataset.messagesHidden = !isMessageSectionVisible ? "true" : "false";
-  messageSectionToggleButton?.classList.toggle("is-active", !isMessageSectionVisible);
-  messageSectionToggleButton?.setAttribute(
-    "aria-label",
-    isMessageSectionVisible ? "Hide messaging section" : "Show messaging section",
-  );
-  messageSectionToggleButton?.setAttribute("aria-pressed", String(!isMessageSectionVisible));
-  if (messageSectionToggleButton) {
-    messageSectionToggleButton.title = isMessageSectionVisible ? "Hide messaging section" : "Show messaging section";
-  }
-}
-
 function applyState(state) {
   appState = state;
 
@@ -728,7 +713,6 @@ function applyState(state) {
   document.body.dataset.minimized = !isSettingsWindow && state.config.display.minimized ? "true" : "false";
   document.body.dataset.adminMode = isSettingsWindow ? "true" : "false";
   document.body.dataset.compactMode = !isSettingsWindow && state.config.display.compactMode ? "true" : "false";
-  syncMessageSectionVisibility();
   adminPanel.classList.toggle("hidden", !isSettingsWindow);
 
   if (!draftConfig) {
@@ -1098,8 +1082,6 @@ alertList?.addEventListener("click", async (event) => {
     }
 
     selectChatRoom(roomId);
-    isMessageSectionVisible = true;
-    syncMessageSectionVisibility();
     renderAlertList(appState);
     renderChatRecipients(appState);
     renderChatMessages(appState);
@@ -1118,12 +1100,6 @@ compactModeButton?.addEventListener("click", async () => {
   await window.pip.updateDisplaySettings({
     compactMode: !appState.config.display.compactMode,
   });
-});
-
-messageSectionToggleButton?.addEventListener("click", () => {
-  isMessageSectionVisible = !isMessageSectionVisible;
-  syncMessageSectionVisibility();
-  reportGadgetHeight();
 });
 
 document.body.addEventListener("dragstart", (event) => {
@@ -1320,8 +1296,6 @@ chatComposeInput?.addEventListener("input", () => {
 
 chatAllRoomsButton?.addEventListener("click", () => {
   selectAllChatRooms(appState);
-  isMessageSectionVisible = true;
-  syncMessageSectionVisibility();
   renderAlertList(appState);
   renderChatRecipients(appState);
   renderChatMessages(appState);

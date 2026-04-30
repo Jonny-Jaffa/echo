@@ -308,15 +308,6 @@ select {
   background: rgba(16, 35, 31, 0.08);
 }
 
-.message-section-toggle-button::before {
-  --button-icon: var(--icon-messages);
-  --icon-size: 16px;
-}
-
-.message-section-toggle-button.is-active {
-  background: rgba(16, 35, 31, 0.08);
-}
-
 .minimize-window-button::before {
   --button-icon: var(--icon-minimize);
   --icon-size: 16px;
@@ -796,11 +787,6 @@ body[data-minimized="true"] .card {
 }
 
 body[data-minimized="true"] .reception-message-shell {
-  display: none;
-}
-
-body[data-messages-hidden="true"] .panel-section-divider,
-body[data-messages-hidden="true"] .reception-message-shell {
   display: none;
 }
 
