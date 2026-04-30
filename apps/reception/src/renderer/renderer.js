@@ -702,7 +702,7 @@ function syncChatComposerState() {
   chatComposeInput.placeholder = areAllRoomsSelected()
     ? "message all rooms"
     : getActiveSingleChatRoom()?.name
-      ? `message ${getActiveSingleChatRoom().name}`
+      ? `message ${getActiveSingleChatRoom().name.toLowerCase()}`
       : "select a room";
 }
 

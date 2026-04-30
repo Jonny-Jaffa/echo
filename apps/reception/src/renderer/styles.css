@@ -382,8 +382,8 @@ select {
   border-radius: 12px 12px 0 0;
   display: inline-flex;
   align-items: center;
-  background: color-mix(in srgb, var(--active-room-accent) 13%, white);
-  color: var(--text);
+  background: var(--active-room-accent);
+  color: white;
   font-size: 13px;
   font-weight: 700;
   white-space: nowrap;
@@ -392,9 +392,9 @@ select {
 .message-all-button {
   min-height: 30px;
   padding: 0 12px;
-  border: 1px solid var(--line);
+  border: 0;
   border-radius: 999px;
-  background: white;
+  background: linear-gradient(180deg, #ffffff, #f7fbfb);
   color: var(--text);
   font: inherit;
   font-size: 12px;
@@ -411,7 +411,7 @@ select {
   width: 30px;
   min-width: 30px;
   height: 30px;
-  border: 1px solid var(--line);
+  border: 0;
   border-radius: 999px;
   background: linear-gradient(180deg, #ffffff, #f7fbfb);
   color: var(--text);
