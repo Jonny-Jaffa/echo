@@ -328,6 +328,10 @@
 
 .message-thread-chip,
 .message-recipient-chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
   border: 1px solid var(--line);
   border-radius: 999px;
   min-height: 34px;
@@ -340,6 +344,28 @@
   cursor: pointer;
   white-space: nowrap;
   flex: 0 0 auto;
+}
+
+.message-recipient-chip,
+.message-thread-drawer-select {
+  position: relative;
+}
+
+.message-recipient-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: var(--field-focus);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--field-focus) 18%, transparent);
+  flex: 0 0 auto;
+}
+
+.message-recipient-chip.is-unread {
+  border-color: color-mix(in srgb, var(--field-focus) 58%, var(--line));
+}
+
+.message-thread-drawer-item.is-unread .message-thread-drawer-select {
+  border-color: color-mix(in srgb, var(--field-focus) 58%, var(--line));
 }
 
 .message-thread-chip.is-active,

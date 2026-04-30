@@ -73,6 +73,7 @@ let draftConfig = null;
 let lastReportedGadgetHeight = 0;
 const pendingPingRooms = new Map();
 const selectedChatRoomIds = new Set();
+const unreadChatRoomIds = new Set();
 let pinnedChatRoomIds = loadPinnedChatRoomIds();
 let chatRoomOrderIds = loadChatRoomOrderIds();
 let isChatRecipientDrawerVisible = false;
@@ -398,9 +399,77 @@ function renderCompactAlertList(state, rooms, alerts) {
 }
 
 function getRelevantChatMessages(state) {
-  return (state?.chatMessages || []).filter(
+  const messages = (state?.chatMessages || []).filter(
     (message) => message?.senderType === "reception" || message?.sendToReception,
   );
+
+  if (selectedChatRoomIds.size === 0) {
+    return messages;
+  }
+
+  return messages.filter((message) => {
+    if (message?.senderType === "reception") {
+      const recipientRoomIds = Array.isArray(message?.recipientRoomIds)
+        ? message.recipientRoomIds.map((roomId) => String(roomId || "").trim())
+        : [];
+
+      return recipientRoomIds.some((roomId) => selectedChatRoomIds.has(roomId));
+    }
+
+    return selectedChatRoomIds.has(String(message?.senderRoomId || "").trim());
+  });
+}
+
+function getIncomingChatRoomId(message) {
+  if (String(message?.senderType || "").trim() !== "room" || !message?.sendToReception) {
+    return "";
+  }
+
+  return String(message?.senderRoomId || "").trim();
+}
+
+function getChatMessageKey(message) {
+  return String(
+    message?.messageId ||
+      [
+        message?.senderType,
+        message?.senderRoomId,
+        message?.timestamp,
+        message?.text,
+      ].join("|"),
+  );
+}
+
+function reconcileIncomingChatMessages(nextMessages = [], previousMessages = []) {
+  const previousMessageKeys = new Set(previousMessages.map(getChatMessageKey));
+  const previousIncomingMessages = previousMessages.filter((message) => getIncomingChatRoomId(message));
+  const newIncomingRoomIds = nextMessages
+    .filter((message) => !previousMessageKeys.has(getChatMessageKey(message)))
+    .map(getIncomingChatRoomId)
+    .filter(Boolean);
+
+  if (newIncomingRoomIds.length === 0) {
+    return;
+  }
+
+  const hasActiveThread =
+    selectedChatRoomIds.size > 0 || Boolean(String(chatComposeInput?.value || "").trim());
+  const shouldAutoSelectFirstRoom =
+    previousIncomingMessages.length === 0 && !hasActiveThread;
+
+  if (shouldAutoSelectFirstRoom) {
+    selectedChatRoomIds.clear();
+    selectedChatRoomIds.add(newIncomingRoomIds[0]);
+  }
+
+  newIncomingRoomIds.forEach((roomId) => {
+    if (selectedChatRoomIds.has(roomId)) {
+      unreadChatRoomIds.delete(roomId);
+      return;
+    }
+
+    unreadChatRoomIds.add(roomId);
+  });
 }
 
 function renderChatRecipients(state) {
@@ -435,17 +504,22 @@ function renderChatRecipients(state) {
     .filter(Boolean);
 
   chatRecipientList.innerHTML = visibleRooms
-    .map((room) => `
-      <button
-        class="message-recipient-chip ${selectedChatRoomIds.has(room.id) ? "is-selected" : ""}"
-        data-chat-room-id="${escapeHtml(room.id)}"
-        data-chat-drag-source="pinned"
-        draggable="true"
-        type="button"
-      >
-        <span title="${escapeHtml(room.name)}">${escapeHtml(getRoomShortLabel(room))}</span>
-      </button>
-    `)
+    .map((room) => {
+      const isUnread = unreadChatRoomIds.has(room.id) && !selectedChatRoomIds.has(room.id);
+
+      return `
+        <button
+          class="message-recipient-chip ${selectedChatRoomIds.has(room.id) ? "is-selected" : ""} ${isUnread ? "is-unread" : ""}"
+          data-chat-room-id="${escapeHtml(room.id)}"
+          data-chat-drag-source="pinned"
+          draggable="true"
+          type="button"
+        >
+          <span title="${escapeHtml(room.name)}">${escapeHtml(getRoomShortLabel(room))}</span>
+          ${isUnread ? '<span class="message-recipient-dot" aria-hidden="true"></span>' : ""}
+        </button>
+      `;
+    })
     .join("");
 
   if (chatRecipientDrawerList) {
@@ -463,9 +537,10 @@ function renderChatRecipients(state) {
       </div>
       ${orderedRooms.map((room) => {
         const isPinned = pinnedChatRoomIds.includes(room.id);
+        const isUnread = unreadChatRoomIds.has(room.id) && !selectedChatRoomIds.has(room.id);
         return `
           <div
-            class="message-thread-drawer-item ${selectedChatRoomIds.has(room.id) ? "is-active" : ""}"
+            class="message-thread-drawer-item ${selectedChatRoomIds.has(room.id) ? "is-active" : ""} ${isUnread ? "is-unread" : ""}"
             data-chat-room-id="${escapeHtml(room.id)}"
             data-chat-drag-source="drawer"
             draggable="true"
@@ -476,6 +551,7 @@ function renderChatRecipients(state) {
               type="button"
             >
               <span title="${escapeHtml(room.name)}">${escapeHtml(getRoomShortLabel(room))}</span>
+              ${isUnread ? '<span class="message-recipient-dot" aria-hidden="true"></span>' : ""}
             </button>
             <button
               class="message-thread-pin-button ${isPinned ? "is-pinned" : ""}"
@@ -1208,9 +1284,11 @@ document.body.addEventListener("click", (event) => {
       roomIds.forEach((roomId) => {
         selectedChatRoomIds.add(roomId);
       });
+      unreadChatRoomIds.clear();
     }
 
     renderChatRecipients(appState);
+    renderChatMessages(appState);
     syncChatComposerState();
     return;
   }
@@ -1228,9 +1306,11 @@ document.body.addEventListener("click", (event) => {
       selectedChatRoomIds.delete(roomId);
     } else {
       selectedChatRoomIds.add(roomId);
+      unreadChatRoomIds.delete(roomId);
     }
 
     renderChatRecipients(appState);
+    renderChatMessages(appState);
     syncChatComposerState();
     return;
   }
@@ -1298,11 +1378,18 @@ window.pip.onChatUpdate((messages) => {
     return;
   }
 
+  const previousMessages = Array.isArray(appState.chatMessages) ? appState.chatMessages : [];
+  const nextMessages = Array.isArray(messages) ? messages : [];
+  reconcileIncomingChatMessages(nextMessages, previousMessages);
+
   appState = {
     ...appState,
-    chatMessages: Array.isArray(messages) ? messages : [],
+    chatMessages: nextMessages,
   };
+  renderChatRecipients(appState);
   renderChatMessages(appState);
+  syncChatComposerState();
+  reportGadgetHeight();
 });
 window.pip.onPingCleared((payload) => {
   if (payload?.roomId) {
