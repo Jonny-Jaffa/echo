@@ -532,7 +532,7 @@ select {
 }
 
 .reception-message-shell .message-send-button {
-  border: 1px solid var(--line);
+  border: 1px solid var(--active-room-accent);
   background: linear-gradient(180deg, #ffffff, #f7fbfb);
   color: var(--text);
   box-shadow:
