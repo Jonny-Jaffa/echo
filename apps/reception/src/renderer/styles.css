@@ -470,7 +470,7 @@ select {
 
 .reception-message-shell .message-list::-webkit-scrollbar-track {
   background: transparent;
-  margin-block: 16px;
+  margin-block: 21px;
 }
 
 .reception-message-shell .message-list::-webkit-scrollbar-thumb {
