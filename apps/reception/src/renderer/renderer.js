@@ -663,6 +663,11 @@ function renderChatMessages(state) {
     return;
   }
 
+  const wasPinnedToBottom =
+    chatMessageList.scrollHeight -
+      chatMessageList.scrollTop -
+      chatMessageList.clientHeight <
+    24;
   const messages = getRelevantChatMessages(state);
 
   if (messages.length === 0) {
@@ -690,6 +695,12 @@ function renderChatMessages(state) {
       `;
     })
     .join("");
+
+  if (wasPinnedToBottom) {
+    requestAnimationFrame(() => {
+      chatMessageList.scrollTop = chatMessageList.scrollHeight;
+    });
+  }
 }
 
 function syncChatComposerState() {

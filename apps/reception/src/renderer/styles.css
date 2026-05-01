@@ -442,6 +442,9 @@ select {
 
 .reception-message-shell .message-list {
   border-radius: 0 20px 20px 20px;
+  display: block;
+  min-height: 0;
+  height: 100%;
   overflow-y: auto;
   scrollbar-width: thin;
   scrollbar-color: color-mix(in srgb, var(--active-room-accent) 38%, transparent) transparent;
