@@ -425,10 +425,11 @@ select {
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  background: var(--active-room-accent);
+  background: var(--active-room-accent, #0f766e);
   color: var(--message-context-short-label-color);
+  box-shadow: 8px 0 18px color-mix(in srgb, var(--active-room-accent, #0f766e) 22%, transparent);
   font-size: 22px;
-  font-weight: 700;
+  font-weight: 600;
 }
 
 .message-all-button {
