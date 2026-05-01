@@ -967,11 +967,11 @@ function formatRelativeTime(timestamp) {
   const diffHours = Math.floor(diffMinutes / 60);
 
   if (diffHours === 1) {
-    return "1 hour ago";
+    return "1 hr ago";
   }
 
   if (diffHours < 24) {
-    return `${diffHours} hours ago`;
+    return `${diffHours} hrs ago`;
   }
 
   const diffDays = Math.floor(diffHours / 24);
