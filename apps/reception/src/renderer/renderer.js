@@ -521,6 +521,7 @@ function syncMessageContext(state = appState) {
   }
 
   chatAllRoomsButton?.classList.toggle("is-active", isAllRoomsSelected);
+  chatAllRoomsButton?.classList.toggle("is-hidden", isAllRoomsSelected);
 
   if (!chatCard) {
     return;

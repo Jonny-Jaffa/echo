@@ -426,6 +426,10 @@ select {
   color: white;
 }
 
+.message-all-button.is-hidden {
+  display: none;
+}
+
 .message-collapse-button {
   width: 30px;
   min-width: 30px;
