@@ -362,7 +362,7 @@ select {
   content: "";
   position: absolute;
   top: var(--message-scrollbar-thumb-top);
-  right: 9px;
+  right: 5px;
   z-index: 2;
   width: 6px;
   height: var(--message-scrollbar-thumb-height);
