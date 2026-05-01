@@ -353,6 +353,7 @@ select {
   grid-template-rows: auto 220px auto;
   --active-room-accent: var(--accent);
   --message-bubble-outgoing: linear-gradient(180deg, #ffffff, #f7fbfb);
+  -webkit-app-region: no-drag;
 }
 
 .message-context-bar {
@@ -445,9 +446,22 @@ select {
   display: block;
   min-height: 0;
   height: 100%;
-  overflow-y: auto;
+  overflow-y: scroll;
+  overscroll-behavior: contain;
+  touch-action: pan-y;
+  padding: 12px 8px 12px 2px;
+  -webkit-app-region: no-drag;
   scrollbar-width: thin;
   scrollbar-color: color-mix(in srgb, var(--active-room-accent) 38%, transparent) transparent;
+}
+
+.reception-message-shell .message-context-bar,
+.reception-message-shell .message-compose {
+  -webkit-app-region: no-drag;
+}
+
+.reception-message-shell .message-item + .message-item {
+  margin-top: 10px;
 }
 
 .reception-message-shell .message-list::-webkit-scrollbar {
