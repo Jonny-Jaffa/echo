@@ -428,6 +428,7 @@ select {
   background: var(--active-room-accent, #0f766e);
   color: var(--message-context-short-label-color);
   box-shadow: 8px 0 18px color-mix(in srgb, var(--active-room-accent, #0f766e) 22%, transparent);
+  font-family: "Roboto Condensed", "Arial Narrow", "Avenir Next Condensed", sans-serif;
   font-size: 20px;
   font-weight: 600;
 }
