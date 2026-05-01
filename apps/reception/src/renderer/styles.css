@@ -694,6 +694,7 @@ select {
   background: var(--row-accent, #0f766e);
   color: white;
   box-shadow: 8px 0 18px color-mix(in srgb, var(--row-accent, #0f766e) 22%, transparent);
+  font-family: "Roboto Condensed", "Arial Narrow", "Avenir Next Condensed", sans-serif;
   font-size: 17px;
   font-weight: 600;
   line-height: 1.1;
