@@ -1299,6 +1299,9 @@ app.whenReady().then(async () => {
         senderRoomId: null,
         recipientRoomIds: Array.isArray(payload.recipientRoomIds) ? payload.recipientRoomIds : [],
         sendToReception: false,
+        messageGroupKey: payload.messageGroupKey,
+        messageGroupLabel: payload.messageGroupLabel,
+        messageGroupParticipantRoomIds: payload.messageGroupParticipantRoomIds,
         text: payload.text,
         source: "reception-ui",
       }, {

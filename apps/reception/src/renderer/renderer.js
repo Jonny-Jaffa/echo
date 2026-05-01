@@ -71,6 +71,7 @@ const RECEPTION_SOUND_OPTIONS = Array.from({ length: 17 }, (_value, index) => {
 });
 const PINNED_CHAT_ROOMS_STORAGE_KEY = "pip-reception-pinned-chat-rooms";
 const CHAT_ROOM_ORDER_STORAGE_KEY = "pip-reception-chat-room-order";
+const RECEPTION_ALL_ROOMS_MESSAGE_GROUP_KEY = "reception-all-rooms";
 
 let appState = null;
 let draftConfig = null;
@@ -78,6 +79,7 @@ let lastReportedGadgetHeight = 0;
 const pendingPingRooms = new Map();
 const selectedChatRoomIds = new Set();
 const unreadChatRoomIds = new Set();
+let isAllChatRoomsThreadSelected = false;
 let pinnedChatRoomIds = loadPinnedChatRoomIds();
 let chatRoomOrderIds = loadChatRoomOrderIds();
 let isChatRecipientDrawerVisible = false;
@@ -414,12 +416,20 @@ function getRelevantChatMessages(state) {
     (message) => message?.senderType === "reception" || message?.sendToReception,
   );
 
+  if (isAllChatRoomsThreadSelected) {
+    return messages.filter((message) => isReceptionAllRoomsMessage(message, state));
+  }
+
   if (selectedChatRoomIds.size === 0) {
     return [];
   }
 
   return messages.filter((message) => {
     if (message?.senderType === "reception") {
+      if (isReceptionAllRoomsMessage(message, state)) {
+        return false;
+      }
+
       const recipientRoomIds = Array.isArray(message?.recipientRoomIds)
         ? message.recipientRoomIds.map((roomId) => String(roomId || "").trim())
         : [];
@@ -431,10 +441,31 @@ function getRelevantChatMessages(state) {
   });
 }
 
-function areAllRoomsSelected(state = appState) {
-  const roomIds = (state?.config?.rooms || []).map((room) => room.id);
+function isReceptionAllRoomsMessage(message, state = appState) {
+  if (String(message?.senderType || "").trim() !== "reception") {
+    return false;
+  }
 
-  return roomIds.length > 0 && roomIds.every((roomId) => selectedChatRoomIds.has(roomId));
+  if (String(message?.messageGroupKey || "").trim() === RECEPTION_ALL_ROOMS_MESSAGE_GROUP_KEY) {
+    return true;
+  }
+
+  const roomIds = (state?.config?.rooms || []).map((room) => String(room.id || "").trim()).filter(Boolean);
+  const recipientRoomIds = [...new Set(
+    Array.isArray(message?.recipientRoomIds)
+      ? message.recipientRoomIds.map((roomId) => String(roomId || "").trim()).filter(Boolean)
+      : [],
+  )];
+
+  return (
+    roomIds.length > 0 &&
+    recipientRoomIds.length === roomIds.length &&
+    roomIds.every((roomId) => recipientRoomIds.includes(roomId))
+  );
+}
+
+function areAllRoomsSelected(state = appState) {
+  return isAllChatRoomsThreadSelected && (state?.config?.rooms || []).length > 0;
 }
 
 function getActiveSingleChatRoom(state = appState) {
@@ -450,17 +481,15 @@ function selectChatRoom(roomId) {
     return;
   }
 
+  isAllChatRoomsThreadSelected = false;
   selectedChatRoomIds.clear();
   selectedChatRoomIds.add(roomId);
   unreadChatRoomIds.delete(roomId);
 }
 
 function selectAllChatRooms(state = appState) {
+  isAllChatRoomsThreadSelected = (state?.config?.rooms || []).length > 0;
   selectedChatRoomIds.clear();
-  (state?.config?.rooms || []).forEach((room) => {
-    selectedChatRoomIds.add(room.id);
-    unreadChatRoomIds.delete(room.id);
-  });
 }
 
 function showMessageSection() {
@@ -480,7 +509,7 @@ function syncMessageSectionVisibility() {
 function syncMessageContext(state = appState) {
   const activeRoom = getActiveSingleChatRoom(state);
   const isAllRoomsSelected = areAllRoomsSelected(state);
-  const accent = activeRoom?.color || "var(--accent)";
+  const accent = isAllRoomsSelected ? "var(--accent)" : activeRoom?.color || "var(--accent)";
   const label = isAllRoomsSelected
     ? "All rooms"
     : activeRoom
@@ -500,7 +529,9 @@ function syncMessageContext(state = appState) {
   chatCard.style.setProperty("--active-room-accent", accent);
   chatCard.style.setProperty(
     "--message-list-background",
-    activeRoom
+    isAllRoomsSelected
+      ? "linear-gradient(180deg, color-mix(in srgb, var(--accent) 10%, white), color-mix(in srgb, var(--accent) 4%, white))"
+      : activeRoom
       ? `linear-gradient(180deg, color-mix(in srgb, ${accent} 10%, white), color-mix(in srgb, ${accent} 4%, white))`
       : "linear-gradient(180deg, #edfbff, #f8fdff)",
   );
@@ -540,17 +571,20 @@ function reconcileIncomingChatMessages(nextMessages = [], previousMessages = [])
   }
 
   const hasActiveThread =
-    selectedChatRoomIds.size > 0 || Boolean(String(chatComposeInput?.value || "").trim());
+    isAllChatRoomsThreadSelected ||
+    selectedChatRoomIds.size > 0 ||
+    Boolean(String(chatComposeInput?.value || "").trim());
   const shouldAutoSelectFirstRoom =
     previousIncomingMessages.length === 0 && !hasActiveThread;
 
   if (shouldAutoSelectFirstRoom) {
+    isAllChatRoomsThreadSelected = false;
     selectedChatRoomIds.clear();
     selectedChatRoomIds.add(newIncomingRoomIds[0]);
   }
 
   newIncomingRoomIds.forEach((roomId) => {
-    if (selectedChatRoomIds.has(roomId)) {
+    if (!isAllChatRoomsThreadSelected && selectedChatRoomIds.has(roomId)) {
       unreadChatRoomIds.delete(roomId);
       return;
     }
@@ -569,6 +603,9 @@ function renderChatRecipients(state) {
       selectedChatRoomIds.delete(roomId);
     }
   }
+  if (rooms.length === 0) {
+    isAllChatRoomsThreadSelected = false;
+  }
   pinnedChatRoomIds = pinnedChatRoomIds.filter((roomId) => roomIds.includes(roomId));
   chatRoomOrderIds = [
     ...chatRoomOrderIds.filter((roomId) => roomIds.includes(roomId)),
@@ -577,8 +614,7 @@ function renderChatRecipients(state) {
   savePinnedChatRoomIds();
   saveChatRoomOrderIds();
 
-  const allRoomsSelected =
-    rooms.length > 0 && rooms.every((room) => selectedChatRoomIds.has(room.id));
+  const allRoomsSelected = areAllRoomsSelected(state);
   const orderedRooms = orderRoomsByIds(rooms, chatRoomOrderIds);
   const visibleRoomIds = [
     ...pinnedChatRoomIds,
@@ -591,11 +627,14 @@ function renderChatRecipients(state) {
   if (chatRecipientList) {
     chatRecipientList.innerHTML = visibleRooms
       .map((room) => {
-        const isUnread = unreadChatRoomIds.has(room.id) && !selectedChatRoomIds.has(room.id);
+        const isUnread =
+          unreadChatRoomIds.has(room.id) &&
+          !isAllChatRoomsThreadSelected &&
+          !selectedChatRoomIds.has(room.id);
 
         return `
           <button
-            class="message-recipient-chip ${selectedChatRoomIds.has(room.id) ? "is-selected" : ""} ${isUnread ? "is-unread" : ""}"
+            class="message-recipient-chip ${!isAllChatRoomsThreadSelected && selectedChatRoomIds.has(room.id) ? "is-selected" : ""} ${isUnread ? "is-unread" : ""}"
             data-chat-room-id="${escapeHtml(room.id)}"
             data-chat-drag-source="pinned"
             draggable="true"
@@ -624,10 +663,13 @@ function renderChatRecipients(state) {
       </div>
       ${orderedRooms.map((room) => {
         const isPinned = pinnedChatRoomIds.includes(room.id);
-        const isUnread = unreadChatRoomIds.has(room.id) && !selectedChatRoomIds.has(room.id);
+        const isUnread =
+          unreadChatRoomIds.has(room.id) &&
+          !isAllChatRoomsThreadSelected &&
+          !selectedChatRoomIds.has(room.id);
         return `
           <div
-            class="message-thread-drawer-item ${selectedChatRoomIds.has(room.id) ? "is-active" : ""} ${isUnread ? "is-unread" : ""}"
+            class="message-thread-drawer-item ${!isAllChatRoomsThreadSelected && selectedChatRoomIds.has(room.id) ? "is-active" : ""} ${isUnread ? "is-unread" : ""}"
             data-chat-room-id="${escapeHtml(room.id)}"
             data-chat-drag-source="drawer"
             draggable="true"
@@ -742,7 +784,8 @@ function syncChatComposerState() {
   }
 
   chatSendButton.disabled =
-    selectedChatRoomIds.size === 0 || !String(chatComposeInput.value || "").trim();
+    (!isAllChatRoomsThreadSelected && selectedChatRoomIds.size === 0) ||
+    !String(chatComposeInput.value || "").trim();
   chatComposeInput.placeholder = areAllRoomsSelected()
     ? "message all rooms"
     : getActiveSingleChatRoom()?.name
@@ -1400,14 +1443,20 @@ chatAllRoomsButton?.addEventListener("click", () => {
 
 chatSendButton?.addEventListener("click", async () => {
   const text = String(chatComposeInput?.value || "").trim();
+  const recipientRoomIds = isAllChatRoomsThreadSelected
+    ? (appState?.config?.rooms || []).map((room) => room.id)
+    : [...selectedChatRoomIds];
 
-  if (!text || selectedChatRoomIds.size === 0) {
+  if (!text || recipientRoomIds.length === 0) {
     syncChatComposerState();
     return;
   }
 
   const result = await window.pip.sendChatMessage({
-    recipientRoomIds: [...selectedChatRoomIds],
+    recipientRoomIds,
+    messageGroupKey: isAllChatRoomsThreadSelected ? RECEPTION_ALL_ROOMS_MESSAGE_GROUP_KEY : "",
+    messageGroupLabel: isAllChatRoomsThreadSelected ? "All rooms" : "",
+    messageGroupParticipantRoomIds: isAllChatRoomsThreadSelected ? recipientRoomIds : [],
     text,
   });
 
@@ -1449,17 +1498,11 @@ document.body.addEventListener("click", (event) => {
   const chatAllChip = target.closest("[data-chat-all]");
 
   if (chatAllChip) {
-    const roomIds = (appState?.config?.rooms || []).map((room) => room.id);
-    const allSelected =
-      roomIds.length > 0 && roomIds.every((roomId) => selectedChatRoomIds.has(roomId));
-
-    selectedChatRoomIds.clear();
-
-    if (!allSelected) {
-      roomIds.forEach((roomId) => {
-        selectedChatRoomIds.add(roomId);
-      });
-      unreadChatRoomIds.clear();
+    if (isAllChatRoomsThreadSelected) {
+      isAllChatRoomsThreadSelected = false;
+      selectedChatRoomIds.clear();
+    } else {
+      selectAllChatRooms(appState);
     }
 
     renderChatRecipients(appState);
@@ -1477,6 +1520,7 @@ document.body.addEventListener("click", (event) => {
       return;
     }
 
+    isAllChatRoomsThreadSelected = false;
     if (selectedChatRoomIds.has(roomId)) {
       selectedChatRoomIds.delete(roomId);
     } else {
