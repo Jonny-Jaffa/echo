@@ -470,11 +470,14 @@ select {
 
 .reception-message-shell .message-list::-webkit-scrollbar-track {
   background: transparent;
+  margin-block: 16px;
 }
 
 .reception-message-shell .message-list::-webkit-scrollbar-thumb {
+  border: 1px solid transparent;
   border-radius: 999px;
   background: color-mix(in srgb, var(--active-room-accent) 38%, transparent);
+  background-clip: content-box;
 }
 
 .reception-message-shell .message-compose {
