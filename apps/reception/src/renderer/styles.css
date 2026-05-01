@@ -350,6 +350,7 @@ select {
   padding: 0;
   gap: 0;
   row-gap: 0;
+  grid-template-rows: auto 220px auto;
   --active-room-accent: var(--accent);
   --message-bubble-outgoing: linear-gradient(180deg, #ffffff, #f7fbfb);
 }
@@ -441,6 +442,22 @@ select {
 
 .reception-message-shell .message-list {
   border-radius: 0 20px 20px 20px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in srgb, var(--active-room-accent) 38%, transparent) transparent;
+}
+
+.reception-message-shell .message-list::-webkit-scrollbar {
+  width: 6px;
+}
+
+.reception-message-shell .message-list::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.reception-message-shell .message-list::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--active-room-accent) 38%, transparent);
 }
 
 .reception-message-shell .message-compose {
