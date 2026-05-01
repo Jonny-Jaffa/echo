@@ -412,7 +412,7 @@ select {
   min-width: 0;
   background: transparent;
   color: var(--active-room-accent);
-  font-size: 14px;
+  font-size: 15px;
   font-weight: 600;
   white-space: nowrap;
 }
@@ -428,7 +428,7 @@ select {
   background: var(--active-room-accent, #0f766e);
   color: var(--message-context-short-label-color);
   box-shadow: 8px 0 18px color-mix(in srgb, var(--active-room-accent, #0f766e) 22%, transparent);
-  font-size: 22px;
+  font-size: 20px;
   font-weight: 600;
 }
 
