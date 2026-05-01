@@ -515,9 +515,15 @@ function syncMessageContext(state = appState) {
     : activeRoom
       ? activeRoom.name
       : "Select a room";
+  const shortLabel = isAllRoomsSelected
+    ? "All"
+    : activeRoom
+      ? getRoomShortLabel(activeRoom)
+      : "";
 
   if (chatContextLabel) {
     chatContextLabel.textContent = label;
+    chatContextLabel.dataset.shortLabel = shortLabel;
   }
 
   chatAllRoomsButton?.classList.toggle("is-active", isAllRoomsSelected);
@@ -529,6 +535,15 @@ function syncMessageContext(state = appState) {
 
   chatCard.style.setProperty("--active-room-accent", accent);
   chatCard.style.setProperty("--message-context-label-color", isAllRoomsSelected ? "var(--text)" : "white");
+  chatCard.style.setProperty("--message-context-short-label-color", isAllRoomsSelected ? "var(--text)" : "white");
+  chatCard.style.setProperty(
+    "--message-context-strip-background",
+    isAllRoomsSelected
+      ? "linear-gradient(90deg, #e7eaea, #f7f8f8)"
+      : activeRoom
+      ? `linear-gradient(90deg, color-mix(in srgb, ${accent} 15%, white), color-mix(in srgb, ${accent} 4%, white) 72%, #ffffff)`
+      : "linear-gradient(90deg, #edfbff, #ffffff)",
+  );
   chatCard.style.setProperty(
     "--message-list-background",
     isAllRoomsSelected
