@@ -380,7 +380,7 @@ select {
   align-items: stretch;
   justify-content: space-between;
   gap: 0;
-  min-height: 54px;
+  min-height: 44px;
   border-radius: 20px 20px 0 0;
   background: var(--message-context-strip-background);
   overflow: hidden;
@@ -403,7 +403,7 @@ select {
 }
 
 .message-context-label {
-  min-height: 54px;
+  min-height: 44px;
   padding: 0 14px 0 0;
   border-radius: 0;
   display: inline-flex;
@@ -411,9 +411,9 @@ select {
   gap: 14px;
   min-width: 0;
   background: transparent;
-  color: var(--text);
-  font-size: 13px;
-  font-weight: 700;
+  color: var(--active-room-accent);
+  font-size: 14px;
+  font-weight: 600;
   white-space: nowrap;
 }
 
