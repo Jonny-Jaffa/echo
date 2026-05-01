@@ -672,6 +672,7 @@ function renderChatMessages(state) {
 
   if (messages.length === 0) {
     chatMessageList.innerHTML = "";
+    updateChatScrollbar();
     return;
   }
 
@@ -699,8 +700,40 @@ function renderChatMessages(state) {
   if (wasPinnedToBottom) {
     requestAnimationFrame(() => {
       chatMessageList.scrollTop = chatMessageList.scrollHeight;
+      updateChatScrollbar();
     });
+  } else {
+    requestAnimationFrame(updateChatScrollbar);
   }
+}
+
+function updateChatScrollbar() {
+  if (!chatCard || !chatMessageList) {
+    return;
+  }
+
+  const maxScroll = chatMessageList.scrollHeight - chatMessageList.clientHeight;
+  const hasScrollbar = maxScroll > 1 && chatMessageList.clientHeight > 0;
+  chatCard.classList.toggle("has-message-scrollbar", hasScrollbar);
+
+  if (!hasScrollbar) {
+    return;
+  }
+
+  const shellRect = chatCard.getBoundingClientRect();
+  const listRect = chatMessageList.getBoundingClientRect();
+  const inset = 21;
+  const trackHeight = Math.max(1, chatMessageList.clientHeight - inset * 2);
+  const thumbHeight = Math.max(
+    34,
+    Math.round(trackHeight * (chatMessageList.clientHeight / chatMessageList.scrollHeight))
+  );
+  const maxThumbOffset = Math.max(0, trackHeight - thumbHeight);
+  const thumbOffset = maxScroll > 0 ? (chatMessageList.scrollTop / maxScroll) * maxThumbOffset : 0;
+  const thumbTop = listRect.top - shellRect.top + inset + thumbOffset;
+
+  chatCard.style.setProperty("--message-scrollbar-thumb-height", `${Math.round(thumbHeight)}px`);
+  chatCard.style.setProperty("--message-scrollbar-thumb-top", `${Math.round(thumbTop)}px`);
 }
 
 function syncChatComposerState() {
@@ -1337,6 +1370,8 @@ chatComposeInput?.addEventListener("input", () => {
   syncChatComposerState();
 });
 
+chatMessageList?.addEventListener("scroll", updateChatScrollbar, { passive: true });
+
 chatAllHeaderButton?.addEventListener("click", () => {
   selectAllChatRooms(appState);
   showMessageSection();
@@ -1547,6 +1582,7 @@ window.pip.onPingCleared((payload) => {
 });
 
 window.addEventListener("resize", () => {
+  updateChatScrollbar();
   reportGadgetHeight();
 });
 

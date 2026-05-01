@@ -353,7 +353,22 @@ select {
   grid-template-rows: auto 220px auto;
   --active-room-accent: var(--accent);
   --message-bubble-outgoing: linear-gradient(180deg, #ffffff, #f7fbfb);
+  --message-scrollbar-thumb-height: 0px;
+  --message-scrollbar-thumb-top: 0px;
   -webkit-app-region: no-drag;
+}
+
+.message-shell.reception-message-shell.has-message-scrollbar::after {
+  content: "";
+  position: absolute;
+  top: var(--message-scrollbar-thumb-top);
+  right: 9px;
+  z-index: 2;
+  width: 6px;
+  height: var(--message-scrollbar-thumb-height);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--active-room-accent) 38%, transparent);
+  pointer-events: none;
 }
 
 .message-context-bar {
@@ -451,8 +466,7 @@ select {
   touch-action: pan-y;
   padding: 12px 8px 12px 2px;
   -webkit-app-region: no-drag;
-  scrollbar-width: thin;
-  scrollbar-color: color-mix(in srgb, var(--active-room-accent) 38%, transparent) transparent;
+  scrollbar-width: none;
 }
 
 .reception-message-shell .message-context-bar,
@@ -465,25 +479,8 @@ select {
 }
 
 .reception-message-shell .message-list::-webkit-scrollbar {
-  width: 6px;
-}
-
-.reception-message-shell .message-list::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-.reception-message-shell .message-list::-webkit-scrollbar-button:vertical:start,
-.reception-message-shell .message-list::-webkit-scrollbar-button:vertical:end {
-  display: block;
-  height: 21px;
-  background: transparent;
-}
-
-.reception-message-shell .message-list::-webkit-scrollbar-thumb {
-  border: 1px solid transparent;
-  border-radius: 999px;
-  background: color-mix(in srgb, var(--active-room-accent) 38%, transparent);
-  background-clip: content-box;
+  width: 0;
+  height: 0;
 }
 
 .reception-message-shell .message-compose {
