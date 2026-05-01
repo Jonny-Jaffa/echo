@@ -353,6 +353,7 @@ select {
   row-gap: 0;
   grid-template-rows: auto 220px auto;
   --active-room-accent: var(--accent);
+  --message-context-label-color: white;
   --message-bubble-outgoing: linear-gradient(180deg, #ffffff, #f7fbfb);
   --message-scrollbar-thumb-height: 0px;
   --message-scrollbar-thumb-top: 0px;
@@ -401,7 +402,7 @@ select {
   display: inline-flex;
   align-items: center;
   background: var(--active-room-accent);
-  color: white;
+  color: var(--message-context-label-color);
   font-size: 13px;
   font-weight: 700;
   white-space: nowrap;

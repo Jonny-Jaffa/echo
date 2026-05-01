@@ -509,7 +509,7 @@ function syncMessageSectionVisibility() {
 function syncMessageContext(state = appState) {
   const activeRoom = getActiveSingleChatRoom(state);
   const isAllRoomsSelected = areAllRoomsSelected(state);
-  const accent = isAllRoomsSelected ? "var(--accent)" : activeRoom?.color || "var(--accent)";
+  const accent = isAllRoomsSelected ? "#d9dddd" : activeRoom?.color || "var(--accent)";
   const label = isAllRoomsSelected
     ? "All rooms"
     : activeRoom
@@ -527,10 +527,11 @@ function syncMessageContext(state = appState) {
   }
 
   chatCard.style.setProperty("--active-room-accent", accent);
+  chatCard.style.setProperty("--message-context-label-color", isAllRoomsSelected ? "var(--text)" : "white");
   chatCard.style.setProperty(
     "--message-list-background",
     isAllRoomsSelected
-      ? "linear-gradient(180deg, color-mix(in srgb, var(--accent) 10%, white), color-mix(in srgb, var(--accent) 4%, white))"
+      ? "linear-gradient(180deg, #f1f3f3, #fafafa)"
       : activeRoom
       ? `linear-gradient(180deg, color-mix(in srgb, ${accent} 10%, white), color-mix(in srgb, ${accent} 4%, white))`
       : "linear-gradient(180deg, #edfbff, #f8fdff)",
