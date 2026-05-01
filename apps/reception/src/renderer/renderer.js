@@ -534,7 +534,7 @@ function syncMessageContext(state = appState) {
   }
 
   chatCard.style.setProperty("--active-room-accent", accent);
-  chatCard.style.setProperty("--message-context-label-color", isAllRoomsSelected ? "var(--text)" : "white");
+  chatCard.style.setProperty("--message-context-label-color", isAllRoomsSelected ? "#3f4444" : accent);
   chatCard.style.setProperty("--message-context-short-label-color", isAllRoomsSelected ? "var(--text)" : "white");
   chatCard.style.setProperty(
     "--message-context-strip-background",
