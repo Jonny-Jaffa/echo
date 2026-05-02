@@ -521,7 +521,7 @@ select {
 
 .reception-message-shell .message-compose-input:focus {
   border-color: var(--active-room-accent);
-  box-shadow: 0 0 0 2px color-mix(in srgb, var(--active-room-accent) 24%, transparent);
+  box-shadow: none;
 }
 
 .reception-message-shell .message-item.is-outgoing .message-item-text {

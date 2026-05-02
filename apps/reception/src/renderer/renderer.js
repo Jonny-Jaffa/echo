@@ -1433,6 +1433,13 @@ chatComposeInput?.addEventListener("input", () => {
 chatMessageList?.addEventListener("scroll", updateChatScrollbar, { passive: true });
 
 chatAllHeaderButton?.addEventListener("click", () => {
+  if (isMessageSectionVisible && areAllRoomsSelected(appState)) {
+    hideMessageSection();
+    renderAlertList(appState);
+    reportGadgetHeight();
+    return;
+  }
+
   selectAllChatRooms(appState);
   showMessageSection();
   renderAlertList(appState);
