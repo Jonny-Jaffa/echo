@@ -420,12 +420,13 @@ select {
 .message-context-label::before {
   content: attr(data-short-label);
   align-self: stretch;
-  width: 66px;
+  width: 62px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
   background: var(--active-room-accent, #0f766e);
+  border-radius: 0 2px 2px 0;
   color: var(--message-context-short-label-color);
   box-shadow: 8px 0 18px color-mix(in srgb, var(--active-room-accent, #0f766e) 22%, transparent);
   font-family: "Roboto Condensed", "Arial Narrow", "Avenir Next Condensed", sans-serif;
