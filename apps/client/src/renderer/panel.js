@@ -1035,6 +1035,10 @@ function getIncomingMessageThreadKey(message) {
   const senderType = String(message?.senderType || "").trim();
   const senderRoomId = String(message?.senderRoomId || "").trim();
 
+  if (isAllRoomsMessage(message)) {
+    return "all";
+  }
+
   if (senderType === "reception") {
     return "reception";
   }
@@ -1173,7 +1177,7 @@ function getObservedMessageGroupThreads(currentRoomId) {
 
     const messageGroupKey = String(message?.messageGroupKey || "").trim();
 
-    if (!messageGroupKey) {
+    if (!messageGroupKey || isReceptionAllRoomsMessage(message)) {
       return;
     }
 
@@ -1216,7 +1220,7 @@ function isMessageInCurrentRoomContext(message, currentRoomId) {
 
 function isAllRoomsMessage(message) {
   if (String(message?.senderType || "").trim() !== "room") {
-    return false;
+    return isReceptionAllRoomsMessage(message);
   }
 
   const senderRoomId = String(message?.senderRoomId || "").trim();
@@ -1236,6 +1240,32 @@ function isAllRoomsMessage(message) {
     .sort();
 
   return recipientRoomIds.join("|") === allOtherRoomIds.join("|");
+}
+
+function isReceptionAllRoomsMessage(message) {
+  if (String(message?.senderType || "").trim() !== "reception") {
+    return false;
+  }
+
+  if (String(message?.messageGroupKey || "").trim() === "reception-all-rooms") {
+    return true;
+  }
+
+  const roomIds = (configState?.rooms || [])
+    .map((room) => String(room?.id || "").trim())
+    .filter(Boolean)
+    .sort();
+  const recipientRoomIds = [...new Set(
+    Array.isArray(message?.recipientRoomIds)
+      ? message.recipientRoomIds.map((roomId) => String(roomId || "").trim()).filter(Boolean)
+      : [],
+  )].sort();
+
+  return (
+    roomIds.length > 0 &&
+    recipientRoomIds.length === roomIds.length &&
+    roomIds.every((roomId) => recipientRoomIds.includes(roomId))
+  );
 }
 
 function isMessageInThread(message, threadKey, currentRoomId) {
