@@ -547,6 +547,7 @@ select {
 }
 
 .reception-message-shell .message-send-button:not(:disabled) {
+  border-color: var(--active-room-accent);
   color: var(--active-room-accent);
 }
 
