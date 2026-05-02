@@ -511,7 +511,7 @@ function syncMessageContext(state = appState) {
   const isAllRoomsSelected = areAllRoomsSelected(state);
   const accent = isAllRoomsSelected ? "#d9dddd" : activeRoom?.color || "var(--accent)";
   const label = isAllRoomsSelected
-    ? "All rooms"
+    ? "All Rooms"
     : activeRoom
       ? activeRoom.name
       : "Select a room";
@@ -674,7 +674,7 @@ function renderChatRecipients(state) {
           type="button"
           ${rooms.length === 0 ? "disabled" : ""}
         >
-          All rooms
+          All Rooms
         </button>
         <span></span>
       </div>
@@ -804,7 +804,7 @@ function syncChatComposerState() {
     (!isAllChatRoomsThreadSelected && selectedChatRoomIds.size === 0) ||
     !String(chatComposeInput.value || "").trim();
   chatComposeInput.placeholder = areAllRoomsSelected()
-    ? "message all rooms"
+    ? "message All Rooms"
     : getActiveSingleChatRoom()?.name
       ? `message ${getActiveSingleChatRoom().name.toLowerCase()}`
       : "select a room";
@@ -1479,7 +1479,7 @@ chatSendButton?.addEventListener("click", async () => {
   const result = await window.pip.sendChatMessage({
     recipientRoomIds,
     messageGroupKey: isAllChatRoomsThreadSelected ? RECEPTION_ALL_ROOMS_MESSAGE_GROUP_KEY : "",
-    messageGroupLabel: isAllChatRoomsThreadSelected ? "All rooms" : "",
+    messageGroupLabel: isAllChatRoomsThreadSelected ? "All Rooms" : "",
     messageGroupParticipantRoomIds: isAllChatRoomsThreadSelected ? recipientRoomIds : [],
     text,
   });
