@@ -419,7 +419,7 @@ select {
 }
 
 .message-context-label::before {
-  content: attr(data-short-label);
+  content: "";
   align-self: stretch;
   width: 62px;
   display: inline-flex;
@@ -428,11 +428,24 @@ select {
   flex-shrink: 0;
   background: var(--active-room-accent, #0f766e);
   border-radius: 0 2px 2px 0;
-  color: var(--message-context-short-label-color);
   box-shadow: 8px 0 18px color-mix(in srgb, var(--active-room-accent, #0f766e) 22%, transparent);
-  font-family: "Roboto Condensed", "Arial Narrow", "Avenir Next Condensed", sans-serif;
-  font-size: 20px;
-  font-weight: 600;
+}
+
+.message-context-label::after {
+  content: "";
+  position: absolute;
+  left: 20px;
+  width: 22px;
+  height: 22px;
+  background-color: white;
+  -webkit-mask-image: var(--icon-messages);
+  mask-image: var(--icon-messages);
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  -webkit-mask-position: center;
+  mask-position: center;
+  -webkit-mask-size: contain;
+  mask-size: contain;
 }
 
 .message-all-button {
