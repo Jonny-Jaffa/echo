@@ -949,7 +949,7 @@ function getAppIcon() {
 }
 
 function getBrandLogoDataUrl() {
-  const logoPath = path.join(__dirname, "assets", "patient-pip-logo-colour.png");
+  const logoPath = path.join(__dirname, "assets", "pip-logo-colour.png");
 
   if (!fs.existsSync(logoPath)) {
     return "";
