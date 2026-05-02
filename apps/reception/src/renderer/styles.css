@@ -412,6 +412,7 @@ select {
   min-width: 0;
   background: transparent;
   color: var(--message-context-label-color);
+  font-family: "Roboto Condensed", "Arial Narrow", "Avenir Next Condensed", sans-serif;
   font-size: 15px;
   font-weight: 600;
   white-space: nowrap;
