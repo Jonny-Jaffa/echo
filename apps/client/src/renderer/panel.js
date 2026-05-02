@@ -1495,6 +1495,7 @@ function syncMessageComposerState() {
     Boolean(getCurrentMessageRoomId());
 
   messageSendButton.disabled = !canSend;
+  messageSendButton.classList.toggle("is-ready-to-send", canSend);
 }
 
 function getIncomingMessageBubbleColor(message) {

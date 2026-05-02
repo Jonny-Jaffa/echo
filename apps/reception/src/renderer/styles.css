@@ -556,7 +556,8 @@ select {
   transform: translate(-1px, 1px);
 }
 
-.reception-message-shell .message-send-button:not(:disabled) {
+.reception-message-shell .message-send-button:not(:disabled),
+.reception-message-shell .message-send-button.is-ready-to-send {
   border-color: var(--active-room-accent);
   color: var(--active-room-accent);
 }

@@ -1506,7 +1506,8 @@ body[data-window-view="main"][data-panel-mode="both"] .room-message-shell {
   transform: translate(-1px, 1px);
 }
 
-.room-message-shell .message-send-button:not(:disabled) {
+.room-message-shell .message-send-button:not(:disabled),
+.room-message-shell .message-send-button.is-ready-to-send {
   border-color: var(--active-room-accent);
   color: var(--active-room-accent);
 }

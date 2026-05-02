@@ -831,9 +831,13 @@ function syncChatComposerState() {
     return;
   }
 
-  chatSendButton.disabled =
+  const canSend = !(
     (!isAllChatRoomsThreadSelected && selectedChatRoomIds.size === 0) ||
-    !String(chatComposeInput.value || "").trim();
+    !String(chatComposeInput.value || "").trim()
+  );
+
+  chatSendButton.disabled = !canSend;
+  chatSendButton.classList.toggle("is-ready-to-send", canSend);
   chatComposeInput.placeholder = areAllRoomsSelected()
     ? "message all rooms"
     : getActiveSingleChatRoom()?.name
