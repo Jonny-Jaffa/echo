@@ -845,12 +845,12 @@ function emitChatMessages() {
   }
 }
 
-function resizeForDisplayMode() {
+function resizeForDisplayMode(options = {}) {
   if (!mainWindow || !configState) {
     return;
   }
 
-  const bounds = getWindowBounds(configState, mainWindow.getBounds());
+  const bounds = getWindowBounds(configState, mainWindow.getBounds(), options);
 
   mainWindow.setAlwaysOnTop(Boolean(configState.display.alwaysOnTop));
   mainWindow.setResizable(false);
@@ -858,7 +858,7 @@ function resizeForDisplayMode() {
   mainWindow.setBounds(bounds, true);
 }
 
-function getWindowBounds(config, currentBounds = null) {
+function getWindowBounds(config, currentBounds = null, options = {}) {
   const savedWindowPosition = getSavedWindowPosition(config);
   const referenceBounds = currentBounds || (
     savedWindowPosition
@@ -895,10 +895,14 @@ function getWindowBounds(config, currentBounds = null) {
 
   const maxX = workArea.x + workArea.width - width;
   const maxY = workArea.y + workArea.height - height;
+  const preferredY =
+    options.preserveBottom && !config.display.minimized
+      ? referenceBounds.y + referenceBounds.height - height
+      : referenceBounds.y;
 
   return {
     x: Math.min(Math.max(referenceBounds.x, workArea.x), Math.max(workArea.x, maxX)),
-    y: Math.min(Math.max(referenceBounds.y, workArea.y), Math.max(workArea.y, maxY)),
+    y: Math.min(Math.max(preferredY, workArea.y), Math.max(workArea.y, maxY)),
     width,
     height,
   };
@@ -1356,7 +1360,7 @@ app.whenReady().then(async () => {
     }
 
     measuredGadgetHeight = nextHeight;
-    resizeForDisplayMode();
+    resizeForDisplayMode({ preserveBottom: true });
 
     return { ok: true, height: measuredGadgetHeight };
   });
