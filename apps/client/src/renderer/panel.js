@@ -1467,6 +1467,19 @@ function syncMessageComposerState() {
   messageSendButton.disabled = !canSend;
 }
 
+function getIncomingMessageBubbleColor(message) {
+  const senderType = String(message?.senderType || "").trim();
+
+  if (senderType === "reception") {
+    return "#000000";
+  }
+
+  const senderRoomId = String(message?.senderRoomId || "").trim();
+  const senderRoom = configState?.rooms?.find((room) => room.id === senderRoomId);
+
+  return senderRoom?.color || "#418191";
+}
+
 function renderChatMessages() {
   if (!messageList) {
     return;
@@ -1483,9 +1496,12 @@ function renderChatMessages() {
   messageList.innerHTML = messages
     .map((message) => {
       const isOutgoing = String(message?.senderRoomId || "").trim() === currentRoomId;
+      const incomingStyle = isOutgoing
+        ? ""
+        : ` style="--message-bubble-incoming: ${escapeHtml(getIncomingMessageBubbleColor(message))}; --message-bubble-text: white; --message-bubble-time: #ededed;"`;
 
       return `
-        <article class="message-item ${isOutgoing ? "is-outgoing" : "is-incoming"}">
+        <article class="message-item ${isOutgoing ? "is-outgoing" : "is-incoming"}"${incomingStyle}>
           <div class="message-bubble">
             <div class="message-bubble-body">
               <p class="message-item-text">${escapeHtml(message.text || "")}</p>
