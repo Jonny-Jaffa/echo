@@ -93,12 +93,11 @@ body[data-window-view="main"] .panel-card {
 }
 
 body[data-window-view="main"][data-quick-actions-visible="true"] .panel-card {
-  grid-template-rows: auto auto auto minmax(0, 1fr);
+  grid-template-rows: auto auto minmax(0, 1fr);
 }
 
 body[data-window-view="main"] .status-row,
 body[data-window-view="main"] .quick-actions,
-body[data-window-view="main"] .message-thread-bar,
 body[data-window-view="main"] .message-compose {
   padding-left: 10px;
   padding-right: 10px;
@@ -831,16 +830,6 @@ body[data-window-view="settings"] .settings-content {
   display: none;
 }
 
-.panel-section-divider {
-  height: 1px;
-  margin: 0 10px;
-  background: var(--line);
-}
-
-.panel-section-divider.hidden {
-  display: none;
-}
-
 .message-shell {
   display: grid;
   gap: 10px;
@@ -855,6 +844,8 @@ body[data-window-view="settings"] .settings-content {
   gap: 0;
   row-gap: 0;
   grid-template-rows: auto auto minmax(220px, 1fr) auto;
+  padding-left: 7px;
+  padding-right: 7px;
   --active-room-accent: var(--accent);
   --message-context-label-color: var(--accent);
   --message-context-short-label-color: white;
@@ -948,6 +939,8 @@ body[data-window-view="settings"] .settings-content {
   display: flex;
   min-height: 34px;
   margin: 0 0 10px;
+  padding-left: 0;
+  padding-right: 0;
 }
 
 .room-message-shell .message-thread-bar.hidden {
@@ -1244,21 +1237,30 @@ body[data-window-view="settings"] .settings-content {
 }
 
 .room-message-shell .message-thread-chip {
-  border-color: color-mix(in srgb, var(--thread-accent, var(--accent)) 35%, var(--line));
-  background: color-mix(in srgb, var(--thread-accent, var(--accent)) 10%, white);
-  color: var(--text);
+  border: 0;
+  background: var(--thread-accent, var(--accent));
+  color: white;
   min-height: 32px;
   padding: 5px 12px;
 }
 
 .room-message-shell .message-thread-chip.is-active {
-  border-color: transparent;
+  border: 0;
   background: var(--thread-accent, var(--accent));
   color: white;
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--thread-accent, var(--accent)) 28%, transparent);
 }
 
+.room-message-shell .message-thread-chip.is-reception,
+.room-message-shell .message-thread-chip.is-all-rooms {
+  background: linear-gradient(180deg, #ffffff, #eef1f1);
+  color: var(--text);
+}
+
+.room-message-shell .message-thread-chip.is-reception.is-active,
 .room-message-shell .message-thread-chip.is-all-rooms.is-active {
   color: var(--text);
+  box-shadow: 0 0 0 2px rgba(16, 35, 31, 0.12);
 }
 
 .message-thread-dot {
@@ -1474,6 +1476,8 @@ body[data-window-view="settings"] .settings-content {
 
 .room-message-shell .message-compose {
   margin-top: 10px;
+  padding-left: 0;
+  padding-right: 0;
 }
 
 .room-message-shell .message-compose-input:focus {

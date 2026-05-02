@@ -15,7 +15,6 @@ const quickActionsToggleButton = document.querySelector("#quick-actions-toggle-b
 const panelDisplayModeMenu = document.querySelector("#panel-display-mode-menu");
 const quickActions = document.querySelector("#quick-actions");
 const quickActionGrid = document.querySelector("#quick-action-grid");
-const panelSectionDivider = document.querySelector("#panel-section-divider");
 const messageShell = document.querySelector(".message-shell");
 const messageCollapseButton = document.querySelector("#message-collapse-button");
 const messageContextLabel = document.querySelector("#message-context-label");
@@ -717,7 +716,6 @@ async function setPanelDisplayMode(mode, options = {}) {
   document.body.dataset.panelMode = panelDisplayMode;
   document.body.dataset.quickActionsVisible = areQuickActionsVisible ? "true" : "false";
   quickActions?.classList.toggle("hidden", !areQuickActionsVisible);
-  panelSectionDivider?.classList.toggle("hidden", panelDisplayMode !== "both");
   messageShell?.classList.toggle("hidden", !showMessages);
 
   if (!showMessages) {
@@ -1383,7 +1381,7 @@ function renderMessageThreads() {
   messageThreadList.innerHTML = orderedThreads
     .map((thread) => `
       <button
-        class="message-thread-chip ${thread.key === activeMessageThreadKey ? "is-active" : ""} ${thread.key === "all" ? "is-all-rooms" : ""}"
+        class="message-thread-chip ${thread.key === activeMessageThreadKey ? "is-active" : ""} ${thread.key === "reception" ? "is-reception" : ""} ${thread.key === "all" ? "is-all-rooms" : ""}"
         style="--thread-accent: ${escapeHtml(getMessageThreadAccent(thread))};"
         data-message-thread-key="${escapeHtml(thread.key)}"
         data-message-thread-drag-source="threads"

@@ -7,7 +7,7 @@ const { pathToFileURL } = require("node:url");
 const { app, BrowserWindow, ipcMain, Menu, Tray, nativeImage } = require("electron");
 
 const DISCOVERY_PORT = 3210;
-const SURGERY_WINDOW_WIDTH = 366;
+const SURGERY_WINDOW_WIDTH = 373;
 const SURGERY_SETTINGS_WINDOW_WIDTH = 780;
 const SURGERY_WINDOW_HEIGHT = 420;
 const SURGERY_WINDOW_BUTTONS_HEIGHT = 238;
