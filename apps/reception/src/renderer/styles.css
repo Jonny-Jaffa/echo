@@ -768,6 +768,14 @@ select {
   width: 44px;
 }
 
+.alert-row .confirm-cluster {
+  transform: translateX(2px);
+}
+
+.alert-row .confirm-cluster .room-alert-count {
+  transform: translateX(2px);
+}
+
 .compact-confirm-cluster {
   flex-shrink: 0;
 }
