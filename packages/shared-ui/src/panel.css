@@ -560,3 +560,8 @@
   opacity: 0.5;
   cursor: default;
 }
+
+.message-send-button.is-ready-to-send {
+  opacity: 1;
+  cursor: pointer;
+}

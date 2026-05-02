@@ -79,6 +79,7 @@ let lastReportedGadgetHeight = 0;
 const pendingPingRooms = new Map();
 const selectedChatRoomIds = new Set();
 const unreadChatRoomIds = new Set();
+let hasUnreadAllRoomsMessage = false;
 let isAllChatRoomsThreadSelected = false;
 let pinnedChatRoomIds = loadPinnedChatRoomIds();
 let chatRoomOrderIds = loadChatRoomOrderIds();
@@ -521,6 +522,7 @@ function selectChatRoom(roomId) {
 function selectAllChatRooms(state = appState) {
   isAllChatRoomsThreadSelected = (state?.config?.rooms || []).length > 0;
   selectedChatRoomIds.clear();
+  hasUnreadAllRoomsMessage = false;
 }
 
 function showMessageSection() {
@@ -559,6 +561,8 @@ function syncMessageContext(state = appState) {
 
   chatAllRoomsButton?.classList.toggle("is-active", isAllRoomsSelected);
   chatAllRoomsButton?.classList.toggle("is-hidden", isAllRoomsSelected);
+  chatAllRoomsButton?.classList.toggle("is-unread", hasUnreadAllRoomsMessage && !isAllRoomsSelected);
+  chatAllHeaderButton?.classList.toggle("is-unread", hasUnreadAllRoomsMessage && !isAllRoomsSelected);
 
   if (!chatCard) {
     return;
@@ -609,12 +613,14 @@ function getChatMessageKey(message) {
 function reconcileIncomingChatMessages(nextMessages = [], previousMessages = []) {
   const previousMessageKeys = new Set(previousMessages.map(getChatMessageKey));
   const previousIncomingMessages = previousMessages.filter((message) => getIncomingChatRoomId(message));
-  const newIncomingRoomIds = nextMessages
-    .filter((message) => !previousMessageKeys.has(getChatMessageKey(message)))
+  const newMessages = nextMessages.filter((message) => !previousMessageKeys.has(getChatMessageKey(message)));
+  const hasNewAllRoomsMessage = newMessages.some((message) => isRoomAllRoomsMessage(message, appState));
+  const newIncomingRoomIds = newMessages
+    .filter((message) => !isRoomAllRoomsMessage(message, appState))
     .map(getIncomingChatRoomId)
     .filter(Boolean);
 
-  if (newIncomingRoomIds.length === 0) {
+  if (!hasNewAllRoomsMessage && newIncomingRoomIds.length === 0) {
     return [];
   }
 
@@ -623,12 +629,22 @@ function reconcileIncomingChatMessages(nextMessages = [], previousMessages = [])
     selectedChatRoomIds.size > 0 ||
     Boolean(String(chatComposeInput?.value || "").trim());
   const shouldAutoSelectFirstRoom =
-    previousIncomingMessages.length === 0 && !hasActiveThread;
+    newIncomingRoomIds.length > 0 &&
+    previousIncomingMessages.length === 0 &&
+    !hasActiveThread;
 
   if (shouldAutoSelectFirstRoom) {
     isAllChatRoomsThreadSelected = false;
     selectedChatRoomIds.clear();
     selectedChatRoomIds.add(newIncomingRoomIds[0]);
+  }
+
+  if (hasNewAllRoomsMessage) {
+    if (isAllChatRoomsThreadSelected) {
+      hasUnreadAllRoomsMessage = false;
+    } else {
+      hasUnreadAllRoomsMessage = true;
+    }
   }
 
   newIncomingRoomIds.forEach((roomId) => {
@@ -640,7 +656,7 @@ function reconcileIncomingChatMessages(nextMessages = [], previousMessages = [])
     unreadChatRoomIds.add(roomId);
   });
 
-  return newIncomingRoomIds;
+  return hasNewAllRoomsMessage ? [...newIncomingRoomIds, RECEPTION_ALL_ROOMS_MESSAGE_GROUP_KEY] : newIncomingRoomIds;
 }
 
 function renderChatRecipients(state) {

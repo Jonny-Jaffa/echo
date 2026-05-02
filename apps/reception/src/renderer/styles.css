@@ -313,6 +313,18 @@ select {
   --icon-size: 16px;
 }
 
+.message-all-header-button.is-unread::after {
+  content: "";
+  position: absolute;
+  right: 6px;
+  top: 6px;
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+  background: var(--field-focus);
+  box-shadow: 0 0 0 2px white;
+}
+
 .minimize-window-button::before {
   --button-icon: var(--icon-minimize);
   --icon-size: 16px;
@@ -457,6 +469,17 @@ select {
   font-size: 13px;
   cursor: pointer;
   font-weight: 600;
+}
+
+.message-all-button.is-unread::after {
+  content: "";
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  margin-left: 6px;
+  border-radius: 999px;
+  background: var(--field-focus);
+  box-shadow: 0 0 0 2px white;
 }
 
 .message-all-button.is-active {
