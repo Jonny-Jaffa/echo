@@ -437,7 +437,7 @@ select {
   left: 20px;
   width: 22px;
   height: 22px;
-  background-color: white;
+  background-color: var(--message-context-short-label-color);
   -webkit-mask-image: var(--icon-messages);
   mask-image: var(--icon-messages);
   -webkit-mask-repeat: no-repeat;
