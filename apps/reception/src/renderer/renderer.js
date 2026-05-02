@@ -324,8 +324,8 @@ function renderAlertList(state) {
               ${
                 alert
                   ? `<div class="confirm-cluster">
-                      <button class="dismiss icon-confirm" data-action="${isActive ? "dismiss" : "dismiss-row"}" data-notification-id="${escapeHtml(alert.notificationId)}" type="button" aria-label="Confirm" title="Confirm">Confirm</button>
                       <span class="room-alert-count" aria-label="${roomAlertCount} ${roomAlertCount === 1 ? "message" : "messages"}">${roomAlertCount}</span>
+                      <button class="dismiss icon-confirm" data-action="${isActive ? "dismiss" : "dismiss-row"}" data-notification-id="${escapeHtml(alert.notificationId)}" type="button" aria-label="Confirm" title="Confirm">Confirm</button>
                     </div>`
                   : `<span class="slot-placeholder" aria-hidden="true"></span>`
               }
@@ -391,8 +391,8 @@ function renderCompactAlertList(state, rooms, alerts) {
             <p class="compact-message-text">${escapeHtml(alert.message || "")}</p>
           </div>
           <div class="confirm-cluster compact-confirm-cluster">
-            <button class="dismiss icon-confirm" data-action="${isActive ? "dismiss" : "dismiss-row"}" data-notification-id="${escapeHtml(alert.notificationId)}" type="button" aria-label="Confirm" title="Confirm">Confirm</button>
             <span class="room-alert-count" aria-label="${roomAlertCount} ${roomAlertCount === 1 ? "message" : "messages"}">${roomAlertCount}</span>
+            <button class="dismiss icon-confirm" data-action="${isActive ? "dismiss" : "dismiss-row"}" data-notification-id="${escapeHtml(alert.notificationId)}" type="button" aria-label="Confirm" title="Confirm">Confirm</button>
           </div>
         </article>
       `;

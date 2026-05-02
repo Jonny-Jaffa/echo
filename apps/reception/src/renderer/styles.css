@@ -10,7 +10,7 @@
   --field-focus: #939393;
   --shadow: 0 18px 40px rgba(16, 35, 31, 0.16);
   --danger: #b42318;
-  --icon-confirm: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Cpath d='M256 512a256 256 0 1 1 0-512 256 256 0 1 1 0 512zM374 145.7c-10.7-7.8-25.7-5.4-33.5 5.3L221.1 315.2 169 263.1c-9.4-9.4-24.6-9.4-33.9 0s-9.4 24.6 0 33.9l72 72c5 5 11.8 7.5 18.8 7s13.4-4.1 17.5-9.8L379.3 179.2c7.8-10.7 5.4-25.7-5.3-33.5z'/%3E%3C/svg%3E");
+  --icon-confirm: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Cpath d='M256 512a256 256 0 1 1 0-512 256 256 0 1 1 0 512zm0-464a208 208 0 1 0 0 416 208 208 0 1 0 0-416zm70.7 121.9c7.8-10.7 22.8-13.1 33.5-5.3 10.7 7.8 13.1 22.8 5.3 33.5L243.4 366.1c-4.1 5.7-10.5 9.3-17.5 9.8-7 .5-13.9-2-18.8-6.9l-55.9-55.9c-9.4-9.4-9.4-24.6 0-33.9s24.6-9.4 33.9 0l36 36 105.6-145.2z'/%3E%3C/svg%3E");
   --icon-alert: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 448 512'%3E%3Cpath d='M224 0c-13.3 0-24 10.7-24 24l0 9.7C118.6 45.3 56 115.4 56 200l0 14.5c0 37.7-10 74.7-29 107.3L5.1 359.2C1.8 365 0 371.5 0 378.2 0 399.1 16.9 416 37.8 416l372.4 0c20.9 0 37.8-16.9 37.8-37.8 0-6.7-1.8-13.3-5.1-19L421 321.7c-19-32.6-29-69.6-29-107.3l0-14.5c0-84.6-62.6-154.7-144-166.3l0-9.7c0-13.3-10.7-24-24-24zM392.4 368l-336.9 0 12.9-22.1C91.7 306 104 260.6 104 214.5l0-14.5c0-66.3 53.7-120 120-120s120 53.7 120 120l0 14.5c0 46.2 12.3 91.5 35.5 131.4L392.4 368zM156.1 464c9.9 28 36.6 48 67.9 48s58-20 67.9-48l-135.8 0z'/%3E%3C/svg%3E");
   --icon-play: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 448 512'%3E%3Cpath d='M91.2 36.9c-12.4-6.8-27.4-6.5-39.6 .7S32 57.9 32 72l0 368c0 14.1 7.5 27.2 19.6 34.4s27.2 7.5 39.6 .7l336-184c12.8-7 20.8-20.5 20.8-35.1s-8-28.1-20.8-35.1l-336-184z'/%3E%3C/svg%3E");
   --icon-minimize: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 448 512'%3E%3Cpath d='M0 256c0-17.7 14.3-32 32-32l384 0c17.7 0 32 14.3 32 32s-14.3 32-32 32L32 288c-17.7 0-32-14.3-32-32z'/%3E%3C/svg%3E");
@@ -418,7 +418,7 @@ select {
 .message-context-label::before {
   content: "";
   align-self: stretch;
-  width: 62px;
+  width: 55px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -431,7 +431,7 @@ select {
 .message-context-label::after {
   content: "";
   position: absolute;
-  left: 20px;
+  left: 17px;
   width: 22px;
   height: 22px;
   background-color: var(--message-context-short-label-color);
@@ -712,9 +712,9 @@ select {
 
 .alert-room {
   align-self: stretch;
-  min-width: 62px;
+  min-width: 54px;
   min-height: 46px;
-  padding: 2px 16px;
+  padding: 2px 10px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -732,7 +732,7 @@ select {
 
 .alert-message {
   margin: 0;
-  color: var(--muted);
+  color: var(--text);
   font-size: 14px;
   font-weight: 500;
   white-space: nowrap;
@@ -762,7 +762,7 @@ select {
 
 .confirm-cluster {
   display: grid;
-  grid-template-columns: 36px 8px;
+  grid-template-columns: 8px 36px;
   align-items: center;
   justify-content: start;
   width: 44px;
@@ -836,8 +836,8 @@ select {
 
 .icon-confirm::before {
   content: "";
-  width: 18px;
-  height: 18px;
+  width: 22px;
+  height: 22px;
   margin: auto;
   background-color: currentColor;
   -webkit-mask-image: var(--icon-confirm);
@@ -868,8 +868,8 @@ select {
 
 .message-room-button::before {
   content: "";
-  width: 18px;
-  height: 18px;
+  width: 22px;
+  height: 22px;
   margin: auto;
   background-color: currentColor;
   -webkit-mask-image: var(--icon-messages);
