@@ -851,6 +851,10 @@ body[data-window-view="settings"] .settings-content {
   --message-bubble-outgoing: linear-gradient(180deg, #ffffff, #f7fbfb);
 }
 
+body[data-window-view="main"][data-panel-mode="both"] .room-message-shell {
+  margin-top: 10px;
+}
+
 .room-message-shell .message-context-bar {
   display: flex;
   align-items: stretch;
@@ -947,7 +951,7 @@ body[data-window-view="settings"] .settings-content {
 .room-message-shell .message-thread-list {
   width: 100%;
   gap: 8px;
-  padding: 1px 0 2px;
+  padding: 1px 0 2px 3px;
 }
 
 .message-thread-label,
