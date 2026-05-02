@@ -8,6 +8,7 @@
   "scripts": {
     "dev": "node src/index.js",
     "dev:panel": "env -u ELECTRON_RUN_AS_NODE electron src/panel-main.cjs",
+    "dev:panel:room2": "env -u ELECTRON_RUN_AS_NODE PIP_DEVICE_ID=pip-room-panel-2 PIP_ROOM_ID=surgery-2 electron --user-data-dir=.pip-room-panel-2 src/panel-main.cjs",
     "start": "node src/index.js",
     "start:panel": "env -u ELECTRON_RUN_AS_NODE electron src/panel-main.cjs",
     "test:surgeries": "node src/test-all-surgeries.js"
