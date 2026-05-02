@@ -34,7 +34,7 @@ let serviceState = {
   notificationCount: 0,
 };
 
-const WINDOW_WIDTH = 440;
+const WINDOW_WIDTH = 460;
 const WINDOW_MINIMIZED_HEIGHT = 96;
 const WINDOW_ADMIN_WIDTH = 780;
 const WINDOW_ADMIN_HEIGHT = 800;

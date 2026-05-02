@@ -804,7 +804,7 @@ function syncChatComposerState() {
     (!isAllChatRoomsThreadSelected && selectedChatRoomIds.size === 0) ||
     !String(chatComposeInput.value || "").trim();
   chatComposeInput.placeholder = areAllRoomsSelected()
-    ? "message All Rooms"
+    ? "message all rooms"
     : getActiveSingleChatRoom()?.name
       ? `message ${getActiveSingleChatRoom().name.toLowerCase()}`
       : "select a room";

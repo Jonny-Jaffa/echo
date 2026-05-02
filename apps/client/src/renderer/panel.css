@@ -5,10 +5,10 @@
   --text: #10231f;
   --muted: #494949;
   --line: rgba(16, 35, 31, 0.2);
-  --accent: #288fa2;
-  --accent-strong: #1c7383;
+  --accent: #323232;
+  --accent-strong: #181818;
   --field-focus: #939393;
-  --message-list-background: #edfbff;
+  --message-list-background: #dbdddd;
   --message-bubble-incoming: #418191;
   --message-bubble-outgoing: #339539;
   --message-bubble-text: #ffffff;
@@ -36,9 +36,7 @@ body {
   margin: 0;
   min-height: 100vh;
   font-family: "Avenir Next", "Segoe UI", sans-serif;
-  background:
-    radial-gradient(circle at top left, rgba(15, 118, 110, 0.18), transparent 40%),
-    linear-gradient(145deg, #edf7f3, #fbfcfc);
+  background: none;
   color: var(--text);
 }
 
@@ -891,8 +889,7 @@ body[data-window-view="settings"] .settings-content {
   min-width: 0;
   background: transparent;
   color: var(--message-context-label-color);
-  font-family: "Roboto Condensed", "Arial Narrow", "Avenir Next Condensed", sans-serif;
-  font-size: 17px;
+  font-size: 16px;
   font-weight: 500;
   white-space: nowrap;
 }
@@ -1016,7 +1013,7 @@ body[data-window-view="settings"] .settings-content {
   height: 30px;
   border: 0;
   border-radius: 999px;
-  background: linear-gradient(180deg, #ffffff, #f7fbfb);
+  background: none;
   color: var(--text);
   cursor: pointer;
   position: relative;

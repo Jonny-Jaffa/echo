@@ -4,11 +4,11 @@
   --shared-header-gap: 5px;
   --shared-icon-button-size: 32px;
   --shared-logo-height: 18px;
-  --message-list-background: #edfbff;
+  --message-list-background: #dbdddd;
   --message-bubble-incoming: #418191;
   --message-bubble-outgoing: #339539;
   --message-bubble-text: #ffffff;
-  --message-bubble-time: #d4d1d1;
+  --message-bubble-time: #ededed;
   --field-focus: #939393;
   --icon-close: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 384 512'%3E%3Cpath d='M55.1 73.4c-12.5-12.5-32.8-12.5-45.3 0s-12.5 32.8 0 45.3L147.2 256 9.9 393.4c-12.5 12.5-12.5 32.8 0 45.3s32.8 12.5 45.3 0L192.5 301.3 329.9 438.6c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L237.8 256 375.1 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0L192.5 210.7 55.1 73.4z'/%3E%3C/svg%3E");
   --icon-arrow-left: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 256 512'%3E%3Cpath d='M9.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L77.3 256 214.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z'/%3E%3C/svg%3E");
@@ -45,6 +45,7 @@
   height: var(--shared-logo-height);
   object-fit: contain;
   object-position: left center;
+  filter: grayscale(1) brightness(0.6);
 }
 
 .toolbar {
@@ -90,7 +91,7 @@
 
 .panel-section-divider {
   height: 1px;
-  margin: 0 10px;
+  margin: 0;
   background: var(--line);
 }
 
