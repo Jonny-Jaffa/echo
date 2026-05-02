@@ -417,7 +417,9 @@ function getRelevantChatMessages(state) {
   );
 
   if (isAllChatRoomsThreadSelected) {
-    return messages.filter((message) => isReceptionAllRoomsMessage(message, state));
+    return messages.filter((message) =>
+      isReceptionAllRoomsMessage(message, state) || isRoomAllRoomsMessage(message, state),
+    );
   }
 
   if (selectedChatRoomIds.size === 0) {
@@ -437,7 +439,8 @@ function getRelevantChatMessages(state) {
       return recipientRoomIds.some((roomId) => selectedChatRoomIds.has(roomId));
     }
 
-    return selectedChatRoomIds.has(String(message?.senderRoomId || "").trim());
+    return !isRoomAllRoomsMessage(message, state) &&
+      selectedChatRoomIds.has(String(message?.senderRoomId || "").trim());
   });
 }
 
@@ -461,6 +464,34 @@ function isReceptionAllRoomsMessage(message, state = appState) {
     roomIds.length > 0 &&
     recipientRoomIds.length === roomIds.length &&
     roomIds.every((roomId) => recipientRoomIds.includes(roomId))
+  );
+}
+
+function isRoomAllRoomsMessage(message, state = appState) {
+  if (String(message?.senderType || "").trim() !== "room" || !message?.sendToReception) {
+    return false;
+  }
+
+  const senderRoomId = String(message?.senderRoomId || "").trim();
+
+  if (!senderRoomId) {
+    return false;
+  }
+
+  const allOtherRoomIds = (state?.config?.rooms || [])
+    .map((room) => String(room.id || "").trim())
+    .filter((roomId) => roomId && roomId !== senderRoomId)
+    .sort();
+  const recipientRoomIds = [...new Set(
+    Array.isArray(message?.recipientRoomIds)
+      ? message.recipientRoomIds.map((roomId) => String(roomId || "").trim()).filter(Boolean)
+      : [],
+  )].sort();
+
+  return (
+    allOtherRoomIds.length > 0 &&
+    recipientRoomIds.length === allOtherRoomIds.length &&
+    allOtherRoomIds.every((roomId) => recipientRoomIds.includes(roomId))
   );
 }
 

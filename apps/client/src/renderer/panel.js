@@ -1215,7 +1215,7 @@ function isMessageInCurrentRoomContext(message, currentRoomId) {
 }
 
 function isAllRoomsMessage(message) {
-  if (String(message?.senderType || "").trim() !== "room" || Boolean(message?.sendToReception)) {
+  if (String(message?.senderType || "").trim() !== "room") {
     return false;
   }
 
@@ -1250,7 +1250,7 @@ function isMessageInThread(message, threadKey, currentRoomId) {
     : [];
 
   if (threadKey === "reception") {
-    return senderType === "reception" || Boolean(message?.sendToReception);
+    return !isAllRoomsMessage(message) && (senderType === "reception" || Boolean(message?.sendToReception));
   }
 
   if (threadKey.startsWith("group:")) {
@@ -2467,7 +2467,7 @@ async function sendChatMessage() {
   const activeGroupThread = activeThreadKey.startsWith("group:")
     ? getMessageGroupThread(activeThreadKey, currentRoom.id)
     : null;
-  const sendToReception = activeThreadKey === "reception";
+  const sendToReception = activeThreadKey === "reception" || activeThreadKey === "all";
   const recipientRoomIds =
     activeGroupThread
       ? (activeGroupThread.participantRoomIds || []).filter((roomId) => roomId !== currentRoom.id)
