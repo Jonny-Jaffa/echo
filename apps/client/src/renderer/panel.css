@@ -17,9 +17,11 @@
   --icon-play: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 448 512'%3E%3Cpath d='M91.2 36.9c-12.4-6.8-27.4-6.5-39.6 .7S32 57.9 32 72l0 368c0 14.1 7.5 27.2 19.6 34.4s27.2 7.5 39.6 .7l336-184c12.8-7 20.8-20.5 20.8-35.1s-8-28.1-20.8-35.1l-336-184z'/%3E%3C/svg%3E");
   --icon-minimize: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 448 512'%3E%3Cpath d='M0 256c0-17.7 14.3-32 32-32l384 0c17.7 0 32 14.3 32 32s-14.3 32-32 32L32 288c-17.7 0-32-14.3-32-32z'/%3E%3C/svg%3E");
   --icon-buttons: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%20576%20512%22%3E%3Cpath%20d%3D%22M288%2080C222.8%2080%20169.2%20109.6%20128.1%20147.7%2089.6%20183.5%2063%20226%2049.4%20256%2063%20286%2089.6%20328.5%20128.1%20364.3%20169.2%20402.4%20222.8%20432%20288%20432s118.8-29.6%20159.9-67.7C486.4%20328.5%20513%20286%20526.6%20256%20513%20226%20486.4%20183.5%20447.9%20147.7%20406.8%20109.6%20353.2%2080%20288%2080zM95.4%20112.6C142.5%2068.8%20207.2%2032%20288%2032s145.5%2036.8%20192.6%2080.6c46.8%2043.5%2078.1%2095.4%2093%20131.1%203.3%207.9%203.3%2016.7%200%2024.6-14.9%2035.7-46.2%2087.7-93%20131.1-47.1%2043.7-111.8%2080.6-192.6%2080.6S142.5%20443.2%2095.4%20399.4c-46.8-43.5-78.1-95.4-93-131.1-3.3-7.9-3.3-16.7%200-24.6%2014.9-35.7%2046.2-87.7%2093-131.1zM288%20336c44.2%200%2080-35.8%2080-80%200-29.6-16.1-55.5-40-69.3-1.4%2059.7-49.6%20107.9-109.3%20109.3%2013.8%2023.9%2039.7%2040%2069.3%2040zm-79.6-88.4c2.5%20.3%205%20.4%207.6%20.4%2035.3%200%2064-28.7%2064-64%200-2.6-.2-5.1-.4-7.6-37.4%203.9-67.2%2033.7-71.1%2071.1zm45.6-115c10.8-3%2022.2-4.5%2033.9-4.5%208.8%200%2017.5%20.9%2025.8%202.6%20.3%20.1%20.5%20.1%20.8%20.2%2057.9%2012.2%20101.4%2063.7%20101.4%20125.2%200%2070.7-57.3%20128-128%20128-61.6%200-113-43.5-125.2-101.4-1.8-8.6-2.8-17.5-2.8-26.6%200-11%201.4-21.8%204-32%20.2-.7%20.3-1.3%20.5-1.9%2011.9-43.4%2046.1-77.6%2089.5-89.5z%22%2F%3E%3C%2Fsvg%3E");
-  --icon-settings: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Cpath d='M32 64C14.3 64 0 78.3 0 96s14.3 32 32 32l86.7 0c12.3 28.3 40.5 48 73.3 48s61-19.7 73.3-48L480 128c17.7 0 32-14.3 32-32s-14.3-32-32-32L265.3 64C253 35.7 224.8 16 192 16s-61 19.7-73.3 48L32 64zm0 160c-17.7 0-32 14.3-32 32s14.3 32 32 32l246.7 0c12.3 28.3 40.5 48 73.3 48s61-19.7 73.3-48l54.7 0c17.7 0 32-14.3 32-32s-14.3-32-32-32l-54.7 0c-12.3-28.3-40.5-48-73.3-48s-61 19.7-73.3 48L32 224zm0 160c-17.7 0-32 14.3-32 32s14.3 32 32 32l54.7 0c12.3 28.3 40.5 48 73.3 48s61-19.7 73.3-48L480 448c17.7 0 32-14.3 32-32s-14.3-32-32-32l-246.7 0c-12.3-28.3-40.5-48-73.3-48s-61 19.7-73.3 48L32 384z'/%3E%3C/svg%3E");
+  --icon-settings: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 128 512'%3E%3Cpath d='M64 144a56 56 0 1 1 0-112 56 56 0 1 1 0 112zm0 224c30.9 0 56 25.1 56 56s-25.1 56-56 56-56-25.1-56-56 25.1-56 56-56zm56-112c0 30.9-25.1 56-56 56s-56-25.1-56-56 25.1-56 56-56 56 25.1 56 56z'/%3E%3C/svg%3E");
   --icon-close: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 384 512'%3E%3Cpath d='M55.1 73.4c-12.5-12.5-32.8-12.5-45.3 0s-12.5 32.8 0 45.3L147.2 256 9.9 393.4c-12.5 12.5-12.5 32.8 0 45.3s32.8 12.5 45.3 0L192.5 301.3 329.9 438.6c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L237.8 256 375.1 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0L192.5 210.7 55.1 73.4z'/%3E%3C/svg%3E");
   --icon-send: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 576 512'%3E%3Cpath d='M536.4-26.3c9.8-3.5 20.6-1 28 6.3s9.8 18.2 6.3 28l-178 496.9c-5 13.9-18.1 23.1-32.8 23.1-14.2 0-27-8.6-32.3-21.7l-64.2-158c-4.5-11-2.5-23.6 5.2-32.6l94.5-112.4c5.1-6.1 4.7-15-.9-20.6s-14.6-6-20.6-.9L229.2 276.1c-9.1 7.6-21.6 9.6-32.6 5.2L38.1 216.8c-13.1-5.3-21.7-18.1-21.7-32.3 0-14.7 9.2-27.8 23.1-32.8l496.9-178z'/%3E%3C/svg%3E");
+  --icon-messages: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%20-32%20576%20576%22%3E%3Cpath%20d%3D%22M76.2%20258.7c6.1-15.2%204-32.6-5.6-45.9-14.5-20.1-22.6-43.7-22.6-68.8%200-66.8%2060.5-128%20144-128s144%2061.2%20144%20128-60.5%20128-144%20128c-15.9%200-31.1-2.3-45.3-6.5-10.3-3.1-21.4-2.5-31.4%201.5l-50.4%2020.2%2011.4-28.5zM0%20144c0%2035.8%2011.6%2069.1%2031.7%2096.8L1.9%20315.2c-1.3%203.2-1.9%206.6-1.9%2010%200%2014.8%2012%2026.8%2026.8%2026.8%203.4%200%206.8-.7%2010-1.9l96.3-38.5c18.6%205.5%2038.4%208.4%2058.9%208.4%20106%200%20192-78.8%20192-176S298-32%20192-32%200%2046.8%200%20144zM384%20512c20.6%200%2040.3-3%2058.9-8.4l96.3%2038.5c3.2%201.3%206.6%201.9%2010%201.9%2014.8%200%2026.8-12%2026.8-26.8%200-3.4-.7-6.8-1.9-10l-29.7-74.4c20-27.8%2031.7-61.1%2031.7-96.8%200-82.4-61.7-151.5-145-170.7-1.6%2016.3-5.1%2031.9-10.1%2046.9%2063.9%2014.8%20107.2%2067.3%20107.2%20123.9%200%2025.1-8.1%2048.7-22.6%2068.8-9.6%2013.3-11.7%2030.6-5.6%2045.9l11.4%2028.5-50.4-20.2c-10-4-21.1-4.5-31.4-1.5-14.2%204.2-29.4%206.5-45.3%206.5-72.2%200-127.1-45.7-140.7-101.2-15.6%203.2-31.7%205-48.1%205.2%2016.4%2081.9%2094.7%20144%20188.8%20144z%22%2F%3E%3C%2Fsvg%3E");
+  --icon-chevron-up: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 448 512'%3E%3Cpath d='M201.4 105.4c12.5-12.5 32.8-12.5 45.3 0l192 192c12.5 12.5 12.5 32.8 0 45.3s-32.8 12.5-45.3 0L224 173.3 54.6 342.6c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3l192-192z'/%3E%3C/svg%3E");
   --icon-arrow-left: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 256 512'%3E%3Cpath d='M9.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L77.3 256 214.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z'/%3E%3C/svg%3E");
   --icon-pin: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 384 512'%3E%3Cpath d='M32 32C32 14.3 46.3 0 64 0L320 0c17.7 0 32 14.3 32 32s-14.3 32-32 32l-29.5 0 10.3 134.1c37.1 21.2 65.8 56.4 78.2 99.7l3.8 13.4c2.8 9.7 .8 20-5.2 28.1S362 352 352 352L32 352c-10 0-19.5-4.7-25.5-12.7s-8-18.4-5.2-28.1L5 297.8c12.4-43.3 41-78.5 78.2-99.7L93.5 64 64 64C46.3 64 32 49.7 32 32zM160 400l64 0 0 112c0 17.7-14.3 32-32 32s-32-14.3-32-32l0-112z'/%3E%3C/svg%3E");
   --icon-chevron: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 320 512'%3E%3Cpath d='M96 96l128 160L96 416'/%3E%3C/svg%3E");
@@ -849,12 +851,111 @@ body[data-window-view="settings"] .settings-content {
   position: relative;
 }
 
+.room-message-shell.message-shell {
+  gap: 0;
+  row-gap: 0;
+  grid-template-rows: auto auto minmax(220px, 1fr) auto;
+  --active-room-accent: var(--accent);
+  --message-context-label-color: var(--accent);
+  --message-context-short-label-color: white;
+  --message-context-strip-background: linear-gradient(90deg, #edfbff, #ffffff);
+  --message-bubble-outgoing: linear-gradient(180deg, #ffffff, #f7fbfb);
+}
+
+.room-message-shell .message-context-bar {
+  display: flex;
+  align-items: stretch;
+  justify-content: space-between;
+  gap: 0;
+  min-height: 44px;
+  border-radius: 20px 20px 0 0;
+  background: var(--message-context-strip-background);
+  overflow: hidden;
+  box-shadow: 0 10px 24px rgba(16, 35, 31, 0.06);
+}
+
+.room-message-shell .message-context-copy {
+  min-width: 0;
+  display: flex;
+  align-items: stretch;
+  flex: 1;
+}
+
+.room-message-shell .message-context-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+  padding: 0 10px;
+}
+
+.room-message-shell .message-context-label {
+  position: relative;
+  min-height: 44px;
+  padding: 0 14px 0 0;
+  border-radius: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 14px;
+  min-width: 0;
+  background: transparent;
+  color: var(--message-context-label-color);
+  font-family: "Roboto Condensed", "Arial Narrow", "Avenir Next Condensed", sans-serif;
+  font-size: 17px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.room-message-shell .message-context-label::before {
+  content: "";
+  align-self: stretch;
+  width: 62px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  background: var(--active-room-accent);
+  border-radius: 0 2px 2px 0;
+  box-shadow: 8px 0 18px color-mix(in srgb, var(--active-room-accent) 22%, transparent);
+}
+
+.room-message-shell .message-context-label::after {
+  content: "";
+  position: absolute;
+  left: 20px;
+  width: 22px;
+  height: 22px;
+  background-color: var(--message-context-short-label-color);
+  -webkit-mask-image: var(--icon-messages);
+  mask-image: var(--icon-messages);
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  -webkit-mask-position: center;
+  mask-position: center;
+  -webkit-mask-size: contain;
+  mask-size: contain;
+}
+
 .message-thread-bar,
 .message-recipient-bar {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr);
   align-items: center;
   gap: 8px;
+}
+
+.room-message-shell .message-thread-bar {
+  display: flex;
+  min-height: 34px;
+  margin: 8px 0;
+}
+
+.room-message-shell .message-thread-bar.hidden {
+  display: none;
+}
+
+.room-message-shell .message-thread-list {
+  width: 100%;
 }
 
 .message-thread-label,
@@ -911,6 +1012,50 @@ body[data-window-view="settings"] .settings-content {
   mask-position: center;
   -webkit-mask-size: contain;
   mask-size: contain;
+}
+
+.room-message-shell .message-thread-drawer-button,
+.room-message-shell .message-collapse-button {
+  width: 30px;
+  min-width: 30px;
+  height: 30px;
+  border: 0;
+  border-radius: 999px;
+  background: linear-gradient(180deg, #ffffff, #f7fbfb);
+  color: var(--text);
+  cursor: pointer;
+  position: relative;
+  text-indent: -9999px;
+  overflow: hidden;
+}
+
+.room-message-shell .message-thread-drawer-button::before,
+.room-message-shell .message-collapse-button::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  width: 16px;
+  height: 16px;
+  margin: auto;
+  background-color: currentColor;
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  -webkit-mask-position: center;
+  mask-position: center;
+  -webkit-mask-size: contain;
+  mask-size: contain;
+}
+
+.room-message-shell .message-thread-drawer-button::before {
+  width: 18px;
+  height: 18px;
+  -webkit-mask-image: var(--icon-messages);
+  mask-image: var(--icon-messages);
+}
+
+.room-message-shell .message-collapse-button::before {
+  -webkit-mask-image: var(--icon-chevron-up);
+  mask-image: var(--icon-chevron-up);
 }
 
 .message-thread-drawer {
@@ -1122,6 +1267,27 @@ body[data-window-view="settings"] .settings-content {
   background-color: var(--message-list-background);
 }
 
+.room-message-shell .message-list {
+  border-radius: 0 0 20px 20px;
+  gap: 10px;
+  padding: 12px 8px 12px 2px;
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in srgb, var(--active-room-accent) 38%, transparent) transparent;
+}
+
+.room-message-shell .message-list::-webkit-scrollbar {
+  width: 6px;
+}
+
+.room-message-shell .message-list::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.room-message-shell .message-list::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--active-room-accent) 38%, transparent);
+}
+
 .message-item {
   display: flex;
   width: 100%;
@@ -1284,6 +1450,51 @@ body[data-window-view="settings"] .settings-content {
 .message-send-button:disabled {
   opacity: 0.52;
   cursor: default;
+}
+
+.room-message-shell .message-compose {
+  margin-top: 10px;
+}
+
+.room-message-shell .message-compose-input:focus {
+  border-color: var(--active-room-accent);
+  box-shadow: none;
+}
+
+.room-message-shell .message-item.is-outgoing .message-item-text {
+  color: var(--text);
+}
+
+.room-message-shell .message-item.is-outgoing .message-item-time {
+  color: var(--muted);
+}
+
+.room-message-shell .message-send-button {
+  border: 1px solid var(--line);
+  background: linear-gradient(180deg, #ffffff, #f7fbfb);
+  color: var(--text);
+  opacity: 1;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.78),
+    0 8px 18px rgba(16, 35, 31, 0.08);
+}
+
+.room-message-shell .message-send-button::before {
+  transform: translate(-1px, 1px);
+}
+
+.room-message-shell .message-send-button:not(:disabled) {
+  border-color: var(--active-room-accent);
+  color: var(--active-room-accent);
+}
+
+.room-message-shell .message-send-button:hover:not(:disabled),
+.room-message-shell .message-send-button:focus-visible:not(:disabled) {
+  background: linear-gradient(180deg, #ffffff, #eef6f6);
+}
+
+.room-message-shell .message-send-button:disabled {
+  opacity: 1;
 }
 
 .server-connection-row {

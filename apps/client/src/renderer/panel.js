@@ -21,6 +21,8 @@ const messageThreadDrawer = document.querySelector("#message-thread-drawer");
 const messageThreadDrawerClose = document.querySelector("#message-thread-drawer-close");
 const messageThreadDrawerList = document.querySelector("#message-thread-drawer-list");
 const messageShell = document.querySelector(".message-shell");
+const messageCollapseButton = document.querySelector("#message-collapse-button");
+const messageContextLabel = document.querySelector("#message-context-label");
 const messageThreadList = document.querySelector("#message-thread-list");
 const messageList = document.querySelector("#message-list");
 const messageComposeInput = document.querySelector("#message-compose-input");
@@ -155,6 +157,18 @@ function getRoomShortLabel(room) {
 
 function getThreadDisplayLabel(thread) {
   return String(thread?.shortLabel || thread?.label || "").trim();
+}
+
+function getThreadFullLabel(thread) {
+  if (!thread) {
+    return "Reception";
+  }
+
+  if (thread.key === "all") {
+    return "All Rooms";
+  }
+
+  return String(thread?.label || thread?.shortLabel || "").trim() || "Reception";
 }
 
 function renderSelectedDeviceRole(settings = panelSettings) {
@@ -1426,6 +1440,7 @@ function renderMessageThreads() {
 
   const threads = ensureActiveMessageThread();
   const pinnedThreads = getPinnedMessageThreads(threads);
+  messageThreadList.parentElement?.classList.toggle("hidden", pinnedThreads.length === 0);
   messageThreadList.innerHTML = pinnedThreads
     .map((thread) => `
       <button
@@ -1441,6 +1456,63 @@ function renderMessageThreads() {
     `)
     .join("");
   renderMessageThreadDrawer(threads);
+}
+
+function hexToRgba(hex, alpha) {
+  const normalized = String(hex || "").trim().replace(/^#/, "");
+  const expanded = normalized.length === 3
+    ? normalized.split("").map((character) => `${character}${character}`).join("")
+    : normalized;
+
+  if (!/^[0-9a-f]{6}$/i.test(expanded)) {
+    return `rgba(40, 143, 162, ${alpha})`;
+  }
+
+  const red = Number.parseInt(expanded.slice(0, 2), 16);
+  const green = Number.parseInt(expanded.slice(2, 4), 16);
+  const blue = Number.parseInt(expanded.slice(4, 6), 16);
+
+  return `rgba(${red}, ${green}, ${blue}, ${alpha})`;
+}
+
+function syncMessageContext() {
+  if (!messageShell || !messageContextLabel) {
+    return;
+  }
+
+  const threads = getMessageThreadItems();
+  const activeThread = threads.find((thread) => thread.key === (activeMessageThreadKey || "reception"))
+    || threads.find((thread) => thread.key === "reception")
+    || null;
+  const activeRoom = configState?.rooms?.find((room) => room.id === activeThread?.key);
+  const isAllRoomsThread = activeThread?.key === "all";
+  const accent = isAllRoomsThread
+    ? "#d9dddd"
+    : activeRoom?.color || "var(--accent)";
+  const labelColor = isAllRoomsThread ? "#3f4444" : activeRoom?.color || "var(--accent)";
+  const iconColor = isAllRoomsThread ? "var(--text)" : "white";
+  const listBackground = isAllRoomsThread
+    ? "linear-gradient(180deg, #f3f4f4, #f8f8f8)"
+    : activeRoom?.color
+      ? `linear-gradient(90deg, ${hexToRgba(activeRoom.color, 0.16)}, ${hexToRgba(activeRoom.color, 0.04)})`
+      : "linear-gradient(180deg, #edfbff, #f8feff)";
+  const stripBackground = isAllRoomsThread
+    ? "linear-gradient(90deg, #f0f1f1, #ffffff)"
+    : activeRoom?.color
+      ? `linear-gradient(90deg, ${hexToRgba(activeRoom.color, 0.16)}, #ffffff)`
+      : "linear-gradient(90deg, #edfbff, #ffffff)";
+  const fullLabel = getThreadFullLabel(activeThread);
+
+  messageContextLabel.textContent = fullLabel;
+  messageShell.style.setProperty("--active-room-accent", accent);
+  messageShell.style.setProperty("--message-context-label-color", labelColor);
+  messageShell.style.setProperty("--message-context-short-label-color", iconColor);
+  messageShell.style.setProperty("--message-context-strip-background", stripBackground);
+  messageShell.style.setProperty("--message-list-background", listBackground);
+
+  if (messageComposeInput) {
+    messageComposeInput.placeholder = `message ${fullLabel.toLowerCase()}`;
+  }
 }
 
 function syncMessageComposerState() {
@@ -1518,6 +1590,7 @@ function updateMessageBubbleLayouts() {
 
 function renderMessagingUi() {
   renderMessageThreads();
+  syncMessageContext();
   renderChatMessages();
   syncMessageComposerState();
   updateMessageComposerHeight();
@@ -2882,6 +2955,12 @@ document.addEventListener("pointerdown", (event) => {
 
 messageThreadDrawerButton?.addEventListener("click", () => {
   setMessageThreadDrawerVisibility(!isMessageThreadDrawerVisible);
+});
+
+messageCollapseButton?.addEventListener("click", () => {
+  setPanelDisplayMode("buttons").catch((error) => {
+    console.error(error);
+  });
 });
 
 messageThreadDrawerClose?.addEventListener("click", () => {
