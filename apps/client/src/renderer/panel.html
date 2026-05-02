@@ -134,21 +134,14 @@
         <div class="panel-section-divider hidden" id="panel-section-divider" aria-hidden="true"></div>
 
         <section class="message-shell room-message-shell">
+          <div class="message-thread-bar">
+            <div class="message-thread-list" id="message-thread-list"></div>
+          </div>
           <div class="message-context-bar">
             <div class="message-context-copy">
               <span class="message-context-label" id="message-context-label">Reception</span>
             </div>
             <div class="message-context-actions">
-              <button
-                class="message-thread-drawer-button"
-                id="message-thread-drawer-button"
-                type="button"
-                aria-label="Show recipients"
-                aria-expanded="false"
-                title="Recipients"
-              >
-                Recipients
-              </button>
               <button
                 class="message-collapse-button"
                 id="message-collapse-button"
@@ -160,24 +153,6 @@
               </button>
             </div>
           </div>
-          <div class="message-thread-bar">
-            <div class="message-thread-list" id="message-thread-list"></div>
-          </div>
-          <aside class="message-thread-drawer hidden" id="message-thread-drawer">
-            <div class="message-thread-drawer-head">
-              <div class="message-thread-drawer-title">Recipients</div>
-              <button
-                class="message-thread-drawer-close"
-                id="message-thread-drawer-close"
-                type="button"
-                aria-label="Close recipients"
-                title="Close"
-              >
-                Close
-              </button>
-            </div>
-            <div class="message-thread-drawer-list" id="message-thread-drawer-list"></div>
-          </aside>
           <div class="message-list" id="message-list"></div>
           <div class="message-compose">
             <textarea

@@ -947,7 +947,7 @@ body[data-window-view="settings"] .settings-content {
 .room-message-shell .message-thread-bar {
   display: flex;
   min-height: 34px;
-  margin: 8px 0;
+  margin: 0 0 10px;
 }
 
 .room-message-shell .message-thread-bar.hidden {
@@ -956,6 +956,8 @@ body[data-window-view="settings"] .settings-content {
 
 .room-message-shell .message-thread-list {
   width: 100%;
+  gap: 8px;
+  padding: 1px 0 2px;
 }
 
 .message-thread-label,
@@ -1239,6 +1241,24 @@ body[data-window-view="settings"] .settings-content {
   border-color: transparent;
   background: var(--accent);
   color: white;
+}
+
+.room-message-shell .message-thread-chip {
+  border-color: color-mix(in srgb, var(--thread-accent, var(--accent)) 35%, var(--line));
+  background: color-mix(in srgb, var(--thread-accent, var(--accent)) 10%, white);
+  color: var(--text);
+  min-height: 32px;
+  padding: 5px 12px;
+}
+
+.room-message-shell .message-thread-chip.is-active {
+  border-color: transparent;
+  background: var(--thread-accent, var(--accent));
+  color: white;
+}
+
+.room-message-shell .message-thread-chip.is-all-rooms.is-active {
+  color: var(--text);
 }
 
 .message-thread-dot {

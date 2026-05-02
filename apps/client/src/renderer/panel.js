@@ -16,10 +16,6 @@ const panelDisplayModeMenu = document.querySelector("#panel-display-mode-menu");
 const quickActions = document.querySelector("#quick-actions");
 const quickActionGrid = document.querySelector("#quick-action-grid");
 const panelSectionDivider = document.querySelector("#panel-section-divider");
-const messageThreadDrawerButton = document.querySelector("#message-thread-drawer-button");
-const messageThreadDrawer = document.querySelector("#message-thread-drawer");
-const messageThreadDrawerClose = document.querySelector("#message-thread-drawer-close");
-const messageThreadDrawerList = document.querySelector("#message-thread-drawer-list");
 const messageShell = document.querySelector(".message-shell");
 const messageCollapseButton = document.querySelector("#message-collapse-button");
 const messageContextLabel = document.querySelector("#message-context-label");
@@ -169,6 +165,15 @@ function getThreadFullLabel(thread) {
   }
 
   return String(thread?.label || thread?.shortLabel || "").trim() || "Reception";
+}
+
+function getMessageThreadAccent(thread) {
+  if (thread?.key === "all") {
+    return "#d9dddd";
+  }
+
+  const room = configState?.rooms?.find((item) => item.id === thread?.key);
+  return room?.color || "var(--accent)";
 }
 
 function renderSelectedDeviceRole(settings = panelSettings) {
@@ -659,14 +664,8 @@ function setServerPanelVisibility(visible) {
   }
 }
 
-function setMessageThreadDrawerVisibility(visible) {
-  isMessageThreadDrawerVisible = !isSettingsWindow && Boolean(visible);
-  messageThreadDrawer?.classList.toggle("hidden", !isMessageThreadDrawerVisible);
-
-  if (messageThreadDrawerButton) {
-    messageThreadDrawerButton.setAttribute("aria-expanded", isMessageThreadDrawerVisible ? "true" : "false");
-    messageThreadDrawerButton.title = isMessageThreadDrawerVisible ? "Hide recipients" : "Recipients";
-  }
+function setMessageThreadDrawerVisibility() {
+  isMessageThreadDrawerVisible = false;
 }
 
 function setPanelDisplayModeMenuVisibility(visible) {
@@ -1353,84 +1352,23 @@ function getVisibleChatMessages() {
   return chatMessages.filter((message) => isMessageInThread(message, threadKey, currentRoomId));
 }
 
-function getPinnedMessageThreads(threads) {
+function syncMessageThreadOrder(threads) {
   const currentRoomId = getCurrentMessageRoomId();
-  const pinnedThreadKeys = currentRoomId ? getCurrentRoomPinnedThreadKeys() : [];
-  const pinnedThreads = [];
 
-  pinnedThreadKeys.forEach((threadKey) => {
-    const thread = threads.find((item) => item.key === threadKey);
-
-    if (thread && !pinnedThreads.some((item) => item.key === thread.key)) {
-      pinnedThreads.push(thread);
-    }
-  });
-
-  if (
-    activeMessageThreadKey &&
-    !pinnedThreads.some((thread) => thread.key === activeMessageThreadKey)
-  ) {
-    const activeThread = threads.find((thread) => thread.key === activeMessageThreadKey);
-
-    if (activeThread) {
-      pinnedThreads.push(activeThread);
-    }
-  }
-
-  return pinnedThreads;
-}
-
-function renderMessageThreadDrawer(threads) {
-  if (!messageThreadDrawerList) {
+  if (!currentRoomId) {
     return;
   }
 
-  const currentRoomId = getCurrentMessageRoomId();
-  const pinnedThreadKeys = currentRoomId ? getCurrentRoomPinnedThreadKeys() : [];
-  if (currentRoomId) {
-    const threadKeys = threads.map((thread) => thread.key);
-    roomMessageThreadOrder = {
-      ...roomMessageThreadOrder,
-      [currentRoomId]: [
-        ...getCurrentRoomMessageThreadOrder().filter((threadKey) => threadKeys.includes(threadKey)),
-        ...threadKeys.filter((threadKey) => !getCurrentRoomMessageThreadOrder().includes(threadKey)),
-      ],
-    };
-    saveRoomMessageThreadOrder();
-  }
-  const orderedThreads = orderMessageThreads(threads);
-  messageThreadDrawerList.innerHTML = orderedThreads
-    .map((thread) => {
-      const isPinned = pinnedThreadKeys.includes(thread.key);
-
-      return `
-        <div
-          class="message-thread-drawer-item ${thread.key === activeMessageThreadKey ? "is-active" : ""}"
-          data-message-thread-key="${escapeHtml(thread.key)}"
-          data-message-thread-drag-source="drawer"
-          draggable="true"
-        >
-          <button
-            class="message-thread-drawer-select"
-            data-message-thread-key="${escapeHtml(thread.key)}"
-            type="button"
-          >
-            <span title="${escapeHtml(thread.label)}">${escapeHtml(getThreadDisplayLabel(thread))}</span>
-            ${thread.unread ? '<span class="message-thread-dot" aria-hidden="true"></span>' : ""}
-          </button>
-          <button
-            class="message-thread-pin-button ${isPinned ? "is-pinned" : ""}"
-            data-pin-message-thread-key="${escapeHtml(thread.key)}"
-            type="button"
-            aria-label="${isPinned ? "Unpin recipient" : "Pin recipient"}"
-            title="${isPinned ? "Unpin" : "Pin"}"
-          >
-            Pin
-          </button>
-        </div>
-      `;
-    })
-    .join("");
+  const threadKeys = threads.map((thread) => thread.key);
+  const currentOrder = getCurrentRoomMessageThreadOrder();
+  roomMessageThreadOrder = {
+    ...roomMessageThreadOrder,
+    [currentRoomId]: [
+      ...currentOrder.filter((threadKey) => threadKeys.includes(threadKey)),
+      ...threadKeys.filter((threadKey) => !currentOrder.includes(threadKey)),
+    ],
+  };
+  saveRoomMessageThreadOrder();
 }
 
 function renderMessageThreads() {
@@ -1439,23 +1377,25 @@ function renderMessageThreads() {
   }
 
   const threads = ensureActiveMessageThread();
-  const pinnedThreads = getPinnedMessageThreads(threads);
-  messageThreadList.parentElement?.classList.toggle("hidden", pinnedThreads.length === 0);
-  messageThreadList.innerHTML = pinnedThreads
+  syncMessageThreadOrder(threads);
+  const orderedThreads = orderMessageThreads(threads);
+  messageThreadList.parentElement?.classList.toggle("hidden", orderedThreads.length === 0);
+  messageThreadList.innerHTML = orderedThreads
     .map((thread) => `
       <button
-        class="message-thread-chip ${thread.key === activeMessageThreadKey ? "is-active" : ""}"
+        class="message-thread-chip ${thread.key === activeMessageThreadKey ? "is-active" : ""} ${thread.key === "all" ? "is-all-rooms" : ""}"
+        style="--thread-accent: ${escapeHtml(getMessageThreadAccent(thread))};"
         data-message-thread-key="${escapeHtml(thread.key)}"
-        data-message-thread-drag-source="pinned"
+        data-message-thread-drag-source="threads"
         draggable="true"
         type="button"
+        title="${escapeHtml(getThreadFullLabel(thread))}"
       >
         <span title="${escapeHtml(thread.label)}">${escapeHtml(getThreadDisplayLabel(thread))}</span>
         ${thread.unread ? '<span class="message-thread-dot" aria-hidden="true"></span>' : ""}
       </button>
     `)
     .join("");
-  renderMessageThreadDrawer(threads);
 }
 
 function hexToRgba(hex, alpha) {
@@ -1486,9 +1426,7 @@ function syncMessageContext() {
     || null;
   const activeRoom = configState?.rooms?.find((room) => room.id === activeThread?.key);
   const isAllRoomsThread = activeThread?.key === "all";
-  const accent = isAllRoomsThread
-    ? "#d9dddd"
-    : activeRoom?.color || "var(--accent)";
+  const accent = getMessageThreadAccent(activeThread);
   const labelColor = isAllRoomsThread ? "#3f4444" : activeRoom?.color || "var(--accent)";
   const iconColor = isAllRoomsThread ? "var(--text)" : "white";
   const listBackground = isAllRoomsThread
@@ -1509,6 +1447,9 @@ function syncMessageContext() {
   messageShell.style.setProperty("--message-context-short-label-color", iconColor);
   messageShell.style.setProperty("--message-context-strip-background", stripBackground);
   messageShell.style.setProperty("--message-list-background", listBackground);
+  messageShell.style.setProperty("--message-bubble-incoming", accent);
+  messageShell.style.setProperty("--message-bubble-text", isAllRoomsThread ? "var(--text)" : "white");
+  messageShell.style.setProperty("--message-bubble-time", isAllRoomsThread ? "var(--muted)" : "#ededed");
 
   if (messageComposeInput) {
     messageComposeInput.placeholder = `message ${fullLabel.toLowerCase()}`;
@@ -2953,18 +2894,10 @@ document.addEventListener("pointerdown", (event) => {
   setPanelDisplayModeMenuVisibility(false);
 });
 
-messageThreadDrawerButton?.addEventListener("click", () => {
-  setMessageThreadDrawerVisibility(!isMessageThreadDrawerVisible);
-});
-
 messageCollapseButton?.addEventListener("click", () => {
   setPanelDisplayMode("buttons").catch((error) => {
     console.error(error);
   });
-});
-
-messageThreadDrawerClose?.addEventListener("click", () => {
-  setMessageThreadDrawerVisibility(false);
 });
 
 messageComposeInput?.addEventListener("input", () => {
@@ -3444,14 +3377,7 @@ document.body.addEventListener("drop", async (event) => {
 
   event.preventDefault();
 
-  if (draggedMessageThreadSource === "pinned") {
-    roomPinnedMessageThreads = {
-      ...roomPinnedMessageThreads,
-      [currentRoomId]: reorderIds(getCurrentRoomPinnedThreadKeys(), draggedMessageThreadKey, targetThreadKey),
-    };
-    renderMessagingUi();
-    await persistPinnedMessageThreads();
-  } else if (draggedMessageThreadSource === "drawer") {
+  if (draggedMessageThreadSource === "threads") {
     roomMessageThreadOrder = {
       ...roomMessageThreadOrder,
       [currentRoomId]: reorderIds(getCurrentRoomMessageThreadOrder(), draggedMessageThreadKey, targetThreadKey),
@@ -3481,52 +3407,6 @@ messageThreadList?.addEventListener("click", (event) => {
   }
 
   selectMessageThread(threadKey);
-});
-
-messageThreadDrawerList?.addEventListener("click", async (event) => {
-  const target = event.target;
-
-  if (!(target instanceof HTMLElement)) {
-    return;
-  }
-
-  const pinButton = target.closest("[data-pin-message-thread-key]");
-
-  if (pinButton) {
-    const currentRoomId = getCurrentMessageRoomId();
-    const threadKey = String(pinButton.getAttribute("data-pin-message-thread-key") || "").trim();
-
-    if (!currentRoomId || !threadKey) {
-      return;
-    }
-
-    const existingPinnedThreadKeys = getCurrentRoomPinnedThreadKeys();
-    const nextPinnedThreadKeys = existingPinnedThreadKeys.includes(threadKey)
-      ? existingPinnedThreadKeys.filter((value) => value !== threadKey)
-      : [...existingPinnedThreadKeys, threadKey];
-
-    roomPinnedMessageThreads = {
-      ...roomPinnedMessageThreads,
-      [currentRoomId]: nextPinnedThreadKeys,
-    };
-    renderMessagingUi();
-    await persistPinnedMessageThreads();
-    return;
-  }
-
-  const threadButton = target.closest("[data-message-thread-key]");
-
-  if (!threadButton) {
-    return;
-  }
-
-  const threadKey = String(threadButton.getAttribute("data-message-thread-key") || "").trim();
-
-  if (!threadKey) {
-    return;
-  }
-
-  selectMessageThread(threadKey, { closeDrawer: true });
 });
 
 selectedRoomVolume?.addEventListener("click", async (event) => {
