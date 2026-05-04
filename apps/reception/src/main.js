@@ -22,6 +22,7 @@ let activeNotification = null;
 let chatMessages = [];
 let measuredGadgetHeight = null;
 let saveWindowPositionTimer = null;
+let preExpandWindowPosition = null;
 let aboutWindow = null;
 let localAppState = {
   runtimeRole: RUNTIME_ROLE_RECEPTION,
@@ -35,6 +36,7 @@ let serviceState = {
 };
 
 const WINDOW_WIDTH = 460;
+const WINDOW_EXPANDED_WIDTH = 1200;
 const WINDOW_MINIMIZED_HEIGHT = 96;
 const WINDOW_ADMIN_WIDTH = 780;
 const WINDOW_ADMIN_HEIGHT = 800;
@@ -874,7 +876,8 @@ function getWindowBounds(config, currentBounds = null, options = {}) {
     ? screen.getDisplayMatching(referenceBounds)
     : screen.getPrimaryDisplay();
   const workArea = targetDisplay.workArea;
-  const desiredWidth = WINDOW_WIDTH;
+  const isExpanded = Boolean(config.display.expanded);
+  const desiredWidth = isExpanded ? WINDOW_EXPANDED_WIDTH : WINDOW_WIDTH;
   const desiredHeight = config.display.minimized
     ? WINDOW_MINIMIZED_HEIGHT
     : getGadgetHeight(config);
@@ -895,6 +898,25 @@ function getWindowBounds(config, currentBounds = null, options = {}) {
 
   const maxX = workArea.x + workArea.width - width;
   const maxY = workArea.y + workArea.height - height;
+
+  if (isExpanded) {
+    return {
+      x: defaultX,
+      y: defaultY,
+      width,
+      height,
+    };
+  }
+
+  if (options.overridePosition) {
+    return {
+      x: Math.min(Math.max(options.overridePosition.x, workArea.x), Math.max(workArea.x, maxX)),
+      y: Math.min(Math.max(options.overridePosition.y, workArea.y), Math.max(workArea.y, maxY)),
+      width,
+      height,
+    };
+  }
+
   const preferredY =
     options.preserveBottom && !config.display.minimized
       ? referenceBounds.y + referenceBounds.height - height
@@ -1018,6 +1040,14 @@ function initializeConfigPath() {
 }
 
 async function updateDisplaySettings(patch) {
+  const wasExpanded = Boolean(configState.display.expanded);
+  const willBeExpanded = typeof patch.expanded === "boolean" ? patch.expanded : wasExpanded;
+
+  if (!wasExpanded && willBeExpanded && mainWindow && !mainWindow.isDestroyed()) {
+    const [x, y] = mainWindow.getPosition();
+    preExpandWindowPosition = { x, y };
+  }
+
   configState = {
     ...configState,
     display: {
@@ -1028,7 +1058,17 @@ async function updateDisplaySettings(patch) {
 
   configState = saveConfigFn(configState);
   setLaunchAtStartup(configState.display.launchAtStartup);
-  resizeForDisplayMode();
+
+  const resizeOptions = {};
+  if (wasExpanded && !willBeExpanded && preExpandWindowPosition) {
+    resizeOptions.overridePosition = preExpandWindowPosition;
+  }
+  resizeForDisplayMode(resizeOptions);
+
+  if (wasExpanded && !willBeExpanded) {
+    preExpandWindowPosition = null;
+  }
+
   refreshTrayMenu();
   emitState();
 
@@ -1347,6 +1387,10 @@ app.whenReady().then(async () => {
 
     if (typeof patch.messagesVisible === "boolean") {
       nextPatch.messagesVisible = patch.messagesVisible;
+    }
+
+    if (typeof patch.expanded === "boolean") {
+      nextPatch.expanded = patch.expanded;
     }
 
     return updateDisplaySettings(nextPatch);

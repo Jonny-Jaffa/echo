@@ -25,6 +25,10 @@ const settingsTabSections = [...document.querySelectorAll("[data-settings-sectio
 const adminFeedback = document.querySelector("#admin-feedback");
 const adminModeButton = document.querySelector("#admin-mode-button");
 const compactModeButton = document.querySelector("#compact-mode-button");
+const compactModeMenu = document.querySelector("#compact-mode-menu");
+const compactModeOptions = document.querySelectorAll(".compact-mode-option");
+const expandWindowButton = document.querySelector("#expand-window-button");
+const expandAdminButton = document.querySelector("#expand-admin-button");
 const minimizeWindowButton = document.querySelector("#minimize-window-button");
 const minimizeAdminButton = document.querySelector("#minimize-admin-button");
 const quitAppButton = document.querySelector("#quit-app-button");
@@ -998,10 +1002,25 @@ function applyState(state) {
     compactModeButton.title = state.config.display.compactMode ? "Disable compact view" : "Enable compact view";
     compactModeButton.classList.toggle("is-active", Boolean(state.config.display.compactMode));
   }
+  compactModeOptions.forEach((option) => {
+    const isActive = option.getAttribute("data-compact-mode") === String(state.config.display.compactMode);
+    option.classList.toggle("is-active", isActive);
+  });
   document.body.dataset.windowView = windowView;
   document.body.dataset.minimized = !isSettingsWindow && state.config.display.minimized ? "true" : "false";
   document.body.dataset.adminMode = isSettingsWindow ? "true" : "false";
   document.body.dataset.compactMode = !isSettingsWindow && state.config.display.compactMode ? "true" : "false";
+  document.body.dataset.expanded = !isSettingsWindow && state.config.display.expanded ? "true" : "false";
+  expandWindowButton?.classList.toggle("is-active", Boolean(state.config.display.expanded));
+  expandAdminButton?.classList.toggle("is-active", Boolean(state.config.display.expanded));
+  if (expandWindowButton) {
+    expandWindowButton.title = state.config.display.expanded ? "Collapse window" : "Expand window";
+    expandWindowButton.setAttribute("aria-label", state.config.display.expanded ? "Collapse window" : "Expand window");
+  }
+  if (expandAdminButton) {
+    expandAdminButton.title = state.config.display.expanded ? "Collapse window" : "Expand window";
+    expandAdminButton.setAttribute("aria-label", state.config.display.expanded ? "Collapse window" : "Expand window");
+  }
   syncMessageSectionVisibility();
   adminPanel.classList.toggle("hidden", !isSettingsWindow);
 
@@ -1447,10 +1466,27 @@ adminModeButton?.addEventListener("click", async () => {
   await window.pip.openSettingsWindow?.().catch(() => {});
 });
 
-compactModeButton?.addEventListener("click", async () => {
-  await window.pip.updateDisplaySettings({
-    compactMode: !appState.config.display.compactMode,
+compactModeButton?.addEventListener("click", () => {
+  const isOpen = compactModeButton.getAttribute("aria-expanded") === "true";
+  compactModeButton.setAttribute("aria-expanded", !isOpen);
+  compactModeMenu?.classList.toggle("hidden", isOpen);
+});
+
+compactModeOptions.forEach((option) => {
+  option.addEventListener("click", async () => {
+    const compactMode = option.getAttribute("data-compact-mode") === "true";
+    await window.pip.updateDisplaySettings({ compactMode });
+    compactModeButton.setAttribute("aria-expanded", "false");
+    compactModeMenu?.classList.add("hidden");
   });
+});
+
+document.addEventListener("click", (event) => {
+  const dropdown = document.querySelector(".compact-mode-dropdown");
+  if (dropdown && !dropdown.contains(event.target)) {
+    compactModeButton?.setAttribute("aria-expanded", "false");
+    compactModeMenu?.classList.add("hidden");
+  }
 });
 
 document.body.addEventListener("dragstart", (event) => {
@@ -1546,6 +1582,29 @@ document.body.addEventListener("drop", (event) => {
 
   renderChatRecipients(appState);
 });
+
+async function toggleExpandWindow() {
+  const isExpanded = document.body.dataset.expanded === "true";
+  const nextExpanded = !isExpanded;
+  document.body.dataset.expanded = nextExpanded ? "true" : "false";
+  expandWindowButton?.classList.toggle("is-active", nextExpanded);
+  expandAdminButton?.classList.toggle("is-active", nextExpanded);
+  if (expandWindowButton) {
+    expandWindowButton.title = nextExpanded ? "Collapse window" : "Expand window";
+    expandWindowButton.setAttribute("aria-label", nextExpanded ? "Collapse window" : "Expand window");
+  }
+  if (expandAdminButton) {
+    expandAdminButton.title = nextExpanded ? "Collapse window" : "Expand window";
+    expandAdminButton.setAttribute("aria-label", nextExpanded ? "Collapse window" : "Expand window");
+  }
+  await window.pip.updateDisplaySettings({
+    expanded: nextExpanded,
+  });
+  reportGadgetHeight();
+}
+
+expandWindowButton?.addEventListener("click", toggleExpandWindow);
+expandAdminButton?.addEventListener("click", toggleExpandWindow);
 
 minimizeWindowButton?.addEventListener("click", async () => {
   await window.pip.minimizeWindow?.().catch(() => {});

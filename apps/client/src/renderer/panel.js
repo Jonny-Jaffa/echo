@@ -10,6 +10,7 @@ const setupFeedback = document.querySelector("#setup-feedback");
 const serverPanel = document.querySelector("#server-panel");
 const serverToggleButton = document.querySelector("#server-toggle-button");
 const panelMinimizeButton = document.querySelector("#panel-minimize-button");
+const panelExpandButton = document.querySelector("#panel-expand-button");
 const panelCloseButton = document.querySelector("#panel-close-button");
 const quickActionsToggleButton = document.querySelector("#quick-actions-toggle-button");
 const panelDisplayModeMenu = document.querySelector("#panel-display-mode-menu");
@@ -3315,6 +3316,22 @@ serverToggleButton?.addEventListener("click", () => {
 
 panelMinimizeButton?.addEventListener("click", () => {
   window.pipPanel.minimizeWindow?.().catch(() => {});
+});
+
+panelExpandButton?.addEventListener("click", async () => {
+  try {
+    const result = await window.pipPanel.expandWindow?.();
+    if (result?.isExpanded !== undefined) {
+      panelExpandButton.classList.toggle("is-active", result.isExpanded);
+      panelExpandButton.setAttribute(
+        "aria-label",
+        result.isExpanded ? "Collapse window" : "Expand window",
+      );
+      panelExpandButton.title = result.isExpanded ? "Collapse window" : "Expand window";
+    }
+  } catch {
+    // Ignore expand errors
+  }
 });
 
 panelCloseButton?.addEventListener("click", () => {

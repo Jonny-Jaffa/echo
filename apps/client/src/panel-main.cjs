@@ -8,6 +8,7 @@ const { app, BrowserWindow, ipcMain, Menu, Tray, nativeImage } = require("electr
 
 const DISCOVERY_PORT = 3210;
 const SURGERY_WINDOW_WIDTH = 373;
+const SURGERY_WINDOW_EXPANDED_WIDTH = 780;
 const SURGERY_SETTINGS_WINDOW_WIDTH = 780;
 const SURGERY_WINDOW_HEIGHT = 420;
 const SURGERY_WINDOW_BUTTONS_HEIGHT = 238;
@@ -104,6 +105,7 @@ let tray = null;
 let aboutWindow = null;
 let isQuitting = false;
 let isSettingsPanelExpanded = false;
+let preExpandWindowPosition = null;
 let clientSettings = {
   runtimeRole: RUNTIME_ROLE_ROOM,
   runtimeRoleConfirmed: true,
@@ -1283,6 +1285,66 @@ app.whenReady().then(async () => {
     const targetWindow = BrowserWindow.fromWebContents(event.sender);
     minimizeWindow(targetWindow);
     return { ok: true };
+  });
+  ipcMain.handle("panel:expandWindow", (event) => {
+    const targetWindow = BrowserWindow.fromWebContents(event.sender);
+
+    if (!targetWindow || targetWindow.isDestroyed()) {
+      return { ok: false, isExpanded: false };
+    }
+
+    const [currentX, currentY] = targetWindow.getPosition();
+    const [currentWidth, currentHeight] = targetWindow.getSize();
+
+    if (currentWidth >= SURGERY_WINDOW_EXPANDED_WIDTH) {
+      // Collapse back to original width
+      if (preExpandWindowPosition) {
+        targetWindow.setBounds({
+          x: preExpandWindowPosition.x,
+          y: preExpandWindowPosition.y,
+          width: SURGERY_WINDOW_WIDTH,
+          height: preExpandWindowPosition.height,
+        }, true);
+        preExpandWindowPosition = null;
+      } else {
+        targetWindow.setBounds({
+          x: currentX,
+          y: currentY,
+          width: SURGERY_WINDOW_WIDTH,
+        }, true);
+      }
+
+      return { ok: true, isExpanded: false };
+    } else {
+      // Save current position and collapse back
+      preExpandWindowPosition = {
+        x: currentX,
+        y: currentY,
+        width: SURGERY_WINDOW_WIDTH,
+        height: currentHeight,
+      };
+
+      // Center the expanded window on the current display
+      const display = require("electron").screen.getDisplayNearestPoint({
+        x: currentX,
+        y: currentY,
+      });
+      const workArea = display.workArea;
+      const expandedX = Math.round(
+        workArea.x + (workArea.width - SURGERY_WINDOW_EXPANDED_WIDTH) / 2,
+      );
+      const expandedY = Math.round(
+        workArea.y + (workArea.height - currentHeight) / 2,
+      );
+
+      targetWindow.setBounds({
+        x: expandedX,
+        y: expandedY,
+        width: SURGERY_WINDOW_EXPANDED_WIDTH,
+      }, true);
+
+      return { ok: true, isExpanded: true };
+    }
   });
   ipcMain.handle("panel:openSettingsWindow", () => {
     createSettingsWindow();

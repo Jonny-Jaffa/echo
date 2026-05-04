@@ -217,6 +217,7 @@ export function normalizeConfig(config) {
       alwaysOnTop: Boolean(config.display?.alwaysOnTop),
       autoHideMs: Math.max(0, Number(config.display?.autoHideMs) || 0),
       compactMode: config.display?.compactMode !== false,
+      expanded: Boolean(config.display?.expanded),
       messagesVisible: Boolean(config.display?.messagesVisible),
       minimized: Boolean(config.display?.minimized),
       adminMode: Boolean(config.display?.adminMode),

@@ -6,6 +6,7 @@ contextBridge.exposeInMainWorld("pipPanel", {
   defaultRoomId: process.env.PIP_ROOM_ID || "surgery-1",
   hideWindow: () => ipcRenderer.invoke("panel:hideWindow"),
   minimizeWindow: () => ipcRenderer.invoke("panel:minimizeWindow"),
+  expandWindow: () => ipcRenderer.invoke("panel:expandWindow"),
   openSettingsWindow: () => ipcRenderer.invoke("panel:openSettingsWindow"),
   openRoleWindow: () => ipcRenderer.invoke("panel:openRoleWindow"),
   closeRoleWindow: () => ipcRenderer.invoke("panel:closeRoleWindow"),
