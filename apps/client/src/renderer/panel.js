@@ -39,6 +39,7 @@ const roleCloseButton = document.querySelector("#role-close-button");
 const openRoleWindowButton = document.querySelector("#open-role-window-button");
 const selectedDeviceRoleLabel = document.querySelector("#selected-device-role-label");
 const receptionPingBanner = document.querySelector("#reception-ping-banner");
+const receptionOfflineBanner = document.querySelector("#reception-offline-banner");
 const showPanelAtStartupInput = document.querySelector("#show-panel-at-startup-input");
 const alwaysOnTopInput = document.querySelector("#always-on-top-input");
 const messageSoundInput = document.querySelector("#message-sound-input");
@@ -1004,6 +1005,7 @@ function connectSocket() {
 
   socket.addEventListener("open", () => {
     setStatus("Connected", "online");
+    hideReceptionOfflineBanner();
     sendIdentify();
     fetchChatMessages().catch(() => {});
   });
@@ -1077,6 +1079,7 @@ function connectSocket() {
 
   socket.addEventListener("close", () => {
     setStatus("Offline", "offline");
+    showReceptionOfflineBanner();
     if (!configState && !manualPanelReveal) {
       setPanelView("waiting");
     }
@@ -1087,6 +1090,7 @@ function connectSocket() {
 
   socket.addEventListener("error", () => {
     setStatus("Offline", "offline");
+    showReceptionOfflineBanner();
     if (!configState && !manualPanelReveal) {
       setPanelView("waiting");
     }
@@ -3130,6 +3134,20 @@ function hideReceptionPingBanner() {
   receptionPingBanner.classList.add("hidden");
 }
 
+function showReceptionOfflineBanner() {
+  if (!receptionOfflineBanner) {
+    return;
+  }
+  receptionOfflineBanner.classList.remove("hidden");
+}
+
+function hideReceptionOfflineBanner() {
+  if (!receptionOfflineBanner) {
+    return;
+  }
+  receptionOfflineBanner.classList.add("hidden");
+}
+
 function clearReceptionPing() {
   if (!receptionPingBanner || receptionPingBanner.classList.contains("hidden")) {
     return;
@@ -3246,14 +3264,24 @@ async function init() {
     saveState();
   } catch (error) {
     setStatus("Offline", "offline");
-    setPanelView("waiting");
-    syncSetupFieldsFromSettings();
-    setSetupFeedback(
-      getServerAccessKeyValue()
-        ? "Reception is offline or the pairing details are incorrect."
-        : "Enter the pairing code from Reception settings, then connect.",
-      "error",
-    );
+
+    if (isSettingsWindow) {
+      // In the settings window, show the settings panel with an inline connection error
+      // rather than switching to the waiting/offline view.
+      setPanelView("panel");
+      setServerPanelVisibility(true);
+      setActiveSettingsSidebarLink("settings-connection");
+    } else {
+      showReceptionOfflineBanner();
+      setPanelView("waiting");
+      syncSetupFieldsFromSettings();
+      setSetupFeedback(
+        getServerAccessKeyValue()
+          ? "Reception is offline or the pairing details are incorrect."
+          : "Enter the pairing code from Reception settings, then connect.",
+        "error",
+      );
+    }
   }
 }
 

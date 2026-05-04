@@ -88,6 +88,30 @@ label {
   display: none;
 }
 
+.reception-offline-banner {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 36px;
+  padding: 6px 14px;
+  background: #b91c1c;
+  color: white;
+  font-size: 13px;
+  font-weight: 600;
+  -webkit-app-region: no-drag;
+  pointer-events: none;
+}
+
+.reception-offline-banner.hidden {
+  display: none;
+}
+
 .panel-shell {
   padding: 0;
   display: grid;
