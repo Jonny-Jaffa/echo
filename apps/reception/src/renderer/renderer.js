@@ -367,16 +367,28 @@ function renderCompactAlertList(state, rooms, alerts) {
       return `
         <article class="compact-room-card" style="--row-accent: ${escapeHtml(room.color || "#0f766e")}">
           <h3 class="compact-room-title" title="${escapeHtml(room.name)}">${escapeHtml(getRoomShortLabel(room))}</h3>
-          <button
-            class="dismiss secondary ping-button compact-room-alert-button ${isWaitingForReply ? "is-pinging" : ""}"
-            data-action="ping-room"
-            data-room-id="${escapeHtml(room.id)}"
-            type="button"
-            aria-label="${isWaitingForReply ? "Clear room alert" : "Alert room"}"
-            title="${isWaitingForReply ? "Clear room alert" : "Alert room"}"
-          >
-            Ping
-          </button>
+          <div class="compact-room-actions">
+            <button
+              class="dismiss secondary ping-button compact-room-alert-button ${isWaitingForReply ? "is-pinging" : ""}"
+              data-action="ping-room"
+              data-room-id="${escapeHtml(room.id)}"
+              type="button"
+              aria-label="${isWaitingForReply ? "Clear room alert" : "Alert room"}"
+              title="${isWaitingForReply ? "Clear room alert" : "Alert room"}"
+            >
+              Ping
+            </button>
+            <button
+              class="dismiss secondary message-room-button compact-room-message-button ${unreadChatRoomIds.has(room.id) ? "is-unread" : ""}"
+              data-action="message-room"
+              data-room-id="${escapeHtml(room.id)}"
+              type="button"
+              aria-label="Message ${escapeHtml(room.name)}"
+              title="Message ${escapeHtml(room.name)}"
+            >
+              Message
+            </button>
+          </div>
         </article>
       `;
     })
@@ -396,19 +408,30 @@ function renderCompactAlertList(state, rooms, alerts) {
         state.activeNotification &&
           alert.notificationId === state.activeNotification.notificationId,
       );
+      const formattedTime = alert ? formatRelativeTime(alert.timestamp) : "";
+      const isWaitingForReply = pendingPingRooms.has(room.id);
 
       return `
         <article
           class="compact-message-row ${isActive ? "is-active" : "is-queued"}"
           style="--row-accent: ${escapeHtml(room.color || "#0f766e")}"
         >
-          <div class="compact-message-copy">
-            <p class="compact-message-room" title="${escapeHtml(room.name)}">${escapeHtml(getRoomShortLabel(room))}</p>
-            <p class="compact-message-text">${escapeHtml(alert.message || "")}</p>
+          <div class="alert-copy">
+            <div class="alert-main-line">
+              <h2 class="alert-room" title="${escapeHtml(room.name)}">${escapeHtml(getRoomShortLabel(room))}</h2>
+              <p class="alert-message">${escapeHtml(alert.message || "")}</p>
+            </div>
           </div>
-          <div class="confirm-cluster compact-confirm-cluster">
-            <span class="room-alert-count" aria-label="${roomAlertCount} ${roomAlertCount === 1 ? "message" : "messages"}">${roomAlertCount}</span>
-            <button class="dismiss icon-confirm" data-action="${isActive ? "dismiss" : "dismiss-row"}" data-notification-id="${escapeHtml(alert.notificationId)}" type="button" aria-label="Confirm" title="Confirm">Confirm</button>
+          <div class="action-row">
+            <div class="action-slot age-slot">
+              <span class="meta alert-age">${formattedTime}</span>
+            </div>
+            <div class="action-slot icon-slot">
+              <div class="confirm-cluster">
+                <span class="room-alert-count" aria-label="${roomAlertCount} ${roomAlertCount === 1 ? "message" : "messages"}">${roomAlertCount}</span>
+                <button class="dismiss icon-confirm" data-action="${isActive ? "dismiss" : "dismiss-row"}" data-notification-id="${escapeHtml(alert.notificationId)}" type="button" aria-label="Confirm" title="Confirm">Confirm</button>
+              </div>
+            </div>
           </div>
         </article>
       `;
@@ -419,8 +442,8 @@ function renderCompactAlertList(state, rooms, alerts) {
   return `
     <section class="compact-layout">
       <div
-        class="compact-room-grid ${rooms.length <= 5 ? "is-centered" : ""}"
-        style="--compact-room-columns: ${Math.max(1, Math.min(rooms.length, 5))}"
+        class="compact-room-grid ${rooms.length <= 4 ? "is-centered" : ""}"
+        style="--compact-room-columns: ${Math.max(1, Math.min(rooms.length, 4))}"
       >${compactRoomControls}</div>
       ${activeMessageRows ? `<div class="compact-message-list">${activeMessageRows}</div>` : ""}
     </section>
@@ -573,7 +596,7 @@ function syncMessageSectionVisibility() {
 function syncMessageContext(state = appState) {
   const activeRoom = getActiveSingleChatRoom(state);
   const isAllRoomsSelected = areAllRoomsSelected(state);
-  const accent = isAllRoomsSelected ? "#d9dddd" : activeRoom?.color || "var(--accent)";
+  const accent = isAllRoomsSelected ? "#879293" : activeRoom?.color || "var(--accent)";
   const label = isAllRoomsSelected
     ? "All Rooms"
     : activeRoom
@@ -602,22 +625,22 @@ function syncMessageContext(state = appState) {
   chatCard.style.setProperty("--active-room-accent", accent);
   chatCard.style.setProperty("--message-send-active-color", isAllRoomsSelected ? "var(--text)" : accent);
   chatCard.style.setProperty("--message-context-label-color", isAllRoomsSelected ? "#3f4444" : accent);
-  chatCard.style.setProperty("--message-context-short-label-color", isAllRoomsSelected ? "var(--text)" : "white");
+  chatCard.style.setProperty("--message-context-short-label-color", isAllRoomsSelected ? "white" : "white");
   chatCard.style.setProperty(
     "--message-context-strip-background",
     isAllRoomsSelected
-      ? "linear-gradient(90deg, #e7eaea, #f7f8f8)"
+      ? "linear-gradient(90deg, #d0d4d4, #ffffff)"
       : activeRoom
       ? `linear-gradient(90deg, color-mix(in srgb, ${accent} 15%, white), color-mix(in srgb, ${accent} 4%, white) 72%, #ffffff)`
-      : "linear-gradient(90deg, #f7f7f7, #ffffff)",
+      : "linear-gradient(90deg, #d0d4d4, #ffffff)",
   );
   chatCard.style.setProperty(
     "--message-list-background",
     isAllRoomsSelected
-      ? "linear-gradient(180deg, #f1f3f3, #fafafa)"
+      ? "linear-gradient(90deg, #d5d9d9, #f5f6f6)"
       : activeRoom
       ? `linear-gradient(180deg, color-mix(in srgb, ${accent} 10%, white), color-mix(in srgb, ${accent} 4%, white))`
-      : "linear-gradient(180deg, #f7f7f7, #f8fdff)",
+      : "linear-gradient(90deg, #d5d9d9, #f5f6f6)",
   );
   chatCard.style.setProperty("--message-bubble-incoming", activeRoom?.color || "#418191");
 }
@@ -952,6 +975,15 @@ function applyState(state) {
   if (!hasRestoredMessageSectionVisibility) {
     isMessageSectionVisible = Boolean(state.config?.display?.messagesVisible);
     hasRestoredMessageSectionVisibility = true;
+
+    if (isMessageSectionVisible && selectedChatRoomIds.size === 0 && !isAllChatRoomsThreadSelected) {
+      const rooms = state?.config?.rooms || [];
+      const firstRoom = rooms[0];
+
+      if (firstRoom?.id) {
+        selectedChatRoomIds.add(firstRoom.id);
+      }
+    }
   }
   syncPendingPingRooms(state);
   adminModeButton?.setAttribute("aria-label", "Open settings");

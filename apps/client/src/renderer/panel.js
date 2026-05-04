@@ -19,6 +19,8 @@ const messageShell = document.querySelector(".message-shell");
 const messageCollapseButton = document.querySelector("#message-collapse-button");
 const messageContextLabel = document.querySelector("#message-context-label");
 const messageThreadList = document.querySelector("#message-thread-list");
+const messageThreadScrollLeft = document.querySelector("#message-thread-scroll-left");
+const messageThreadScrollRight = document.querySelector("#message-thread-scroll-right");
 const messageList = document.querySelector("#message-list");
 const messageComposeInput = document.querySelector("#message-compose-input");
 const messageSendButton = document.querySelector("#message-send-button");
@@ -217,7 +219,7 @@ function getThreadFullLabel(thread) {
 
 function getMessageThreadAccent(thread) {
   if (thread?.key === "all") {
-    return "#d9dddd";
+    return "#879293";
   }
 
   const room = configState?.rooms?.find((item) => item.id === thread?.key);
@@ -430,7 +432,7 @@ function normalizeRoomActionNotification(notification, index, roomId = "") {
     ? Math.max(0, Math.min(ROOM_ACTION_BUTTON_COUNT - 1, Math.round(parsedDeviceButton)))
     : Math.max(0, Math.min(ROOM_ACTION_BUTTON_COUNT - 1, index));
   const fallbackLabel = `Action ${deviceButton + 1}`;
-  const label = String(notification?.label || notification?.message || "").trim().slice(0, 20);
+  const label = String(notification?.label || notification?.message || "").trim().slice(0, 21);
 
   if (!label) {
     return null;
@@ -439,7 +441,7 @@ function normalizeRoomActionNotification(notification, index, roomId = "") {
   return {
     id: String(notification?.id || `${roomId || "room"}-action-${deviceButton + 1}`).trim(),
     label,
-    message: String(notification?.message || label || fallbackLabel).trim().slice(0, 20) || fallbackLabel,
+    message: String(notification?.message || label || fallbackLabel).trim().slice(0, 21) || fallbackLabel,
     color: String(notification?.color || "#2563eb").trim(),
     icon: String(notification?.icon || "").trim().slice(0, 20),
     deviceButton,
@@ -1474,7 +1476,7 @@ function renderMessageThreads() {
   const threads = ensureActiveMessageThread();
   syncMessageThreadOrder(threads);
   const orderedThreads = orderMessageThreads(threads);
-  messageThreadList.parentElement?.classList.toggle("hidden", orderedThreads.length === 0);
+  messageThreadList.closest(".message-thread-bar")?.classList.toggle("hidden", orderedThreads.length === 0);
   messageThreadList.innerHTML = orderedThreads
     .map((thread) => `
       <button
@@ -1491,6 +1493,21 @@ function renderMessageThreads() {
       </button>
     `)
     .join("");
+  requestAnimationFrame(updateMessageThreadScrollButtons);
+}
+
+function updateMessageThreadScrollButtons() {
+  if (!messageThreadList || !messageThreadScrollLeft || !messageThreadScrollRight) {
+    return;
+  }
+
+  const hasOverflow = messageThreadList.scrollWidth > messageThreadList.clientWidth;
+  const atStart = messageThreadList.scrollLeft <= 2;
+  const atEnd = messageThreadList.scrollLeft + messageThreadList.clientWidth >= messageThreadList.scrollWidth - 2;
+
+  messageThreadScrollLeft.hidden = !hasOverflow || atStart;
+  messageThreadScrollRight.hidden = !hasOverflow || atEnd;
+  messageThreadList.classList.toggle("has-overflow", hasOverflow);
 }
 
 function hexToRgba(hex, alpha) {
@@ -1523,17 +1540,17 @@ function syncMessageContext() {
   const isAllRoomsThread = activeThread?.key === "all";
   const accent = getMessageThreadAccent(activeThread);
   const labelColor = isAllRoomsThread ? "#3f4444" : activeRoom?.color || "var(--accent)";
-  const iconColor = isAllRoomsThread ? "var(--text)" : "white";
+  const iconColor = isAllRoomsThread ? "white" : "white";
   const listBackground = isAllRoomsThread
-    ? "linear-gradient(180deg, #f7f7f7 #f8f8f8)"
+    ? "linear-gradient(90deg, #d5d9d9, #f5f6f6)"
     : activeRoom?.color
       ? `linear-gradient(90deg, ${hexToRgba(activeRoom.color, 0.16)}, ${hexToRgba(activeRoom.color, 0.04)})`
-      : "linear-gradient(180deg, #f7f7f7, #f8feff)";
+      : "linear-gradient(90deg, #d5d9d9, #f5f6f6)";
   const stripBackground = isAllRoomsThread
-    ? "linear-gradient(90deg, #f0f1f1, #ffffff)"
+    ? "linear-gradient(90deg, #d0d4d4, #ffffff)"
     : activeRoom?.color
       ? `linear-gradient(90deg, ${hexToRgba(activeRoom.color, 0.16)}, #ffffff)`
-      : "linear-gradient(90deg, #f7f7f7, #ffffff)";
+      : "linear-gradient(90deg, #d0d4d4, #ffffff)";
   const fullLabel = getThreadFullLabel(activeThread);
 
   messageContextLabel.textContent = fullLabel;
@@ -2105,7 +2122,7 @@ function updateRoomActionSetting(roomId, buttonIndex, key, value) {
           icon: "",
           deviceButton: Number(buttonIndex),
         };
-  const normalizedValue = String(value ?? "").trim().slice(0, key === "icon" ? 20 : 20);
+  const normalizedValue = String(value ?? "").trim().slice(0, key === "icon" ? 20 : 21);
   const nextNotification = {
     ...currentNotification,
     [key]: normalizedValue,
@@ -2294,7 +2311,7 @@ function renderRoomActionRows(roomId) {
               data-room-action-button="${action.buttonIndex}"
               data-room-action-key="message"
               type="text"
-              maxlength="20"
+              maxlength="21"
               value="${escapeHtml(action.message)}"
             />
           </label>
@@ -3798,6 +3815,38 @@ document.body.addEventListener("drop", async (event) => {
     saveRoomMessageThreadOrder();
     renderMessagingUi();
   }
+});
+
+messageThreadList?.addEventListener("scroll", updateMessageThreadScrollButtons, { passive: true });
+
+const messageThreadScrollObserver = new ResizeObserver(() => {
+  requestAnimationFrame(updateMessageThreadScrollButtons);
+});
+
+if (messageThreadList) {
+  messageThreadScrollObserver.observe(messageThreadList);
+}
+
+window.addEventListener("resize", () => {
+  requestAnimationFrame(updateMessageThreadScrollButtons);
+});
+
+messageThreadScrollLeft?.addEventListener("click", () => {
+  if (!messageThreadList) {
+    return;
+  }
+
+  const scrollAmount = Math.max(120, messageThreadList.clientWidth * 0.5);
+  messageThreadList.scrollBy({ left: -scrollAmount, behavior: "smooth" });
+});
+
+messageThreadScrollRight?.addEventListener("click", () => {
+  if (!messageThreadList) {
+    return;
+  }
+
+  const scrollAmount = Math.max(120, messageThreadList.clientWidth * 0.5);
+  messageThreadList.scrollBy({ left: scrollAmount, behavior: "smooth" });
 });
 
 messageThreadList?.addEventListener("click", (event) => {

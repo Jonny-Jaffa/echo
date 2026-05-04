@@ -135,7 +135,11 @@
         </section>
         <section class="message-shell room-message-shell">
           <div class="message-thread-bar">
-            <div class="message-thread-list" id="message-thread-list"></div>
+            <div class="message-thread-scroll-wrap">
+              <button class="message-thread-scroll-button is-scroll-left" id="message-thread-scroll-left" type="button" aria-label="Scroll left" title="Scroll left" hidden>Scroll left</button>
+              <div class="message-thread-list" id="message-thread-list"></div>
+              <button class="message-thread-scroll-button is-scroll-right" id="message-thread-scroll-right" type="button" aria-label="Scroll right" title="Scroll right" hidden>Scroll right</button>
+            </div>
           </div>
           <div class="message-context-bar">
             <div class="message-context-copy">
