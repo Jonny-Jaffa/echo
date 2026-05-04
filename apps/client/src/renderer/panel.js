@@ -65,6 +65,54 @@ const DEFAULT_BUTTON_APPEARANCE = {
   activeBackground: "#000000",
   activeText: "#FFFFFF",
 };
+const BUTTON_SOLID_SWATCHES = [
+  "#FDD905",
+  "#000000",
+  "#FFFFFF",
+  "#D0069A",
+  "#E07C0B",
+  "#0BC120",
+  "#1997E6",
+  "#7C3AED",
+  "#DC2626",
+  "#0F766E",
+  "#2563EB",
+  "#9333EA",
+  "#BE123C",
+  "#047857",
+  "#475569",
+  "#0891B2",
+  "#CA8A04",
+  "#DB2777",
+];
+const BUTTON_GRADIENT_SWATCHES = [
+  "linear-gradient(135deg, #FDD905 0%, #F59E0B 100%)",
+  "linear-gradient(135deg, #D0069A 0%, #7C3AED 100%)",
+  "linear-gradient(135deg, #1997E6 0%, #0BC120 100%)",
+  "linear-gradient(135deg, #0F766E 0%, #14B8A6 100%)",
+  "linear-gradient(135deg, #2563EB 0%, #9333EA 100%)",
+  "linear-gradient(135deg, #DC2626 0%, #F97316 100%)",
+  "linear-gradient(135deg, #111827 0%, #475569 100%)",
+  "linear-gradient(135deg, #BE123C 0%, #DB2777 100%)",
+  "linear-gradient(135deg, #047857 0%, #84CC16 100%)",
+  "linear-gradient(135deg, #0891B2 0%, #2563EB 100%)",
+  "linear-gradient(135deg, #7C2D12 0%, #CA8A04 100%)",
+  "linear-gradient(135deg, #FFFFFF 0%, #E5E7EB 100%)",
+  "radial-gradient(circle at 30% 30%, #FDD905 0%, #E67E22 100%)",
+  "radial-gradient(circle at 30% 30%, #D0069A 0%, #7C3AED 100%)",
+  "radial-gradient(circle at 30% 30%, #34D399 0%, #059669 100%)",
+  "radial-gradient(circle at 30% 30%, #2DD4BF 0%, #0F766E 100%)",
+  "radial-gradient(circle at 30% 30%, #60A5FA 0%, #2563EB 100%)",
+  "radial-gradient(circle at 30% 30%, #F87171 0%, #DC2626 100%)",
+  "radial-gradient(circle at 30% 30%, #6B7280 0%, #111827 100%)",
+  "radial-gradient(circle at 30% 30%, #FB7185 0%, #BE123C 100%)",
+  "radial-gradient(circle at 30% 30%, #A3E635 0%, #4D7C0F 100%)",
+  "radial-gradient(circle at 30% 30%, #22D3EE 0%, #0891B2 100%)",
+  "radial-gradient(circle at 30% 30%, #FBBF24 0%, #B45309 100%)",
+  "radial-gradient(circle at 30% 30%, #FFFFFF 0%, #D1D5DB 100%)",
+];
+const BUTTON_BACKGROUND_SWATCHES = [...BUTTON_SOLID_SWATCHES, ...BUTTON_GRADIENT_SWATCHES];
+const BUTTON_TEXT_SWATCHES = ["#000000", "#FFFFFF"];
 const DEFAULT_LEFT_AUX_SETTING = {
   enabled: true,
   mode: "party",
@@ -133,6 +181,7 @@ let activeMessageThreadKey = "";
 const unreadMessageThreadKeys = new Set();
 let areQuickActionsVisible = false;
 let isMessageThreadDrawerVisible = false;
+let buttonAppearancePickerState = null;
 let draggedMessageThreadKey = "";
 let draggedMessageThreadSource = "";
 let panelDisplayMode = "messages";
@@ -253,21 +302,37 @@ function normalizeHexColor(value, fallback) {
   return fallback;
 }
 
+function normalizeButtonBackground(value, fallback) {
+  const normalized = String(value || "").trim();
+  const paletteMatch = BUTTON_BACKGROUND_SWATCHES.find((swatch) => swatch.toLowerCase() === normalized.toLowerCase());
+
+  if (paletteMatch) {
+    return paletteMatch;
+  }
+
+  return normalizeHexColor(normalized, fallback);
+}
+
+function normalizeButtonTextColor(value, fallback) {
+  const normalized = normalizeHexColor(value, fallback).toUpperCase();
+  return normalized === "#FFFFFF" ? "#FFFFFF" : "#000000";
+}
+
 function normalizeButtonAppearance(buttonAppearance, fallbackAppearance = {}) {
   return {
-    defaultBackground: normalizeHexColor(
+    defaultBackground: normalizeButtonBackground(
       buttonAppearance?.defaultBackground,
       fallbackAppearance.defaultBackground || DEFAULT_BUTTON_APPEARANCE.defaultBackground,
     ),
-    defaultText: normalizeHexColor(
+    defaultText: normalizeButtonTextColor(
       buttonAppearance?.defaultText,
       fallbackAppearance.defaultText || DEFAULT_BUTTON_APPEARANCE.defaultText,
     ),
-    activeBackground: normalizeHexColor(
+    activeBackground: normalizeButtonBackground(
       buttonAppearance?.activeBackground,
       fallbackAppearance.activeBackground || DEFAULT_BUTTON_APPEARANCE.activeBackground,
     ),
-    activeText: normalizeHexColor(
+    activeText: normalizeButtonTextColor(
       buttonAppearance?.activeText,
       fallbackAppearance.activeText || DEFAULT_BUTTON_APPEARANCE.activeText,
     ),
@@ -722,12 +787,14 @@ async function setPanelDisplayMode(mode, options = {}) {
     setMessageThreadDrawerVisibility(false);
   }
 
+  updateMessageScrollbar();
   renderPanelDisplayModeMenu();
 
   if (!isSettingsWindow && resize) {
     await window.pipPanel
       .setSettingsExpanded?.({
         mode: panelDisplayMode,
+        messageComposerHeightOffset: getMessageComposerHeightOffset(),
       })
       .catch(() => {});
   }
@@ -1458,19 +1525,20 @@ function syncMessageContext() {
   const labelColor = isAllRoomsThread ? "#3f4444" : activeRoom?.color || "var(--accent)";
   const iconColor = isAllRoomsThread ? "var(--text)" : "white";
   const listBackground = isAllRoomsThread
-    ? "linear-gradient(180deg, #f3f4f4, #f8f8f8)"
+    ? "linear-gradient(180deg, #f7f7f7 #f8f8f8)"
     : activeRoom?.color
       ? `linear-gradient(90deg, ${hexToRgba(activeRoom.color, 0.16)}, ${hexToRgba(activeRoom.color, 0.04)})`
-      : "linear-gradient(180deg, #edfbff, #f8feff)";
+      : "linear-gradient(180deg, #f7f7f7, #f8feff)";
   const stripBackground = isAllRoomsThread
     ? "linear-gradient(90deg, #f0f1f1, #ffffff)"
     : activeRoom?.color
       ? `linear-gradient(90deg, ${hexToRgba(activeRoom.color, 0.16)}, #ffffff)`
-      : "linear-gradient(90deg, #edfbff, #ffffff)";
+      : "linear-gradient(90deg, #f7f7f7, #ffffff)";
   const fullLabel = getThreadFullLabel(activeThread);
 
   messageContextLabel.textContent = fullLabel;
   messageShell.style.setProperty("--active-room-accent", accent);
+  messageShell.style.setProperty("--message-send-active-color", isAllRoomsThread ? "var(--text)" : accent);
   messageShell.style.setProperty("--message-context-label-color", labelColor);
   messageShell.style.setProperty("--message-context-short-label-color", iconColor);
   messageShell.style.setProperty("--message-context-strip-background", stripBackground);
@@ -1516,10 +1584,16 @@ function renderChatMessages() {
     return;
   }
 
+  const wasPinnedToBottom =
+    messageList.scrollHeight -
+      messageList.scrollTop -
+      messageList.clientHeight <
+    24;
   const messages = getVisibleChatMessages();
 
   if (messages.length === 0) {
     messageList.innerHTML = "";
+    updateMessageScrollbar();
     return;
   }
 
@@ -1545,7 +1619,14 @@ function renderChatMessages() {
     .join("");
 
   updateMessageBubbleLayouts();
-  messageList.scrollTop = messageList.scrollHeight;
+  if (wasPinnedToBottom) {
+    requestAnimationFrame(() => {
+      messageList.scrollTop = messageList.scrollHeight;
+      updateMessageScrollbar();
+    });
+  } else {
+    requestAnimationFrame(updateMessageScrollbar);
+  }
 }
 
 function updateMessageBubbleLayouts() {
@@ -1588,7 +1669,88 @@ function updateMessageComposerHeight() {
   }
 
   messageComposeInput.style.height = "auto";
-  messageComposeInput.style.height = `${Math.min(messageComposeInput.scrollHeight, 144)}px`;
+  messageComposeInput.style.height = `${Math.min(messageComposeInput.scrollHeight, 136)}px`;
+  updateMessageComposerScrollbar();
+}
+
+function getMessageComposerHeightOffset() {
+  if (!messageComposeInput || messageShell?.classList.contains("hidden")) {
+    return 0;
+  }
+
+  const inputStyle = window.getComputedStyle(messageComposeInput);
+  const minHeight = Number.parseFloat(inputStyle.minHeight) || 38;
+  const currentHeight = Math.ceil(
+    messageComposeInput.getBoundingClientRect().height || messageComposeInput.clientHeight || minHeight,
+  );
+
+  return Math.max(0, currentHeight - Math.ceil(minHeight));
+}
+
+function updateMessageComposerScrollbar() {
+  if (!messageComposeInput) {
+    return;
+  }
+
+  const compose = messageComposeInput.closest(".message-compose");
+
+  if (!(compose instanceof HTMLElement)) {
+    return;
+  }
+
+  const maxScroll = messageComposeInput.scrollHeight - messageComposeInput.clientHeight;
+  const hasScrollbar = maxScroll > 1 && messageComposeInput.clientHeight > 0;
+  compose.classList.toggle("has-compose-scrollbar", hasScrollbar);
+
+  if (!hasScrollbar) {
+    return;
+  }
+
+  const composeRect = compose.getBoundingClientRect();
+  const inputRect = messageComposeInput.getBoundingClientRect();
+  const inset = 17;
+  const trackHeight = Math.max(1, messageComposeInput.clientHeight - inset * 2);
+  const thumbHeight = Math.max(
+    24,
+    Math.round(trackHeight * (messageComposeInput.clientHeight / messageComposeInput.scrollHeight)),
+  );
+  const maxThumbOffset = Math.max(0, trackHeight - thumbHeight);
+  const thumbOffset = maxScroll > 0 ? (messageComposeInput.scrollTop / maxScroll) * maxThumbOffset : 0;
+  const thumbTop = inputRect.top - composeRect.top + inset + thumbOffset;
+  const thumbLeft = inputRect.right - composeRect.left - 15;
+
+  compose.style.setProperty("--compose-scrollbar-left", `${Math.round(thumbLeft)}px`);
+  compose.style.setProperty("--compose-scrollbar-top", `${Math.round(thumbTop)}px`);
+  compose.style.setProperty("--compose-scrollbar-thumb-height", `${Math.round(thumbHeight)}px`);
+}
+
+function updateMessageScrollbar() {
+  if (!messageShell || !messageList) {
+    return;
+  }
+
+  const maxScroll = messageList.scrollHeight - messageList.clientHeight;
+  const hasScrollbar = maxScroll > 1 && messageList.clientHeight > 0;
+  messageShell.classList.toggle("has-message-scrollbar", hasScrollbar);
+
+  if (!hasScrollbar) {
+    return;
+  }
+
+  const shellRect = messageShell.getBoundingClientRect();
+  const listRect = messageList.getBoundingClientRect();
+  const inset = 30;
+  const trackHeight = Math.max(1, messageList.clientHeight - inset * 2);
+  const thumbHeight = Math.max(
+    34,
+    Math.round(trackHeight * (messageList.clientHeight / messageList.scrollHeight)),
+  );
+  const maxThumbOffset = Math.max(0, trackHeight - thumbHeight);
+  const thumbOffset = maxScroll > 0 ? (messageList.scrollTop / maxScroll) * maxThumbOffset : 0;
+  const thumbTop = listRect.top - shellRect.top + inset + thumbOffset;
+
+  messageShell.style.setProperty("--message-scrollbar-thumb-height", `${Math.round(thumbHeight)}px`);
+  messageShell.style.setProperty("--message-scrollbar-thumb-top", `${Math.round(thumbTop)}px`);
 }
 
 function selectMessageThread(threadKey, { closeDrawer = false } = {}) {
@@ -1642,6 +1804,178 @@ function updateRoomButtonAppearance(roomId, key, value) {
       [key]: value,
     }),
   };
+}
+
+function getRoomButtonPreviewText(roomId) {
+  const firstNotification = getResolvedRoomNotifications(roomId)[0];
+  return String(
+    firstNotification?.icon ||
+      firstNotification?.label ||
+      firstNotification?.message ||
+      "15MIN",
+  ).trim() || "15MIN";
+}
+
+function getButtonAppearanceModeKeys(mode) {
+  return mode === "active"
+    ? {
+        background: "activeBackground",
+        text: "activeText",
+        title: "Active Button Style",
+      }
+    : {
+        background: "defaultBackground",
+        text: "defaultText",
+        title: "Button Style",
+      };
+}
+
+function renderButtonBackgroundSwatches(selectedBackground) {
+  const normalizedSelected = String(selectedBackground || "").trim().toLowerCase();
+  const renderSwatch = (background, index, type) => `
+    <button
+      class="button-style-swatch ${String(background).trim().toLowerCase() === normalizedSelected ? "is-selected" : ""}"
+      data-button-style-background="${escapeHtml(background)}"
+      data-button-style-swatch-type="${type.toLowerCase()}"
+      data-button-style-swatch-index="${index}"
+      type="button"
+      aria-label="${type} style ${index + 1}"
+      title="${type} style ${index + 1}"
+      style="--swatch-background: ${escapeHtml(background)}"
+    ></button>
+  `;
+
+  return `
+    <div class="button-style-swatch-section">
+      <span>Solid</span>
+      <div class="button-style-swatch-grid is-solid">
+        ${BUTTON_SOLID_SWATCHES.map((background, index) => renderSwatch(background, index, "Solid")).join("")}
+      </div>
+    </div>
+    <div class="button-style-swatch-section">
+      <span>Gradient</span>
+      <div class="button-style-swatch-grid is-gradient">
+        ${BUTTON_GRADIENT_SWATCHES.map((background, index) => renderSwatch(background, index, "Gradient")).join("")}
+      </div>
+    </div>
+  `;
+}
+
+function renderButtonAppearanceSummary(roomId, mode) {
+  const appearance = getRoomButtonAppearance(roomId);
+  const modeKeys = getButtonAppearanceModeKeys(mode);
+  const background = appearance[modeKeys.background];
+  const textColour = appearance[modeKeys.text];
+  const previewText = getRoomButtonPreviewText(roomId);
+
+  return `
+    <button
+      class="button-style-trigger"
+      data-room-appearance-id="${escapeHtml(roomId)}"
+      data-button-style-mode="${escapeHtml(mode)}"
+      type="button"
+    >
+      <span class="button-style-trigger-copy">
+        <span class="selected-room-control-label">${escapeHtml(modeKeys.title)}</span>
+        <span>${mode === "active" ? "Pressed state" : "Normal state"}</span>
+      </span>
+      <span
+        class="button-style-trigger-preview"
+        style="--button-background: ${escapeHtml(background)}; --button-text: ${escapeHtml(textColour)};"
+      >
+        ${escapeHtml(previewText)}
+      </span>
+    </button>
+  `;
+}
+
+function renderButtonAppearancePicker() {
+  const state = buttonAppearancePickerState;
+  const pickerHost = selectedRoomVolume?.querySelector(".selected-room-button-appearance-grid");
+
+  if (!pickerHost || !state) {
+    return;
+  }
+
+  const room = configState?.rooms?.find((item) => item.id === state.roomId);
+
+  if (!room) {
+    buttonAppearancePickerState = null;
+    selectedRoomVolume.querySelector(".button-style-popover")?.remove();
+    return;
+  }
+
+  const appearance = getRoomButtonAppearance(room.id);
+  const modeKeys = getButtonAppearanceModeKeys(state.mode);
+  const background = appearance[modeKeys.background];
+  const textColour = appearance[modeKeys.text];
+  const previewText = getRoomButtonPreviewText(room.id);
+  const existingPopover = pickerHost.querySelector(".button-style-popover");
+  const popoverHtml = `
+    <div class="button-style-popover" role="dialog" aria-label="${escapeHtml(modeKeys.title)}">
+      <div class="button-style-popover-header">
+        <div>
+          <span class="selected-room-control-label">${escapeHtml(modeKeys.title)}</span>
+          <strong>${escapeHtml(room.name)}</strong>
+        </div>
+        <button class="button-style-close" data-button-style-close="true" type="button" aria-label="Close style picker">Close</button>
+      </div>
+      <div class="button-style-popover-body">
+        <div class="button-style-preview-wrap">
+          <button
+            class="panel-button is-preview button-style-live-preview"
+            type="button"
+            style="
+              --button-background: ${escapeHtml(background)};
+              --button-text: ${escapeHtml(textColour)};
+            "
+          >
+            <span class="panel-button-text">${escapeHtml(previewText)}</span>
+          </button>
+        </div>
+        <div class="button-style-controls">
+          ${renderButtonBackgroundSwatches(background)}
+          <div class="button-style-swatch-section">
+            <span>Text</span>
+            <div class="button-style-text-options">
+              ${BUTTON_TEXT_SWATCHES.map((colour) => `
+                <button
+                  class="button-style-text-option ${colour === textColour ? "is-selected" : ""}"
+                  data-button-style-text="${escapeHtml(colour)}"
+                  type="button"
+                >
+                  ${colour === "#FFFFFF" ? "White" : "Black"}
+                </button>
+              `).join("")}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+
+  if (existingPopover) {
+    existingPopover.outerHTML = popoverHtml;
+  } else {
+    pickerHost.insertAdjacentHTML("beforeend", popoverHtml);
+  }
+}
+
+function openButtonAppearancePicker(roomId, mode) {
+  if (!roomId) {
+    return;
+  }
+
+  buttonAppearancePickerState = {
+    roomId,
+    mode: mode === "active" ? "active" : "default",
+  };
+  renderButtonAppearancePicker();
+}
+
+function closeButtonAppearancePicker() {
+  buttonAppearancePickerState = null;
+  selectedRoomVolume?.querySelector(".button-style-popover")?.remove();
 }
 
 function getRoomLeftAuxSetting(roomId) {
@@ -1996,7 +2330,6 @@ function renderSelectedRoomVolumeControl() {
 
   const volume = getRoomAlertVolume(room.id);
   const sound = getRoomAlertSound(room.id);
-  const buttonAppearance = getRoomButtonAppearance(room.id);
   const leftAuxSetting = getRoomLeftAuxSetting(room.id);
   const rightAuxSetting = getRoomRightAuxSetting(room.id);
   selectedRoomVolume.dataset.roomSettingsId = room.id;
@@ -2044,46 +2377,8 @@ function renderSelectedRoomVolumeControl() {
         </label>
       </div>
       <div class="selected-room-button-appearance-grid push-down">
-        <label class="selected-room-colour-field">
-          <span class="selected-room-control-label">Button Colour</span>
-          <input
-            class="selected-room-colour-picker"
-            data-room-appearance-id="${escapeHtml(room.id)}"
-            data-appearance-key="defaultBackground"
-            type="color"
-            value="${escapeHtml(buttonAppearance.defaultBackground)}"
-          />
-        </label>
-        <label class="selected-room-colour-field">
-          <span class="selected-room-control-label">Text Colour</span>
-          <input
-            class="selected-room-colour-picker"
-            data-room-appearance-id="${escapeHtml(room.id)}"
-            data-appearance-key="defaultText"
-            type="color"
-            value="${escapeHtml(buttonAppearance.defaultText)}"
-          />
-        </label>
-        <label class="selected-room-colour-field">
-          <span class="selected-room-control-label">Active Button Colour</span>
-          <input
-            class="selected-room-colour-picker"
-            data-room-appearance-id="${escapeHtml(room.id)}"
-            data-appearance-key="activeBackground"
-            type="color"
-            value="${escapeHtml(buttonAppearance.activeBackground)}"
-          />
-        </label>
-        <label class="selected-room-colour-field">
-          <span class="selected-room-control-label">Active Text Colour</span>
-          <input
-            class="selected-room-colour-picker"
-            data-room-appearance-id="${escapeHtml(room.id)}"
-            data-appearance-key="activeText"
-            type="color"
-            value="${escapeHtml(buttonAppearance.activeText)}"
-          />
-        </label>
+        ${renderButtonAppearanceSummary(room.id, "default")}
+        ${renderButtonAppearanceSummary(room.id, "active")}
       </div>
       <div class="selected-room-left-aux-card push-down">
         <div class="selected-room-left-aux-header">
@@ -2554,6 +2849,7 @@ async function sendChatMessage() {
   await fetchChatMessages().catch(() => {});
   updateMessageComposerHeight();
   syncMessageComposerState();
+  setPanelDisplayMode(panelDisplayMode, { persist: false }).catch(() => {});
 }
 
 async function sendPanelAction(buttonId) {
@@ -2843,6 +3139,7 @@ async function init() {
     setPanelDisplayMode(panelDisplayMode, { persist: false, resize: false }).catch(() => {});
     renderButtons();
     renderSelectedRoomVolumeControl();
+    renderButtonAppearancePicker();
     renderMessageGroupSettings();
     renderMessagingUi();
   });
@@ -2948,7 +3245,12 @@ messageCollapseButton?.addEventListener("click", () => {
 messageComposeInput?.addEventListener("input", () => {
   updateMessageComposerHeight();
   syncMessageComposerState();
+  setPanelDisplayMode(panelDisplayMode, { persist: false }).catch(() => {});
 });
+
+messageComposeInput?.addEventListener("scroll", updateMessageComposerScrollbar, { passive: true });
+
+messageList?.addEventListener("scroll", updateMessageScrollbar, { passive: true });
 
 messageSendButton?.addEventListener("click", async () => {
   try {
@@ -3241,6 +3543,72 @@ selectedRoomVolume?.addEventListener("input", (event) => {
   const volumeLabel = document.querySelector("#selected-room-volume-value");
   if (volumeLabel) {
     volumeLabel.textContent = `${nextVolume}%`;
+  }
+});
+
+selectedRoomVolume?.addEventListener("click", (event) => {
+  const target = event.target;
+
+  if (!(target instanceof HTMLElement)) {
+    return;
+  }
+
+  const styleTrigger = target.closest("[data-room-appearance-id][data-button-style-mode]");
+
+  if (styleTrigger instanceof HTMLElement) {
+    lockRoomSettingsRefresh();
+    openButtonAppearancePicker(
+      String(styleTrigger.dataset.roomAppearanceId || "").trim(),
+      String(styleTrigger.dataset.buttonStyleMode || "").trim(),
+    );
+    return;
+  }
+
+  if (target.closest("[data-button-style-close]")) {
+    closeButtonAppearancePicker();
+    return;
+  }
+
+  if (!buttonAppearancePickerState) {
+    return;
+  }
+
+  const backgroundSwatch = target.closest("[data-button-style-background]");
+
+  if (backgroundSwatch instanceof HTMLElement) {
+    const modeKeys = getButtonAppearanceModeKeys(buttonAppearancePickerState.mode);
+    const swatchType = String(backgroundSwatch.dataset.buttonStyleSwatchType || "").trim();
+    const swatchIndex = Number(backgroundSwatch.dataset.buttonStyleSwatchIndex);
+    const indexedBackground = swatchType === "gradient"
+      ? BUTTON_GRADIENT_SWATCHES[swatchIndex]
+      : swatchType === "solid"
+        ? BUTTON_SOLID_SWATCHES[swatchIndex]
+        : "";
+    updateRoomButtonAppearance(
+      buttonAppearancePickerState.roomId,
+      modeKeys.background,
+      indexedBackground || String(backgroundSwatch.dataset.buttonStyleBackground || "").trim(),
+    );
+    renderButtons();
+    renderSelectedRoomVolumeControl();
+    renderButtonAppearancePicker();
+    persistRoomSettings().catch(() => {});
+    return;
+  }
+
+  const textOption = target.closest("[data-button-style-text]");
+
+  if (textOption instanceof HTMLElement) {
+    const modeKeys = getButtonAppearanceModeKeys(buttonAppearancePickerState.mode);
+    updateRoomButtonAppearance(
+      buttonAppearancePickerState.roomId,
+      modeKeys.text,
+      String(textOption.dataset.buttonStyleText || "").trim(),
+    );
+    renderButtons();
+    renderSelectedRoomVolumeControl();
+    renderButtonAppearancePicker();
+    persistRoomSettings().catch(() => {});
   }
 });
 

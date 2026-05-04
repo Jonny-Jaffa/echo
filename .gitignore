@@ -27,3 +27,28 @@ yarn-error.log*
 
 # Local backup copy kept outside version control
 old version/
+
+# Electron app cache / runtime data
+apps/*/.pip-*/
+apps/*/.pip-room-panel-*/
+apps/*/.pip-reception-*/
+apps/*/client-settings.json
+apps/*/client-service.log
+apps/*/Local Storage/
+apps/*/Session Storage/
+apps/*/Cache/
+apps/*/Code Cache/
+apps/*/GPUCache/
+apps/*/DawnGraphiteCache/
+apps/*/DawnWebGPUCache/
+apps/*/Shared Dictionary/
+apps/*/Cookies
+apps/*/Cookies-journal
+apps/*/DIPS
+apps/*/DIPS-wal
+apps/*/Network Persistent State
+apps/*/Preferences
+apps/*/SharedStorage
+apps/*/SharedStorage-wal
+apps/*/Trust Tokens
+apps/*/Trust Tokens-journal

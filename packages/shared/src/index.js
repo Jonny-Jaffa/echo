@@ -217,6 +217,7 @@ export function normalizeConfig(config) {
       alwaysOnTop: Boolean(config.display?.alwaysOnTop),
       autoHideMs: Math.max(0, Number(config.display?.autoHideMs) || 0),
       compactMode: config.display?.compactMode !== false,
+      messagesVisible: Boolean(config.display?.messagesVisible),
       minimized: Boolean(config.display?.minimized),
       adminMode: Boolean(config.display?.adminMode),
       launchAtStartup:
@@ -296,11 +297,11 @@ export function buildDefaultRoomShortName(roomName = "", roomId = "", index = 0)
 
 function normalizeButtonAppearance(buttonAppearance) {
   return {
-    defaultBackground: normalizeHexColor(
+    defaultBackground: normalizeCssBackground(
       buttonAppearance?.defaultBackground,
       DEFAULT_BUTTON_APPEARANCE.defaultBackground,
     ),
-    activeBackground: normalizeHexColor(
+    activeBackground: normalizeCssBackground(
       buttonAppearance?.activeBackground,
       DEFAULT_BUTTON_APPEARANCE.activeBackground,
     ),
@@ -321,6 +322,16 @@ function normalizeHexColor(value, fallback) {
   }
 
   return fallback;
+}
+
+function normalizeCssBackground(value, fallback) {
+  const normalized = String(value || "").trim();
+
+  if (/^linear-gradient\(\d+deg,\s*#[0-9a-fA-F]{6}\s+\d+%,\s*#[0-9a-fA-F]{6}\s+\d+%\)$/.test(normalized)) {
+    return normalized;
+  }
+
+  return normalizeHexColor(normalized, fallback);
 }
 
 function normalizeWindowPosition(windowPosition) {

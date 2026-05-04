@@ -216,9 +216,23 @@ function normalizeHexColor(value, fallback) {
   return fallback;
 }
 
+function normalizeCssBackground(value, fallback) {
+  const normalized = String(value || "").trim();
+
+  if (/^linear-gradient\(\d+deg,\s*#[0-9a-fA-F]{6}\s+\d+%,\s*#[0-9a-fA-F]{6}\s+\d+%\)$/.test(normalized)) {
+    return normalized;
+  }
+
+  if (/^radial-gradient\(circle\s+at\s+\d+%\s+\d+%,\s*#[0-9a-fA-F]{6}\s+\d+%,\s*#[0-9a-fA-F]{6}\s+\d+%\)$/.test(normalized)) {
+    return normalized;
+  }
+
+  return normalizeHexColor(normalized, fallback);
+}
+
 function normalizeButtonAppearance(buttonAppearance, fallbackAppearance = {}) {
   return {
-    defaultBackground: normalizeHexColor(
+    defaultBackground: normalizeCssBackground(
       buttonAppearance?.defaultBackground,
       fallbackAppearance.defaultBackground || DEFAULT_BUTTON_BACKGROUND_HEX,
     ),
@@ -226,7 +240,7 @@ function normalizeButtonAppearance(buttonAppearance, fallbackAppearance = {}) {
       buttonAppearance?.defaultText,
       fallbackAppearance.defaultText || DEFAULT_BUTTON_TEXT_HEX,
     ),
-    activeBackground: normalizeHexColor(
+    activeBackground: normalizeCssBackground(
       buttonAppearance?.activeBackground,
       fallbackAppearance.activeBackground || DEFAULT_ACTIVE_BUTTON_BACKGROUND_HEX,
     ),
@@ -2297,6 +2311,32 @@ async function renderNeoCanvasImage(payload) {
         ctx.closePath();
       };
 
+      const createBackgroundFill = (background, width, height) => {
+        const normalized = String(background || "").trim();
+        const linearMatch = normalized.match(/^linear-gradient\\((\\d+)deg,\\s*(#[0-9a-fA-F]{6})\\s+(\\d+)%,\\s*(#[0-9a-fA-F]{6})\\s+(\\d+)%\\)$/);
+
+        if (linearMatch) {
+          const gradient = ctx.createLinearGradient(0, 0, width, height);
+          gradient.addColorStop(Math.max(0, Math.min(1, Number(linearMatch[3]) / 100)), linearMatch[2]);
+          gradient.addColorStop(Math.max(0, Math.min(1, Number(linearMatch[5]) / 100)), linearMatch[4]);
+          return gradient;
+        }
+
+        const radialMatch = normalized.match(/^radial-gradient\\(circle\\s+at\\s+(\\d+)%\\s+(\\d+)%,\\s*(#[0-9a-fA-F]{6})\\s+(\\d+)%,\\s*(#[0-9a-fA-F]{6})\\s+(\\d+)%\\)$/);
+
+        if (radialMatch) {
+          const centerX = width * (Number(radialMatch[1]) / 100);
+          const centerY = height * (Number(radialMatch[2]) / 100);
+          const radius = Math.max(width, height) * 0.7;
+          const gradient = ctx.createRadialGradient(centerX, centerY, 0, centerX, centerY, radius);
+          gradient.addColorStop(Math.max(0, Math.min(1, Number(radialMatch[4]) / 100)), radialMatch[3]);
+          gradient.addColorStop(Math.max(0, Math.min(1, Number(radialMatch[6]) / 100)), radialMatch[5]);
+          return gradient;
+        }
+
+        return normalized || "#08090b";
+      };
+
       const drawHeart = (centerX, centerY, size, fillStyle) => {
         const halfSize = size / 2;
         ctx.beginPath();
@@ -2324,7 +2364,7 @@ async function renderNeoCanvasImage(payload) {
 
       if (payload.kind === "button") {
         roundRect(0, 0, payload.width, payload.height, 18);
-        ctx.fillStyle = payload.backgroundColor;
+        ctx.fillStyle = createBackgroundFill(payload.backgroundColor, payload.width, payload.height);
         ctx.fill();
 
         const lines = Array.isArray(payload.lines) ? payload.lines.filter(Boolean).slice(0, 2) : [];

@@ -277,9 +277,23 @@ function normalizeHexColor(value, fallback) {
   return fallback;
 }
 
+function normalizeCssBackground(value, fallback) {
+  const normalized = String(value || "").trim();
+
+  if (/^linear-gradient\(\d+deg,\s*#[0-9a-fA-F]{6}\s+\d+%,\s*#[0-9a-fA-F]{6}\s+\d+%\)$/.test(normalized)) {
+    return normalized;
+  }
+
+  if (/^radial-gradient\(circle\s+at\s+\d+%\s+\d+%,\s*#[0-9a-fA-F]{6}\s+\d+%,\s*#[0-9a-fA-F]{6}\s+\d+%\)$/.test(normalized)) {
+    return normalized;
+  }
+
+  return normalizeHexColor(normalized, fallback);
+}
+
 function normalizeButtonAppearance(buttonAppearance) {
   return {
-    defaultBackground: normalizeHexColor(
+    defaultBackground: normalizeCssBackground(
       buttonAppearance?.defaultBackground,
       DEFAULT_BUTTON_APPEARANCE.defaultBackground,
     ),
@@ -287,7 +301,7 @@ function normalizeButtonAppearance(buttonAppearance) {
       buttonAppearance?.defaultText,
       DEFAULT_BUTTON_APPEARANCE.defaultText,
     ),
-    activeBackground: normalizeHexColor(
+    activeBackground: normalizeCssBackground(
       buttonAppearance?.activeBackground,
       DEFAULT_BUTTON_APPEARANCE.activeBackground,
     ),
@@ -1133,13 +1147,17 @@ function setWindowSettingsExpanded(details) {
     : details
       ? "both"
       : "messages";
+  const messageComposerHeightOffset = typeof details === "object" && details !== null
+    ? Math.min(120, Math.max(0, Math.round(Number(details.messageComposerHeightOffset) || 0)))
+    : 0;
   isSettingsPanelExpanded = mode === "both";
 
   if (!mainWindow || mainWindow.isDestroyed()) {
     return;
   }
 
-  const targetHeight = getPanelDisplayModeHeight(mode);
+  const targetHeight =
+    getPanelDisplayModeHeight(mode) + (mode === "buttons" ? 0 : messageComposerHeightOffset);
   const minimumHeight = targetHeight;
   const [currentX, currentY] = mainWindow.getPosition();
   const [, currentHeight] = mainWindow.getSize();

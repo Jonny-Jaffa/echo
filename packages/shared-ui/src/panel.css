@@ -124,6 +124,7 @@
   min-width: 0;
   overflow-x: auto;
   scrollbar-width: none;
+  justify-content: center;
 }
 
 .message-thread-list::-webkit-scrollbar,
@@ -334,8 +335,8 @@
   justify-content: center;
   gap: 7px;
   border: 1px solid var(--line);
-  border-radius: 999px;
-  min-height: 34px;
+  border-radius: 15px 15px 15px 0px;
+  min-height: 36px;
   padding: 5px 10px;
   background: white;
   color: var(--text);
@@ -412,7 +413,7 @@
   width: fit-content;
   max-width: min(82%, 520px);
   min-width: 120px;
-  padding: 12px 14px;
+  padding: 7px 14px;
   border-radius: 18px;
   background: var(--message-bubble-incoming);
   box-shadow:
@@ -494,13 +495,30 @@
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   gap: 10px;
-  align-items: center;
+  align-items: end;
+  position: relative;
+  --compose-scrollbar-left: 0px;
+  --compose-scrollbar-top: 0px;
+  --compose-scrollbar-thumb-height: 0px;
+}
+
+.message-compose.has-compose-scrollbar::after {
+  content: "";
+  position: absolute;
+  left: var(--compose-scrollbar-left);
+  top: var(--compose-scrollbar-top);
+  z-index: 2;
+  width: 6px;
+  height: var(--compose-scrollbar-thumb-height);
+  border-radius: 999px;
+  background: var(--active-room-accent, var(--field-focus));
+  pointer-events: none;
 }
 
 .message-compose-input {
   width: 100%;
   min-height: 38px;
-  max-height: 144px;
+  max-height: 136px;
   resize: none;
   border: 1px solid var(--line);
   border-radius: 18px;
@@ -510,7 +528,13 @@
   font: inherit;
   font-size: 15px;
   line-height: 1.4;
-  overflow: hidden;
+  overflow-y: auto;
+  scrollbar-width: none;
+}
+
+.message-compose-input::-webkit-scrollbar {
+  width: 0;
+  height: 0;
 }
 
 .message-compose-input:focus {

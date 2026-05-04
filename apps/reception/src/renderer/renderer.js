@@ -72,6 +72,20 @@ const RECEPTION_SOUND_OPTIONS = Array.from({ length: 17 }, (_value, index) => {
 const PINNED_CHAT_ROOMS_STORAGE_KEY = "pip-reception-pinned-chat-rooms";
 const CHAT_ROOM_ORDER_STORAGE_KEY = "pip-reception-chat-room-order";
 const RECEPTION_ALL_ROOMS_MESSAGE_GROUP_KEY = "reception-all-rooms";
+const ROOM_COLOUR_PALETTE = [
+  "#d0069a",
+  "#e07c0b",
+  "#0bc120",
+  "#1997e6",
+  "#7c3aed",
+  "#dc2626",
+  "#0f766e",
+  "#2563eb",
+  "#9333ea",
+  "#be123c",
+  "#047857",
+  "#475569",
+];
 
 let appState = null;
 let draftConfig = null;
@@ -85,6 +99,7 @@ let pinnedChatRoomIds = loadPinnedChatRoomIds();
 let chatRoomOrderIds = loadChatRoomOrderIds();
 let isChatRecipientDrawerVisible = false;
 let isMessageSectionVisible = false;
+let hasRestoredMessageSectionVisibility = false;
 let draggedChatRoomId = "";
 let draggedChatRoomSource = "";
 
@@ -525,14 +540,30 @@ function selectAllChatRooms(state = appState) {
   hasUnreadAllRoomsMessage = false;
 }
 
-function showMessageSection() {
-  isMessageSectionVisible = true;
-  document.body.dataset.messagesHidden = "false";
+function persistMessageSectionVisibility() {
+  if (!appState || isSettingsWindow || isRoleWindow) {
+    return;
+  }
+
+  window.pip.updateDisplaySettings?.({
+    messagesVisible: isMessageSectionVisible,
+  }).catch(() => {});
 }
 
-function hideMessageSection() {
+function showMessageSection(options = {}) {
+  isMessageSectionVisible = true;
+  document.body.dataset.messagesHidden = "false";
+  if (options.persist) {
+    persistMessageSectionVisibility();
+  }
+}
+
+function hideMessageSection(options = {}) {
   isMessageSectionVisible = false;
   document.body.dataset.messagesHidden = "true";
+  if (options.persist) {
+    persistMessageSectionVisibility();
+  }
 }
 
 function syncMessageSectionVisibility() {
@@ -569,6 +600,7 @@ function syncMessageContext(state = appState) {
   }
 
   chatCard.style.setProperty("--active-room-accent", accent);
+  chatCard.style.setProperty("--message-send-active-color", isAllRoomsSelected ? "var(--text)" : accent);
   chatCard.style.setProperty("--message-context-label-color", isAllRoomsSelected ? "#3f4444" : accent);
   chatCard.style.setProperty("--message-context-short-label-color", isAllRoomsSelected ? "var(--text)" : "white");
   chatCard.style.setProperty(
@@ -577,7 +609,7 @@ function syncMessageContext(state = appState) {
       ? "linear-gradient(90deg, #e7eaea, #f7f8f8)"
       : activeRoom
       ? `linear-gradient(90deg, color-mix(in srgb, ${accent} 15%, white), color-mix(in srgb, ${accent} 4%, white) 72%, #ffffff)`
-      : "linear-gradient(90deg, #edfbff, #ffffff)",
+      : "linear-gradient(90deg, #f7f7f7, #ffffff)",
   );
   chatCard.style.setProperty(
     "--message-list-background",
@@ -585,7 +617,7 @@ function syncMessageContext(state = appState) {
       ? "linear-gradient(180deg, #f1f3f3, #fafafa)"
       : activeRoom
       ? `linear-gradient(180deg, color-mix(in srgb, ${accent} 10%, white), color-mix(in srgb, ${accent} 4%, white))`
-      : "linear-gradient(180deg, #edfbff, #f8fdff)",
+      : "linear-gradient(180deg, #f7f7f7, #f8fdff)",
   );
   chatCard.style.setProperty("--message-bubble-incoming", activeRoom?.color || "#418191");
 }
@@ -828,7 +860,7 @@ function updateChatScrollbar() {
 
   const shellRect = chatCard.getBoundingClientRect();
   const listRect = chatMessageList.getBoundingClientRect();
-  const inset = 21;
+  const inset = 30;
   const trackHeight = Math.max(1, chatMessageList.clientHeight - inset * 2);
   const thumbHeight = Math.max(
     34,
@@ -861,6 +893,53 @@ function syncChatComposerState() {
       : "select a room";
 }
 
+function updateChatComposerHeight() {
+  if (!chatComposeInput) {
+    return;
+  }
+
+  chatComposeInput.style.height = "auto";
+  chatComposeInput.style.height = `${Math.min(chatComposeInput.scrollHeight, 136)}px`;
+  updateChatComposerScrollbar();
+}
+
+function updateChatComposerScrollbar() {
+  if (!chatComposeInput) {
+    return;
+  }
+
+  const compose = chatComposeInput.closest(".message-compose");
+
+  if (!(compose instanceof HTMLElement)) {
+    return;
+  }
+
+  const maxScroll = chatComposeInput.scrollHeight - chatComposeInput.clientHeight;
+  const hasScrollbar = maxScroll > 1 && chatComposeInput.clientHeight > 0;
+  compose.classList.toggle("has-compose-scrollbar", hasScrollbar);
+
+  if (!hasScrollbar) {
+    return;
+  }
+
+  const composeRect = compose.getBoundingClientRect();
+  const inputRect = chatComposeInput.getBoundingClientRect();
+  const inset = 17;
+  const trackHeight = Math.max(1, chatComposeInput.clientHeight - inset * 2);
+  const thumbHeight = Math.max(
+    24,
+    Math.round(trackHeight * (chatComposeInput.clientHeight / chatComposeInput.scrollHeight)),
+  );
+  const maxThumbOffset = Math.max(0, trackHeight - thumbHeight);
+  const thumbOffset = maxScroll > 0 ? (chatComposeInput.scrollTop / maxScroll) * maxThumbOffset : 0;
+  const thumbTop = inputRect.top - composeRect.top + inset + thumbOffset;
+  const thumbLeft = inputRect.right - composeRect.left - 15;
+
+  compose.style.setProperty("--compose-scrollbar-left", `${Math.round(thumbLeft)}px`);
+  compose.style.setProperty("--compose-scrollbar-top", `${Math.round(thumbTop)}px`);
+  compose.style.setProperty("--compose-scrollbar-thumb-height", `${Math.round(thumbHeight)}px`);
+}
+
 function applyState(state) {
   appState = state;
 
@@ -870,6 +949,10 @@ function applyState(state) {
   }
 
   renderSelectedDeviceRole(state?.app || {});
+  if (!hasRestoredMessageSectionVisibility) {
+    isMessageSectionVisible = Boolean(state.config?.display?.messagesVisible);
+    hasRestoredMessageSectionVisibility = true;
+  }
   syncPendingPingRooms(state);
   adminModeButton?.setAttribute("aria-label", "Open settings");
   if (adminModeButton) {
@@ -899,6 +982,7 @@ function applyState(state) {
   renderAlertList(state);
   renderChatRecipients(state);
   renderChatMessages(state);
+  updateChatComposerHeight();
   syncChatComposerState();
   reportGadgetHeight();
   if (!isSettingsWindow) {
@@ -1023,16 +1107,10 @@ function renderRooms() {
             </label>
             <label class="field colour-field">
               <span>Colour</span>
-              <div class="colour-input-wrap compact-colour-input">
-                <input
-                  class="colour-picker"
-                  data-entity="room"
-                  data-index="${index}"
-                  data-key="color"
-                  type="color"
-                  value="${escapeHtml(room.color || "#0f766e")}"
-                />
+              <div class="room-colour-picker" role="group" aria-label="Colour for ${escapeHtml(room.name)}">
+                ${renderRoomColourSwatches(room, index)}
               </div>
+              <small class="room-colour-help">Dot means already used by another room.</small>
             </label>
             <div class="field room-remove-field">
               <span>&nbsp;</span>
@@ -1100,6 +1178,60 @@ function escapeHtml(value) {
     .replaceAll("\"", "&quot;")
     .replaceAll("<", "&lt;")
     .replaceAll(">", "&gt;");
+}
+
+function normalizeHexColour(value, fallback = "#0f766e") {
+  const normalized = String(value || "").trim().toLowerCase();
+  return /^#[0-9a-f]{6}$/i.test(normalized) ? normalized : fallback;
+}
+
+function getRoomColourUsage(colour, currentRoomIndex) {
+  const normalizedColour = normalizeHexColour(colour);
+  return (draftConfig?.rooms || [])
+    .map((room, index) => ({
+      index,
+      name: String(room.name || `Room ${index + 1}`).trim(),
+      colour: normalizeHexColour(room.color),
+    }))
+    .filter((room) => room.index !== currentRoomIndex && room.colour === normalizedColour);
+}
+
+function getNextRoomColour() {
+  const usedColours = new Set(
+    (draftConfig?.rooms || []).map((room) => normalizeHexColour(room.color)),
+  );
+  return ROOM_COLOUR_PALETTE.find((colour) => !usedColours.has(colour)) || ROOM_COLOUR_PALETTE[0];
+}
+
+function renderRoomColourSwatches(room, index) {
+  const selectedColour = normalizeHexColour(room.color);
+  const palette = ROOM_COLOUR_PALETTE.includes(selectedColour)
+    ? ROOM_COLOUR_PALETTE
+    : [selectedColour, ...ROOM_COLOUR_PALETTE];
+
+  return palette.map((colour) => {
+    const isSelected = colour === selectedColour;
+    const usedBy = getRoomColourUsage(colour, index);
+    const usedLabel = usedBy.map((item) => item.name).join(", ");
+    const title = usedBy.length > 0
+      ? `${colour} currently used by ${usedLabel}`
+      : colour;
+
+    return `
+      <button
+        class="room-colour-swatch ${isSelected ? "is-selected" : ""} ${usedBy.length > 0 ? "is-used" : ""}"
+        data-room-colour-index="${index}"
+        data-room-colour="${escapeHtml(colour)}"
+        type="button"
+        title="${escapeHtml(title)}"
+        aria-label="${escapeHtml(title)}"
+        style="--swatch-colour: ${escapeHtml(colour)}"
+      >
+        <span class="room-colour-swatch-mark" aria-hidden="true"></span>
+        ${usedBy.length > 0 ? '<span class="room-colour-swatch-used" aria-hidden="true"></span>' : ""}
+      </button>
+    `;
+  }).join("");
 }
 
 function formatRelativeTime(timestamp) {
@@ -1261,14 +1393,14 @@ alertList?.addEventListener("click", async (event) => {
       selectedChatRoomIds.size === 1 &&
       selectedChatRoomIds.has(roomId)
     ) {
-      hideMessageSection();
+      hideMessageSection({ persist: true });
       renderAlertList(appState);
       reportGadgetHeight();
       return;
     }
 
     selectChatRoom(roomId);
-    showMessageSection();
+    showMessageSection({ persist: true });
     renderAlertList(appState);
     renderChatRecipients(appState);
     renderChatMessages(appState);
@@ -1421,7 +1553,7 @@ addRoomButton?.addEventListener("click", () => {
   const baseRoom = lastRoom
     ? structuredClone(lastRoom)
     : {
-        color: "#0f766e",
+        color: getNextRoomColour(),
         icon: "",
         receptionSound: {
           enabled: false,
@@ -1432,6 +1564,7 @@ addRoomButton?.addEventListener("click", () => {
 
   draftConfig.rooms.push({
     ...baseRoom,
+    color: getNextRoomColour(),
     id: `room-${nextRoomNumber}`,
     name: `Room ${nextRoomNumber}`,
     shortName: getDefaultRoomShortLabel(`Room ${nextRoomNumber}`, `room-${nextRoomNumber}`, nextRoomNumber - 1),
@@ -1463,6 +1596,30 @@ document.body.addEventListener("input", (event) => {
   }
 });
 
+roomsEditor?.addEventListener("click", (event) => {
+  const target = event.target;
+
+  if (!(target instanceof HTMLElement)) {
+    return;
+  }
+
+  const swatch = target.closest("[data-room-colour-index][data-room-colour]");
+
+  if (!(swatch instanceof HTMLElement)) {
+    return;
+  }
+
+  const index = Number(swatch.dataset.roomColourIndex);
+  const colour = normalizeHexColour(swatch.dataset.roomColour);
+
+  if (!Number.isInteger(index) || !draftConfig?.rooms?.[index]) {
+    return;
+  }
+
+  draftConfig.rooms[index].color = colour;
+  renderRooms();
+});
+
 audioPlayTestButton?.addEventListener("click", async () => {
   await window.pip.playReceptionTestSound({
     sound: normalizeReceptionSound(audioNotificationSoundInput.value),
@@ -1478,21 +1635,25 @@ audioMessagePlayTestButton?.addEventListener("click", async () => {
 });
 
 chatComposeInput?.addEventListener("input", () => {
+  updateChatComposerHeight();
   syncChatComposerState();
+  reportGadgetHeight();
 });
+
+chatComposeInput?.addEventListener("scroll", updateChatComposerScrollbar, { passive: true });
 
 chatMessageList?.addEventListener("scroll", updateChatScrollbar, { passive: true });
 
 chatAllHeaderButton?.addEventListener("click", () => {
   if (isMessageSectionVisible && areAllRoomsSelected(appState)) {
-    hideMessageSection();
+    hideMessageSection({ persist: true });
     renderAlertList(appState);
     reportGadgetHeight();
     return;
   }
 
   selectAllChatRooms(appState);
-  showMessageSection();
+  showMessageSection({ persist: true });
   renderAlertList(appState);
   renderChatRecipients(appState);
   renderChatMessages(appState);
@@ -1501,14 +1662,14 @@ chatAllHeaderButton?.addEventListener("click", () => {
 });
 
 chatCollapseButton?.addEventListener("click", () => {
-  hideMessageSection();
+  hideMessageSection({ persist: true });
   renderAlertList(appState);
   reportGadgetHeight();
 });
 
 chatAllRoomsButton?.addEventListener("click", () => {
   selectAllChatRooms(appState);
-  showMessageSection();
+  showMessageSection({ persist: true });
   renderAlertList(appState);
   renderChatRecipients(appState);
   renderChatMessages(appState);
@@ -1543,7 +1704,9 @@ chatSendButton?.addEventListener("click", async () => {
   if (chatComposeInput) {
     chatComposeInput.value = "";
   }
+  updateChatComposerHeight();
   syncChatComposerState();
+  reportGadgetHeight();
 });
 
 document.body.addEventListener("click", (event) => {

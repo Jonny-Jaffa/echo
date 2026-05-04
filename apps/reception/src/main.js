@@ -1345,6 +1345,10 @@ app.whenReady().then(async () => {
       nextPatch.compactMode = patch.compactMode;
     }
 
+    if (typeof patch.messagesVisible === "boolean") {
+      nextPatch.messagesVisible = patch.messagesVisible;
+    }
+
     return updateDisplaySettings(nextPatch);
   });
 

@@ -321,7 +321,7 @@ select {
   width: 7px;
   height: 7px;
   border-radius: 999px;
-  background: var(--field-focus);
+  background: #16a34a;
   box-shadow: 0 0 0 2px white;
 }
 
@@ -365,7 +365,7 @@ select {
   --active-room-accent: var(--accent);
   --message-context-label-color: white;
   --message-context-short-label-color: white;
-  --message-context-strip-background: linear-gradient(90deg, #edfbff, #ffffff);
+  --message-context-strip-background: linear-gradient(90deg, #f7f7f7, #ffffff);
   --message-bubble-outgoing: linear-gradient(180deg, #ffffff, #f7fbfb);
   --message-scrollbar-thumb-height: 0px;
   --message-scrollbar-thumb-top: 0px;
@@ -381,7 +381,7 @@ select {
   width: 6px;
   height: var(--message-scrollbar-thumb-height);
   border-radius: 999px;
-  background: color-mix(in srgb, var(--active-room-accent) 38%, transparent);
+  background: var(--active-room-accent);
   pointer-events: none;
 }
 
@@ -390,11 +390,12 @@ select {
   align-items: stretch;
   justify-content: space-between;
   gap: 0;
-  min-height: 44px;
-  border-radius: 20px 20px 0 0;
+  min-height: 38px;
+  border-radius: 20px 20px 20px 0;
   background: var(--message-context-strip-background);
   overflow: hidden;
   box-shadow: 0 10px 24px rgba(16, 35, 31, 0.06);
+  margin-bottom: 3px;
 }
 
 .message-context-copy {
@@ -413,7 +414,7 @@ select {
 }
 
 .message-context-label {
-  min-height: 44px;
+  min-height: 38px;
   padding: 0 14px 0 0;
   border-radius: 0;
   display: inline-flex;
@@ -422,7 +423,7 @@ select {
   min-width: 0;
   background: transparent;
   color: var(--message-context-label-color);
-  font-size: 16px;
+  font-size: 15px;
   font-weight: 500;
   white-space: nowrap;
 }
@@ -436,7 +437,7 @@ select {
   justify-content: center;
   flex-shrink: 0;
   background: var(--active-room-accent, #0f766e);
-  border-radius: 0 2px 2px 0;
+  border-radius: 20px 20px 20px 0;
   box-shadow: 8px 0 18px color-mix(in srgb, var(--active-room-accent, #0f766e) 22%, transparent);
 }
 
@@ -478,7 +479,7 @@ select {
   height: 7px;
   margin-left: 6px;
   border-radius: 999px;
-  background: var(--field-focus);
+  background: #16a34a;
   box-shadow: 0 0 0 2px white;
 }
 
@@ -581,8 +582,8 @@ select {
 
 .reception-message-shell .message-send-button:not(:disabled),
 .reception-message-shell .message-send-button.is-ready-to-send {
-  border-color: var(--active-room-accent);
-  color: var(--active-room-accent);
+  border-color: var(--message-send-active-color, var(--active-room-accent));
+  color: var(--message-send-active-color, var(--active-room-accent));
 }
 
 .reception-message-shell .message-send-button:disabled {
@@ -923,7 +924,7 @@ select {
   width: 7px;
   height: 7px;
   border-radius: 999px;
-  background: var(--field-focus);
+  background: #16a34a;
   box-shadow: 0 0 0 2px white;
 }
 
@@ -1161,7 +1162,7 @@ body[data-admin-mode="true"] .admin-panel {
 }
 
 .room-grid {
-  grid-template-columns: minmax(0, 1fr) 92px 72px auto;
+  grid-template-columns: minmax(0, 1fr) 92px 198px auto;
   align-items: end;
 }
 
@@ -1308,6 +1309,75 @@ body[data-admin-mode="true"] .admin-panel {
 .colour-picker::-moz-color-swatch {
   border: 0;
   border-radius: 11px;
+}
+
+.room-colour-picker {
+  display: grid;
+  grid-template-columns: repeat(6, 26px);
+  gap: 7px;
+  align-items: center;
+  justify-content: start;
+}
+
+.room-colour-swatch {
+  width: 26px;
+  height: 26px;
+  border: 2px solid transparent;
+  border-radius: 999px;
+  padding: 0;
+  background: var(--swatch-colour);
+  cursor: pointer;
+  position: relative;
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.52),
+    0 1px 3px rgba(16, 35, 31, 0.16);
+}
+
+.room-colour-swatch:hover,
+.room-colour-swatch:focus-visible {
+  border-color: var(--text);
+  outline: none;
+}
+
+.room-colour-swatch.is-selected {
+  border-color: var(--text);
+}
+
+.room-colour-swatch-mark {
+  display: none;
+  position: absolute;
+  inset: 6px;
+  background: white;
+  -webkit-mask-image: var(--icon-confirm);
+  mask-image: var(--icon-confirm);
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  -webkit-mask-position: center;
+  mask-position: center;
+  -webkit-mask-size: contain;
+  mask-size: contain;
+}
+
+.room-colour-swatch.is-selected .room-colour-swatch-mark {
+  display: block;
+}
+
+.room-colour-swatch-used {
+  position: absolute;
+  right: -3px;
+  top: -3px;
+  width: 8px;
+  height: 8px;
+  border: 2px solid white;
+  border-radius: 999px;
+  background: var(--text);
+  box-shadow: 0 1px 2px rgba(16, 35, 31, 0.18);
+}
+
+.room-colour-help {
+  color: var(--muted);
+  font-size: 10px;
+  line-height: 1.2;
 }
 
 .action-remove-wrap {
