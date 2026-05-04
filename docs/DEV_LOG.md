@@ -425,8 +425,29 @@
 - Messaging, message groups, and pinned-thread behavior are now meaningful state that future role-unification work must preserve
 - The agreed architectural direction is a unified product with explicit runtime roles, not a single window trying to be reception and surgery simultaneously
 
+## 2026-05-05
+
+### Session 1
+
+- Fixed blank settings panel issue: when the settings window opened while Reception was offline, it showed the waiting/offline view instead of the settings panel. Now it shows the settings panel with the Connection tab active, so users can adjust connection details directly.
+- Added a persistent "Reception Offline" banner indicator in the surgery app main panel:
+  - A red banner at the top of the window displays "Reception is offline — alerts and messages won't be delivered until it's back"
+  - Appears when the WebSocket connection drops or errors
+  - Appears when the initial config fetch fails
+  - Auto-hides when the connection is re-established
+  - Uses the same fixed-position pattern as the existing reception-ping-banner
+- Documented a potential future feature for peer-to-peer room messaging when Reception is offline (see `docs/DEV_PLAN.md` — Future Features section)
+
+### Notes
+
+- The Reception Offline banner solves the UX problem of surgery apps running without any indication that Reception is unavailable
+- The settings panel fix ensures users can always access connection settings regardless of Reception's status
+- Full P2P messaging between rooms without Reception was considered but deferred — see DEV_PLAN for details
+
 ### Next Checkpoint
 
+- Test the current build with Reception offline to verify the banner and settings panel behavior
+- Evaluate whether P2P room messaging (Future Feature) is worth implementing
 - Document and implement a role-selection model for a unified `Pip` installer/app
 - Identify what can be shared between reception and room modes without coupling the startup logic too tightly
 - Keep the reception server/runtime responsibilities isolated even if both roles eventually live inside one packaged Electron product

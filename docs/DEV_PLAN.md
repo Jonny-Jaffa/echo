@@ -1,6 +1,6 @@
 # Pip Dev Plan
 
-Last updated: 2026-04-26
+Last updated: 2026-05-05
 
 ## Branding Note
 
@@ -83,6 +83,8 @@ Phase 6: Unified Product and Role Selection
   - `Reception` opens the current reception app
   - `Room` opens the current client panel
   - the transitional in-process runtime is stopped before handoff to avoid port/hardware conflicts
+- Fixed blank settings panel when Reception is offline — now shows settings with Connection tab instead of waiting view
+- Added persistent "Reception Offline" banner indicator in surgery app main panel
 
 ### In Progress
 
@@ -93,6 +95,8 @@ Phase 6: Unified Product and Role Selection
 
 ### Next
 
+- Test the current build with Reception offline to verify the banner and settings panel behavior
+- Evaluate whether P2P room messaging (Future Feature) is worth implementing
 - Design first-run role selection for a single packaged `Pip` app
 - [x] Expose the role chooser from a deliberate settings/support path
 - Decide whether the first unified build should reuse one renderer entrypoint or introduce a dedicated bootstrap main process
@@ -104,7 +108,7 @@ Phase 6: Unified Product and Role Selection
 - Click-test real Neo button presses end to end against reception actions
 - Validate the pairing-code rollout flow on a fresh reception install and a fresh room install
 - Decide whether to keep direct Neo mode only or also ship an official Stream Deck plugin path
-- Validate Windows installer and uninstaller behavior from a Windows-built release if NSIS issues persist
+- Validate Windows installer and uninstaller behavior from a Windows-built release if NSIS issues continue
 
 ## Phase Breakdown
 
@@ -196,4 +200,58 @@ Phase 6: Unified Product and Role Selection
 - Confirmed the Phase 3 code path still launches the reception app and accepts client notifications
 - Confirmed the surgery client can detect and open a connected Stream Deck Neo directly on macOS
 - Confirmed the surgery client can connect to reception, receive config, and sync Neo key colors from mapped actions
+- Confirmed the surgery app now shows a "Reception Offline" banner when the WebSocket connection drops
+- Confirmed the settings panel now shows settings (not waiting view) when Reception is offline
 - A visual/manual review of the gadget window in the real desktop workflow is still recommended
+
+## Future Features
+
+### Peer-to-Peer Room Messaging (Optional)
+
+**Status:** Deferred — not yet implemented
+
+**Description:** Allow surgery apps to send chat messages directly to each other when the Reception app is not running, without requiring a central server.
+
+**Why this matters:** Currently, when Reception is offline, surgery apps show a "Reception Offline" banner and messaging between rooms is unavailable. This feature would enable room-to-room messaging to continue working even without Reception, making the system more resilient.
+
+**Proposed approach:** Lightweight peer-to-peer messaging layer that activates only when Reception is confirmed offline:
+
+1. **Peer Discovery** — Extend the existing UDP discovery mechanism (`discoverReceptionServer()` in `panel-main.cjs`) so surgery apps can discover each other directly on the LAN when Reception doesn't respond.
+
+2. **Peer Server** — Each surgery app runs a tiny HTTP server (a few routes) that:
+   - Serves its room identity (name, color from local settings)
+   - Accepts incoming chat messages from other surgery apps
+   - Forwards messages to its own renderer via IPC
+
+3. **Peer Client** — When Reception is offline, the surgery app:
+   - Discovers other surgery apps via UDP broadcast
+   - Connects to them directly via HTTP
+   - Shows available rooms in the thread list
+   - Sends messages directly to peer surgery apps
+
+4. **Seamless Fallback** — When Reception comes back online, the app switches back to the normal Reception-based messaging path.
+
+**Estimated scope:**
+- New `PeerDiscovery` module (extends existing UDP discovery) — ~100 lines
+- New `PeerServer` module (lightweight HTTP server for receiving messages) — ~100 lines
+- New `PeerClient` module (HTTP client for sending messages to peers) — ~50 lines
+- Integration in `panel-main.cjs` to start/stop the peer server — ~50 lines
+- Integration in `panel.js` renderer to show peer rooms and handle fallback — ~100 lines
+- **Total: ~400 lines of new code**
+
+**What stays the same:**
+- No changes to the Reception server
+- No changes to the config structure
+- No changes to the existing WebSocket messaging flow
+- No changes to the database or persistence layer
+- No changes to the shared packages
+
+**Risks and considerations:**
+- **Port conflicts:** Each surgery app needs a unique port. Can use `roomId` to derive a port (e.g., `3210 + roomIndex`) or use ephemeral ports broadcast via discovery.
+- **Firewall/network isolation:** Direct machine-to-machine HTTP may be blocked on some networks. UDP discovery would fail gracefully, showing "no rooms available."
+- **Message ordering:** Without a central server, messages between peers could arrive out of order. Each message would need a timestamp + sequence number.
+- **Partial message history:** A surgery app that was offline won't have messages sent between other peers during that time. Acceptable — same as any messaging app being offline.
+- **Authentication:** In P2P mode, skip the access key check (local network only). Minor security consideration.
+- **No message persistence:** Messages are ephemeral in P2P mode (in-memory only). Full history is available again when Reception comes back online.
+
+**Decision:** This feature adds meaningful resilience but also introduces complexity. It should be implemented only if users regularly need messaging when Reception is unavailable. The current "Reception Offline" banner provides clear feedback about the limitation.
