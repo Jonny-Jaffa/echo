@@ -5,12 +5,12 @@
   --text: #10231f;
   --muted: #494949;
   --line: rgba(16, 35, 31, 0.2);
-  --accent: #323232;
-  --accent-strong: #181818;
+  --accent: #121212;
+  --accent-strong: #121212;
   --field-focus: #939393;
   --message-list-background: #dbdddd;
   --message-bubble-incoming: #418191;
-  --message-bubble-outgoing: #339539;
+  --message-bubble-outgoing: linear-gradient(180deg, #ffffff, #f7fbfb);
   --message-bubble-text: #ffffff;
   --message-bubble-time: #d4d1d1;
   --shadow: 0 24px 50px rgba(16, 35, 31, 0.14);
