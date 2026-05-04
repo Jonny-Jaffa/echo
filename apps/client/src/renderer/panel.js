@@ -38,6 +38,7 @@ const roleCurrentLabel = document.querySelector("#role-current-label");
 const roleCloseButton = document.querySelector("#role-close-button");
 const openRoleWindowButton = document.querySelector("#open-role-window-button");
 const selectedDeviceRoleLabel = document.querySelector("#selected-device-role-label");
+const receptionPingBanner = document.querySelector("#reception-ping-banner");
 const showPanelAtStartupInput = document.querySelector("#show-panel-at-startup-input");
 const alwaysOnTopInput = document.querySelector("#always-on-top-input");
 const messageSoundInput = document.querySelector("#message-sound-input");
@@ -1031,6 +1032,12 @@ function connectSocket() {
       message.payload?.roomId === roomSelect.value
     ) {
       playRoomAlertSound(message.payload.roomId).catch(() => {});
+      showReceptionPingBanner();
+      return;
+    }
+
+    if (message.type === "room:pingCleared") {
+      hideReceptionPingBanner();
       return;
     }
 
@@ -1855,7 +1862,7 @@ function getButtonAppearanceModeKeys(mode) {
     : {
         background: "defaultBackground",
         text: "defaultText",
-        title: "Button Style",
+        title: "Default Button Style",
       };
 }
 
@@ -2371,103 +2378,118 @@ function renderSelectedRoomVolumeControl() {
           ${renderRoomActionRows(room.id)}
         </div>
       </div>
-      <div class="selected-room-volume-controls">
-        <label class="selected-room-sound-field">
-          <span class="selected-room-control-label">Alert Sound</span>
-          <div class="selected-room-sound-row">
-            <select class="selected-room-sound-select" data-room-sound-id="${escapeHtml(room.id)}">
-              ${renderRoomAlertSoundOptions(sound)}
-            </select>
-            <button
-              class="selected-room-sound-test"
-              data-room-sound-test-id="${escapeHtml(room.id)}"
-              type="button"
-              aria-label="Play sound"
-              title="Play sound"
-            >
-              Play
-            </button>
-          </div>
-        </label>
-        <label class="selected-room-slider-field">
-          <span class="selected-room-control-label">Alert Volume</span>
-          <div class="selected-room-slider-row">
-            <input
-              class="selected-room-volume-slider"
-              data-room-volume-id="${escapeHtml(room.id)}"
-              type="range"
-              min="0"
-              max="100"
-              step="1"
-              value="${volume}"
-            />
-            <span class="selected-room-volume-value" id="selected-room-volume-value">${volume}%</span>
-          </div>
-        </label>
-      </div>
-      <div class="selected-room-button-appearance-grid push-down">
-        ${renderButtonAppearanceSummary(room.id, "default")}
-        ${renderButtonAppearanceSummary(room.id, "active")}
-      </div>
-      <div class="selected-room-left-aux-card push-down">
-        <div class="selected-room-left-aux-header">
-          <span class="selected-room-control-label">Neo Left Button</span>
+      <div class="selected-room-alert-sound-card">
+        <div class="selected-room-volume-header">
+          <div class="selected-room-volume-title">Alert Sound</div>
         </div>
-        <div class="selected-room-left-aux-grid">
-          <div class="selected-room-toggle-field">
-            <span class="selected-room-control-label">Enable</span>
-            <label class="checkbox-toggle">
+        <div class="selected-room-volume-controls">
+          <label class="selected-room-sound-field">
+            <span class="selected-room-control-label">Select Sound</span>
+            <div class="selected-room-sound-row">
+              <select class="selected-room-sound-select" data-room-sound-id="${escapeHtml(room.id)}">
+                ${renderRoomAlertSoundOptions(sound)}
+              </select>
+              <button
+                class="selected-room-sound-test"
+                data-room-sound-test-id="${escapeHtml(room.id)}"
+                type="button"
+                aria-label="Play sound"
+                title="Play sound"
+              >
+                Play
+              </button>
+            </div>
+          </label>
+          <label class="selected-room-slider-field">
+            <span class="selected-room-control-label">Volume</span>
+            <div class="selected-room-slider-row">
               <input
+                class="selected-room-volume-slider"
+                data-room-volume-id="${escapeHtml(room.id)}"
+                type="range"
+                min="0"
+                max="100"
+                step="1"
+                value="${volume}"
+              />
+              <span class="selected-room-volume-value" id="selected-room-volume-value">${volume}%</span>
+            </div>
+          </label>
+        </div>
+      </div>
+      <div class="selected-room-button-style-card">
+        <div class="selected-room-volume-header">
+          <div class="selected-room-volume-title">Button Style</div>
+        </div>
+        <div class="selected-room-button-appearance-grid">
+          ${renderButtonAppearanceSummary(room.id, "default")}
+          ${renderButtonAppearanceSummary(room.id, "active")}
+        </div>
+      </div>
+      <div class="selected-room-additional-buttons-card">
+        <div class="selected-room-volume-header">
+          <div class="selected-room-volume-title">Additional Buttons</div>
+        </div>
+        <div class="selected-room-left-aux-card push-down">
+          <div class="selected-room-left-aux-header">
+            <span class="selected-room-control-label">Neo Left Button</span>
+          </div>
+          <div class="selected-room-left-aux-grid">
+            <div class="selected-room-toggle-field">
+              <span class="selected-room-control-label">Enable</span>
+              <label class="checkbox-toggle">
+                <input
+                  data-room-left-aux-id="${escapeHtml(room.id)}"
+                  data-left-aux-key="enabled"
+                  type="checkbox"
+                  ${leftAuxSetting.enabled ? "checked" : ""}
+                />
+                <span>Enabled</span>
+              </label>
+            </div>
+            <label class="selected-room-mode-field">
+              <span class="selected-room-control-label">Mode</span>
+              <select
+                class="selected-room-mode-select"
                 data-room-left-aux-id="${escapeHtml(room.id)}"
-                data-left-aux-key="enabled"
-                type="checkbox"
-                ${leftAuxSetting.enabled ? "checked" : ""}
-              />
-              <span>Enabled</span>
+                data-left-aux-key="mode"
+              >
+                <option value="party" ${leftAuxSetting.mode === "party" ? "selected" : ""}>Party Mode</option>
+                <option value="cancel" ${leftAuxSetting.mode === "cancel" ? "selected" : ""}>Cancel Alert</option>
+              </select>
             </label>
           </div>
-          <label class="selected-room-mode-field">
-            <span class="selected-room-control-label">Mode</span>
-            <select
-              class="selected-room-mode-select"
-              data-room-left-aux-id="${escapeHtml(room.id)}"
-              data-left-aux-key="mode"
-            >
-              <option value="party" ${leftAuxSetting.mode === "party" ? "selected" : ""}>Party Mode</option>
-              <option value="cancel" ${leftAuxSetting.mode === "cancel" ? "selected" : ""}>Cancel Alert</option>
-            </select>
-          </label>
         </div>
-      </div>
-      <div class="selected-room-left-aux-card">
-        <div class="selected-room-left-aux-header">
-          <span class="selected-room-control-label">Neo Right Button</span>
-        </div>
-        <div class="selected-room-left-aux-grid">
-          <div class="selected-room-toggle-field">
-            <span class="selected-room-control-label">Enable</span>
-            <label class="checkbox-toggle">
-              <input
+        <div class="selected-room-left-aux-card">
+          <div class="selected-room-left-aux-header">
+            <span class="selected-room-control-label">Neo Right Button</span>
+          </div>
+          <div class="selected-room-left-aux-grid">
+            <div class="selected-room-toggle-field">
+              <span class="selected-room-control-label">Enable</span>
+              <label class="checkbox-toggle">
+                <input
+                  data-room-right-aux-id="${escapeHtml(room.id)}"
+                  data-right-aux-key="enabled"
+                  type="checkbox"
+                  ${rightAuxSetting.enabled ? "checked" : ""}
+                />
+                <span>Enabled</span>
+              </label>
+            </div>
+            <label class="selected-room-mode-field">
+              <span class="selected-room-control-label">Mode</span>
+              <select
+                class="selected-room-mode-select"
                 data-room-right-aux-id="${escapeHtml(room.id)}"
-                data-right-aux-key="enabled"
-                type="checkbox"
-                ${rightAuxSetting.enabled ? "checked" : ""}
-              />
-              <span>Enabled</span>
+                data-right-aux-key="action"
+              >
+                <option value="none" ${rightAuxSetting.action === "none" ? "selected" : ""}>No action assigned</option>
+                <option value="lucy" ${rightAuxSetting.action === "lucy" ? "selected" : ""}>Lucy Mode</option>
+                <option value="cancel" ${rightAuxSetting.action === "cancel" ? "selected" : ""}>Cancel Alert</option>
+              </select>
             </label>
           </div>
-          <label class="selected-room-mode-field">
-            <span class="selected-room-control-label">Mode</span>
-            <select
-              class="selected-room-mode-select"
-              data-room-right-aux-id="${escapeHtml(room.id)}"
-              data-right-aux-key="action"
-            >
-              <option value="none" ${rightAuxSetting.action === "none" ? "selected" : ""}>No action assigned</option>
-              <option value="lucy" ${rightAuxSetting.action === "lucy" ? "selected" : ""}>Lucy Mode</option>
-              <option value="cancel" ${rightAuxSetting.action === "cancel" ? "selected" : ""}>Cancel Alert</option>
-            </select>
-          </label>
         </div>
       </div>
     </div>
@@ -3094,6 +3116,40 @@ function clearAllPanelNotifications() {
   renderButtons();
 }
 
+function showReceptionPingBanner() {
+  if (!receptionPingBanner) {
+    return;
+  }
+  receptionPingBanner.classList.remove("hidden");
+}
+
+function hideReceptionPingBanner() {
+  if (!receptionPingBanner) {
+    return;
+  }
+  receptionPingBanner.classList.add("hidden");
+}
+
+function clearReceptionPing() {
+  if (!receptionPingBanner || receptionPingBanner.classList.contains("hidden")) {
+    return;
+  }
+
+  hideReceptionPingBanner();
+
+  if (!socket || socket.readyState !== WebSocket.OPEN) {
+    return;
+  }
+
+  socket.send(
+    JSON.stringify({
+      type: "room:pingCleared",
+      roomId: roomSelect.value,
+      deviceId: panelDeviceId,
+    }),
+  );
+}
+
 function getSelectedRoom() {
   return configState?.rooms?.find((item) => item.id === roomSelect.value) || null;
 }
@@ -3263,6 +3319,10 @@ document.addEventListener("pointerdown", (event) => {
   }
 
   setPanelDisplayModeMenuVisibility(false);
+});
+
+document.addEventListener("pointerdown", () => {
+  clearReceptionPing();
 });
 
 messageCollapseButton?.addEventListener("click", () => {

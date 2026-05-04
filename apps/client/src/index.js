@@ -597,15 +597,82 @@ function classifyStreamDeckOpenError(error) {
 
 async function main() {
   setHardwareStatus("starting", "Starting Stream Deck service");
-  configState = await fetchConfig();
-  await clearStartupNotifications();
-  await registerClient();
+
+  // Retry initial HTTP requests to the reception server with backoff,
+  // in case the server hasn't finished starting up yet (e.g. at boot).
+  const maxRetries = 10;
+  let lastError = null;
+
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      configState = await fetchConfig();
+      await clearStartupNotifications();
+      await registerClient();
+      lastError = null;
+      break;
+    } catch (error) {
+      lastError = error;
+      logClient("warn", `reception server not ready (attempt ${attempt}/${maxRetries})`, error);
+
+      if (attempt < maxRetries) {
+        await new Promise((resolve) => setTimeout(resolve, 2000));
+      }
+    }
+  }
+
+  if (lastError) {
+    logClient("error", "reception server unreachable after retries", lastError);
+    setHardwareStatus("waiting", "Reception server unreachable, will retry");
+    // Keep retrying the server connection in the background so we can
+    // connect even if the reception server starts up much later.
+    scheduleServerRetry();
+    return;
+  }
+
   connectSocket();
   await connectStreamDeck().catch((error) => {
     logClient("error", "initial stream deck connect failed", error);
     scheduleStreamDeckReconnect();
   });
   startConfigRefresh();
+}
+
+let serverRetryTimer = null;
+
+function scheduleServerRetry() {
+  if (!serviceRunning) {
+    return;
+  }
+
+  if (serverRetryTimer) {
+    return;
+  }
+
+  serverRetryTimer = setTimeout(async () => {
+    serverRetryTimer = null;
+
+    if (!serviceRunning) {
+      return;
+    }
+
+    try {
+      configState = await fetchConfig();
+      await clearStartupNotifications();
+      await registerClient();
+    } catch (error) {
+      logClient("warn", "reception server still unreachable, will retry later", error);
+      scheduleServerRetry();
+      return;
+    }
+
+    logClient("info", "reception server reached, completing startup");
+    connectSocket();
+    await connectStreamDeck().catch((error) => {
+      logClient("error", "stream deck connect failed after server retry", error);
+      scheduleStreamDeckReconnect();
+    });
+    startConfigRefresh();
+  }, 10000);
 }
 
 async function fetchConfig() {
@@ -1253,6 +1320,11 @@ async function shutdownService({ exitProcess = false } = {}) {
   if (streamDeckReconnectTimer) {
     clearTimeout(streamDeckReconnectTimer);
     streamDeckReconnectTimer = null;
+  }
+
+  if (serverRetryTimer) {
+    clearTimeout(serverRetryTimer);
+    serverRetryTimer = null;
   }
 
   if (socket) {

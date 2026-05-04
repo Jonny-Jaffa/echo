@@ -63,6 +63,31 @@ label {
   -webkit-app-region: no-drag;
 }
 
+.reception-ping-banner {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 36px;
+  padding: 6px 14px;
+  background: #16a34a;
+  color: white;
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  -webkit-app-region: no-drag;
+  pointer-events: none;
+}
+
+.reception-ping-banner.hidden {
+  display: none;
+}
+
 .panel-shell {
   padding: 0;
   display: grid;
@@ -672,7 +697,6 @@ body[data-window-view="settings"] .settings-sidebar {
   text-decoration: none;
   font-size: 12px;
   font-weight: 700;
-  font: inherit;
   text-align: left;
   cursor: pointer;
 }
@@ -1761,6 +1785,27 @@ body[data-window-view="main"][data-panel-mode="both"] .room-message-shell {
   color: var(--text);
 }
 
+.message-group-settings-card {
+  display: grid;
+  gap: 8px;
+  padding: 10px 12px 12px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.9);
+}
+
+.message-group-settings-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.message-group-settings-title {
+  font-size: 12px;
+  color: var(--muted);
+}
+
 .message-group-settings-block {
   display: grid;
   gap: 10px;
@@ -1796,6 +1841,33 @@ body[data-window-view="main"][data-panel-mode="both"] .room-message-shell {
 }
 
 .selected-room-volume-card {
+  display: grid;
+  gap: 8px;
+  padding: 10px 12px 12px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.9);
+}
+
+.selected-room-alert-sound-card {
+  display: grid;
+  gap: 8px;
+  padding: 10px 12px 12px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.9);
+}
+
+.selected-room-button-style-card {
+  display: grid;
+  gap: 8px;
+  padding: 10px 12px 12px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.9);
+}
+
+.selected-room-additional-buttons-card {
   display: grid;
   gap: 8px;
   padding: 10px 12px 12px;

@@ -23,8 +23,10 @@ async function createReceptionServer({
   const getConfig = typeof config === "function" ? config : () => config;
   let discoveryEnabled = false;
   const MAX_REQUEST_BODY_BYTES = 32 * 1024;
+  const MAX_NOTIFICATIONS = 500;
   const MAX_CHAT_MESSAGES = 200;
   const MAX_CHAT_TEXT_LENGTH = 500;
+  let notificationPruneTimer = null;
 
   const server = http.createServer(async (req, res) => {
     const url = new URL(req.url, `http://${req.headers.host}`);
@@ -130,6 +132,9 @@ async function createReceptionServer({
             );
 
       notifications.push(payload);
+      while (notifications.length > MAX_NOTIFICATIONS) {
+        notifications.shift();
+      }
       broadcast(clients, { type: "notification", payload });
       onAuditEvent?.({
         type: "notification.sent",
@@ -318,6 +323,9 @@ async function createReceptionServer({
               );
 
           notifications.push(payload);
+          while (notifications.length > MAX_NOTIFICATIONS) {
+            notifications.shift();
+          }
           broadcast(clients, { type: "notification", payload });
           onAuditEvent?.({
             type: "notification.sent",
@@ -448,6 +456,41 @@ async function createReceptionServer({
       discoverySocket.close();
     } catch {
       // Ignore close failures after a bind error.
+    }
+  }
+
+  startNotificationPruneTimer();
+
+  function startNotificationPruneTimer() {
+    stopNotificationPruneTimer();
+    const currentConfig = getConfig();
+    const retentionMinutes = Number(currentConfig?.display?.messageRetentionMinutes) || 60;
+    const checkIntervalMs = Math.min(retentionMinutes * 60 * 1000, 5 * 60 * 1000);
+    const retentionMs = retentionMinutes * 60 * 1000;
+
+    notificationPruneTimer = setInterval(() => {
+      const cutoff = Date.now() - retentionMs;
+      const beforeCount = notifications.length;
+      removeNotificationsFromHistory(notifications, (notification) => {
+        const timestamp = new Date(notification.timestamp).getTime();
+        return Number.isFinite(timestamp) && timestamp < cutoff;
+      });
+      const prunedCount = beforeCount - notifications.length;
+      if (prunedCount > 0) {
+        onAuditEvent?.({
+          type: "notifications.pruned",
+          count: prunedCount,
+          retentionMinutes,
+        });
+      }
+    }, checkIntervalMs);
+    notificationPruneTimer.unref();
+  }
+
+  function stopNotificationPruneTimer() {
+    if (notificationPruneTimer) {
+      clearInterval(notificationPruneTimer);
+      notificationPruneTimer = null;
     }
   }
 

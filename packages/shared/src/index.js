@@ -225,6 +225,7 @@ export function normalizeConfig(config) {
         typeof config.display?.launchAtStartup === "boolean"
           ? config.display.launchAtStartup
           : true,
+      messageRetentionMinutes: Math.max(1, Number(config.display?.messageRetentionMinutes) || 60),
       windowPosition: normalizeWindowPosition(config.display?.windowPosition),
     },
     hardware: {

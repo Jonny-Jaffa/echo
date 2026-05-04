@@ -71,6 +71,7 @@
         </div>
       </section>
 
+      <div class="reception-ping-banner hidden" id="reception-ping-banner">Reception</div>
       <section class="panel-card drag-region">
         <div class="status-row drag-region">
           <div class="brand-lockup">
@@ -224,10 +225,12 @@
               <div>
                 <h3>Messaging</h3>
               </div>
-              <button class="settings-add-button" id="add-message-group-button" type="button">Add group</button>
             </div>
-            <div class="message-group-settings-block">
-              <div class="settings-subsection-title">Message Groups</div>
+            <div class="message-group-settings-card">
+              <div class="message-group-settings-head">
+                <div class="message-group-settings-title">Message Groups</div>
+                <button class="settings-add-button" id="add-message-group-button" type="button">Add group</button>
+              </div>
               <div class="message-group-list" id="message-group-list"></div>
             </div>
             <div class="selected-room-volume-card message-sound-card">
@@ -288,7 +291,7 @@
             <div class="checkbox-toggle-field">
               <label class="checkbox-toggle">
                 <input id="show-panel-at-startup-input" type="checkbox" />
-                <span>Show panel on startup</span>
+                <span>Show app on desktop at startup</span>
               </label>
               <label class="checkbox-toggle">
                 <input id="always-on-top-input" type="checkbox" />

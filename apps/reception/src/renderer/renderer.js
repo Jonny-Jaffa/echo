@@ -42,6 +42,7 @@ const detectedServerAddressOutput = document.querySelector("#detected-server-add
 const selectedDeviceRoleLabel = document.querySelector("#selected-device-role-label");
 const launchAtStartupInput = document.querySelector("#launch-at-startup-input");
 const alwaysOnTopInput = document.querySelector("#always-on-top-input");
+const messageRetentionInput = document.querySelector("#message-retention-input");
 const audioNotificationSoundInput = document.querySelector("#audio-notification-sound-input");
 const audioPlayTestButton = document.querySelector("#audio-play-test-button");
 const audioMasterVolumeInput = document.querySelector("#audio-master-volume-input");
@@ -445,10 +446,12 @@ function renderCompactAlertList(state, rooms, alerts) {
 
   return `
     <section class="compact-layout">
-      <div
-        class="compact-room-grid ${rooms.length <= 4 ? "is-centered" : ""}"
-        style="--compact-room-columns: ${Math.max(1, Math.min(rooms.length, 4))}"
-      >${compactRoomControls}</div>
+      <div class="compact-room-grid-container">
+        <div
+          class="compact-room-grid ${rooms.length <= 4 ? "is-centered" : ""}"
+          style="--compact-room-columns: ${Math.max(1, Math.min(rooms.length, 4))}"
+        >${compactRoomControls}</div>
+      </div>
       ${activeMessageRows ? `<div class="compact-message-list">${activeMessageRows}</div>` : ""}
     </section>
   `;
@@ -1120,6 +1123,9 @@ function populateEditor(config) {
   authAccessKeyInput.value = draftConfig.auth?.accessKey || "";
   launchAtStartupInput.checked = draftConfig.display?.launchAtStartup !== false;
   alwaysOnTopInput.checked = Boolean(draftConfig.display.alwaysOnTop);
+  if (messageRetentionInput) {
+    messageRetentionInput.value = String(draftConfig.display?.messageRetentionMinutes ?? 60);
+  }
   populateReceptionSoundSelectOptions(draftConfig.audio?.notificationSound);
   populateMessageSoundSelectOptions(draftConfig.audio?.messageSound);
   audioMasterVolumeInput.value = String(draftConfig.audio?.masterVolume ?? 80);
@@ -1363,6 +1369,7 @@ function buildConfigFromForm() {
       ...draftConfig.display,
       launchAtStartup: launchAtStartupInput.checked,
       alwaysOnTop: alwaysOnTopInput.checked,
+      messageRetentionMinutes: Number(messageRetentionInput?.value) || 60,
       adminMode: false,
     },
     audio: {

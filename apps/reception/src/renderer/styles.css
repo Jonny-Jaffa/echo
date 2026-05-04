@@ -168,6 +168,21 @@ body[data-window-view="role"] .admin-panel {
   cursor: pointer;
 }
 
+.retention-select-row {
+  display: grid;
+  gap: 8px;
+}
+
+.retention-select-row select {
+  max-width: 200px;
+}
+
+.retention-hint {
+  font-size: 12px;
+  color: var(--muted);
+  line-height: 1.4;
+}
+
 .gadget-panel,
 .admin-panel {
   background: var(--panel);
@@ -675,10 +690,17 @@ select {
   padding: 6px 4px 4px;
 }
 
+.compact-room-grid-container {
+  display: flex;
+  justify-content: center;
+}
+
 .compact-room-grid {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 10px;
+  width: 100%;
+  max-width: 500px;
 }
 
 .compact-room-grid.is-centered {
@@ -1149,20 +1171,26 @@ body[data-admin-mode="true"] .admin-panel {
 }
 
 .settings-sidebar-link {
-  min-height: 38px;
+  min-height: 36px;
+  display: flex;
+  align-items: center;
   border: 0;
-  border-radius: 12px;
   padding: 0 12px;
+  border-radius: 12px;
   background: transparent;
   color: var(--muted);
-  cursor: pointer;
-  font: inherit;
-  font-size: 15px;
+  text-decoration: none;
+  font-size: 12px;
+  font-weight: 700;
   text-align: left;
+  cursor: pointer;
 }
 
-.settings-sidebar-link.is-active {
-  background: color-mix(in srgb, var(--message-list-background) 72%, white);
+.settings-sidebar-link:hover,
+.settings-sidebar-link.is-active,
+.settings-sidebar-link:focus-visible {
+  outline: none;
+  background: color-mix(in srgb, var(--accent) 12%, white);
   color: var(--text);
 }
 
@@ -1510,6 +1538,10 @@ body[data-admin-mode="true"] .admin-panel {
 .settings-grid {
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 12px;
+}
+
+.settings-grid + .settings-grid {
+  margin-top: 12px;
 }
 
 .full-width-field {
