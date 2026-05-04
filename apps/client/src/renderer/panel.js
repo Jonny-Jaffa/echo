@@ -164,6 +164,7 @@ let configState = null;
 let socket = null;
 let reconnectTimer = null;
 let configRefreshTimer = null;
+let configHash = "";
 let panelDeviceId = "";
 let isServerPanelVisible = false;
 let manualPanelReveal = false;
@@ -811,6 +812,7 @@ async function setPanelDisplayMode(mode, options = {}) {
 
 async function fetchConfig(options = {}) {
   const revealPanel = options.revealPanel !== false;
+  const skipRenderIfUnchanged = options.skipRenderIfUnchanged !== false;
   const serverUrl = serverInput.value.trim();
   const selectedRoomId =
     preferredRoomId || roomSelect.value || window.pipPanel.defaultRoomId;
@@ -822,7 +824,16 @@ async function fetchConfig(options = {}) {
     throw new Error(`Unable to reach reception: ${response.status}`);
   }
 
-  configState = await response.json();
+  const nextConfig = await response.json();
+  const nextHash = JSON.stringify(nextConfig);
+
+  if (skipRenderIfUnchanged && nextHash === configHash && configState) {
+    configState = nextConfig;
+    return;
+  }
+
+  configState = nextConfig;
+  configHash = nextHash;
   manualPanelReveal = false;
   if (revealPanel) {
     setPanelView("panel");
@@ -2969,7 +2980,7 @@ function startConfigRefresh() {
     const wasUninitialized = !configState;
 
     try {
-      await fetchConfig();
+      await fetchConfig({ skipRenderIfUnchanged: true });
       await fetchChatMessages().catch(() => {});
 
       if (wasUninitialized) {
