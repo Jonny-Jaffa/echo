@@ -1779,6 +1779,13 @@ body[data-window-view="main"][data-panel-mode="both"] .room-message-shell {
   background: rgba(255, 255, 255, 0.9);
 }
 
+.room-select-card {
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.9);
+}
+
 .role-launch-copy {
   display: grid;
   gap: 4px;
