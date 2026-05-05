@@ -13,6 +13,8 @@ async function createReceptionServer({
   onNotificationsCleared,
   onPingCleared,
   onChatMessage,
+  onChatDeleted,
+  onChatEdited,
   onAuditEvent,
 }) {
   const { parseJsonBody, buildNotificationPayload } = await import("@pip/shared");
@@ -186,6 +188,96 @@ async function createReceptionServer({
       return;
     }
 
+    if (req.method === "PATCH" && url.pathname === "/chat/messages") {
+      const body = await parseJsonBody(req, { maxBytes: MAX_REQUEST_BODY_BYTES }).catch((error) => {
+        writeBodyParseError(res, error);
+        return null;
+      });
+
+      if (!body) {
+        return;
+      }
+
+      const messageId = String(body.messageId || "").trim();
+      const newText = String(body.text || "").trim();
+
+      if (!messageId) {
+        writeJson(res, 400, {
+          ok: false,
+          error: "messageId is required.",
+        });
+        return;
+      }
+
+      if (!newText) {
+        writeJson(res, 400, {
+          ok: false,
+          error: "Message text is required.",
+        });
+        return;
+      }
+
+      const edited = editChatMessage(messageId, newText, {
+        transport: "http",
+        remoteAddress: req.socket?.remoteAddress || null,
+      });
+
+      if (!edited) {
+        writeJson(res, 404, {
+          ok: false,
+          error: "Message not found or cannot be edited.",
+        });
+        return;
+      }
+
+      writeJson(res, 200, {
+        ok: true,
+        messageId,
+        text: newText,
+      });
+      return;
+    }
+
+    if (req.method === "DELETE" && url.pathname === "/chat/messages") {
+      const body = await parseJsonBody(req, { maxBytes: MAX_REQUEST_BODY_BYTES }).catch((error) => {
+        writeBodyParseError(res, error);
+        return null;
+      });
+
+      if (!body) {
+        return;
+      }
+
+      const messageId = String(body.messageId || "").trim();
+
+      if (!messageId) {
+        writeJson(res, 400, {
+          ok: false,
+          error: "messageId is required.",
+        });
+        return;
+      }
+
+      const deleted = deleteChatMessage(messageId, {
+        transport: "http",
+        remoteAddress: req.socket?.remoteAddress || null,
+      });
+
+      if (!deleted) {
+        writeJson(res, 404, {
+          ok: false,
+          error: "Message not found.",
+        });
+        return;
+      }
+
+      writeJson(res, 200, {
+        ok: true,
+        messageId,
+      });
+      return;
+    }
+
     if (req.method === "POST" && url.pathname === "/cancel-notification") {
       const body = await parseJsonBody(req, { maxBytes: MAX_REQUEST_BODY_BYTES }).catch((error) => {
         writeBodyParseError(res, error);
@@ -348,6 +440,27 @@ async function createReceptionServer({
             transport: "websocket",
             remoteAddress: request.socket?.remoteAddress || null,
           });
+        }
+
+        if (message.type === "chat:delete") {
+          const messageId = String(message.messageId || "").trim();
+          if (messageId) {
+            deleteChatMessage(messageId, {
+              transport: "websocket",
+              remoteAddress: request.socket?.remoteAddress || null,
+            });
+          }
+        }
+
+        if (message.type === "chat:edit") {
+          const messageId = String(message.messageId || "").trim();
+          const newText = String(message.text || "").trim();
+          if (messageId && newText) {
+            editChatMessage(messageId, newText, {
+              transport: "websocket",
+              remoteAddress: request.socket?.remoteAddress || null,
+            });
+          }
         }
 
         if (message.type === "notification:cancel") {
@@ -602,6 +715,12 @@ async function createReceptionServer({
       sendChatMessage(payload, metadata);
       return payload;
     },
+    deleteChatMessage(messageId, metadata = {}) {
+      return deleteChatMessage(messageId, metadata);
+    },
+    editChatMessage(messageId, newText, metadata = {}) {
+      return editChatMessage(messageId, newText, metadata);
+    },
     close() {
       if (discoveryEnabled) {
         discoverySocket.close();
@@ -791,6 +910,110 @@ async function createReceptionServer({
       sendToReception: payload.sendToReception,
       source: payload.source,
     });
+  }
+
+  function deleteChatMessage(messageId, metadata = {}) {
+    const normalizedMessageId = String(messageId || "").trim();
+
+    if (!normalizedMessageId) {
+      return false;
+    }
+
+    const index = chatMessages.findIndex(
+      (message) => String(message.messageId || "").trim() === normalizedMessageId,
+    );
+
+    if (index === -1) {
+      return false;
+    }
+
+    const deletedMessage = chatMessages[index];
+    chatMessages[index] = {
+      ...deletedMessage,
+      text: "",
+      deleted: true,
+      deletedAt: new Date().toISOString(),
+    };
+
+    broadcast(clients, {
+      type: "chat:messageDeleted",
+      payload: {
+        messageId: normalizedMessageId,
+        deletedAt: new Date().toISOString(),
+      },
+    });
+
+    onChatDeleted?.({
+      messageId: normalizedMessageId,
+      deletedAt: new Date().toISOString(),
+    });
+
+    onAuditEvent?.({
+      type: "chat.deleted",
+      transport: metadata.transport || "server",
+      remoteAddress: metadata.remoteAddress || null,
+      messageId: normalizedMessageId,
+      senderType: deletedMessage.senderType,
+      senderRoomId: deletedMessage.senderRoomId,
+    });
+
+    return true;
+  }
+
+  function editChatMessage(messageId, newText, metadata = {}) {
+    const normalizedMessageId = String(messageId || "").trim();
+    const normalizedText = String(newText || "").trim().slice(0, MAX_CHAT_TEXT_LENGTH);
+
+    if (!normalizedMessageId || !normalizedText) {
+      return false;
+    }
+
+    const index = chatMessages.findIndex(
+      (message) => String(message.messageId || "").trim() === normalizedMessageId,
+    );
+
+    if (index === -1) {
+      return false;
+    }
+
+    const existingMessage = chatMessages[index];
+
+    if (existingMessage.deleted) {
+      return false;
+    }
+
+    chatMessages[index] = {
+      ...existingMessage,
+      text: normalizedText,
+      edited: true,
+      editedAt: new Date().toISOString(),
+    };
+
+    broadcast(clients, {
+      type: "chat:messageEdited",
+      payload: {
+        messageId: normalizedMessageId,
+        text: normalizedText,
+        editedAt: new Date().toISOString(),
+      },
+    });
+
+    onChatEdited?.({
+      messageId: normalizedMessageId,
+      text: normalizedText,
+      editedAt: new Date().toISOString(),
+    });
+
+    onAuditEvent?.({
+      type: "chat.edited",
+      transport: metadata.transport || "server",
+      remoteAddress: metadata.remoteAddress || null,
+      messageId: normalizedMessageId,
+      senderType: existingMessage.senderType,
+      senderRoomId: existingMessage.senderRoomId,
+    });
+
+    return true;
   }
 }
 

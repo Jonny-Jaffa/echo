@@ -851,12 +851,27 @@ function renderChatMessages(state) {
       const text = String(message.text || "");
       const timestamp = formatRelativeTime(message.timestamp);
       const isSingleLine = text.length <= 34 && !text.includes("\n");
+      const isDeleted = Boolean(message.deleted);
+      const messageId = String(message.messageId || "").trim();
 
+      if (isDeleted) {
+        return `
+          <article class="message-item ${isOutgoing ? "is-outgoing" : "is-incoming"} is-deleted" style="--message-bubble-incoming: ${escapeHtml(senderRoom?.color || "#418191")}">
+            <div class="message-bubble">
+              <div class="message-bubble-body is-single-line">
+                <p class="message-item-text message-item-text-deleted">Message deleted</p>
+              </div>
+            </div>
+          </article>
+        `;
+      }
+
+      const editedLabel = message.edited ? " <span class=\"message-item-edited\">(edited)</span>" : "";
       return `
-        <article class="message-item ${isOutgoing ? "is-outgoing" : "is-incoming"}" style="--message-bubble-incoming: ${escapeHtml(senderRoom?.color || "#418191")}">
+        <article class="message-item ${isOutgoing ? "is-outgoing" : "is-incoming"}" style="--message-bubble-incoming: ${escapeHtml(senderRoom?.color || "#418191")}" data-message-id="${escapeHtml(messageId)}">
           <div class="message-bubble">
             <div class="message-bubble-body ${isSingleLine ? "is-single-line" : "is-multi-line"}">
-              <p class="message-item-text">${escapeHtml(text)}</p>
+              <p class="message-item-text">${escapeHtml(text)}${editedLabel}</p>
               <span class="message-item-time">${escapeHtml(timestamp)}</span>
             </div>
           </div>
@@ -1875,7 +1890,155 @@ document.body.addEventListener("click", (event) => {
   if (removeType) {
     removeItem(removeType, Number(target.dataset.index));
   }
+
+  // Dismiss context menu on click outside
+  const contextMenu = document.querySelector(".message-context-menu");
+  if (contextMenu && !target.closest(".message-context-menu")) {
+    contextMenu.remove();
+  }
 });
+
+// Right-click context menu for editing and deleting messages
+chatMessageList?.addEventListener("contextmenu", (event) => {
+  const target = event.target;
+
+  if (!(target instanceof HTMLElement)) {
+    return;
+  }
+
+  const messageItem = target.closest(".message-item[data-message-id]");
+
+  if (!messageItem) {
+    return;
+  }
+
+  const messageId = String(messageItem.getAttribute("data-message-id") || "").trim();
+
+  if (!messageId) {
+    return;
+  }
+
+  // Only allow editing/deleting outgoing (reception) messages
+  if (!messageItem.classList.contains("is-outgoing")) {
+    return;
+  }
+
+  event.preventDefault();
+
+  // Remove any existing context menu
+  document.querySelector(".message-context-menu")?.remove();
+
+  const menu = document.createElement("div");
+  menu.className = "message-context-menu";
+  menu.innerHTML = `
+    <button class="message-context-menu-item" data-action="edit-message" data-message-id="${escapeHtml(messageId)}" type="button">
+      Edit message
+    </button>
+    <button class="message-context-menu-item is-danger" data-action="delete-message" data-message-id="${escapeHtml(messageId)}" type="button">
+      Delete for everyone
+    </button>
+  `;
+
+  // Position the menu near the click
+  const rect = messageItem.getBoundingClientRect();
+  const chatListRect = chatMessageList.getBoundingClientRect();
+  const menuX = Math.min(event.clientX, chatListRect.right - 180);
+  const menuY = Math.min(event.clientY, chatListRect.bottom - 60);
+
+  menu.style.left = `${menuX}px`;
+  menu.style.top = `${menuY}px`;
+  document.body.appendChild(menu);
+
+  // Handle edit click
+  menu.querySelector("[data-action='edit-message']")?.addEventListener("click", () => {
+    const id = String(menu.querySelector("[data-action='edit-message']")?.getAttribute("data-message-id") || "").trim();
+    menu.remove();
+    if (id) {
+      startInlineEdit(id);
+    }
+  });
+
+  // Handle delete click
+  menu.querySelector("[data-action='delete-message']")?.addEventListener("click", async () => {
+    const id = String(menu.querySelector("[data-action='delete-message']")?.getAttribute("data-message-id") || "").trim();
+    if (id) {
+      await window.pip.deleteChatMessage(id).catch(() => {});
+    }
+    menu.remove();
+  });
+});
+
+function startInlineEdit(messageId) {
+  const messageItem = chatMessageList?.querySelector(`.message-item[data-message-id="${escapeHtml(messageId)}"]`);
+
+  if (!messageItem) {
+    return;
+  }
+
+  const bubbleBody = messageItem.querySelector(".message-bubble-body");
+
+  if (!bubbleBody) {
+    return;
+  }
+
+  const textElement = bubbleBody.querySelector(".message-item-text");
+
+  if (!textElement) {
+    return;
+  }
+
+  const currentText = String(textElement.textContent || "").replace(/\s*\(edited\)\s*$/, "").trim();
+
+  // Replace the bubble content with an edit textarea
+  bubbleBody.innerHTML = `
+    <textarea class="message-edit-input" maxlength="500" rows="2">${escapeHtml(currentText)}</textarea>
+    <div class="message-edit-actions">
+      <button class="message-edit-save" type="button">Save</button>
+      <button class="message-edit-cancel" type="button">Cancel</button>
+    </div>
+  `;
+
+  const textarea = bubbleBody.querySelector(".message-edit-input");
+  const saveButton = bubbleBody.querySelector(".message-edit-save");
+  const cancelButton = bubbleBody.querySelector(".message-edit-cancel");
+
+  if (!textarea || !saveButton || !cancelButton) {
+    return;
+  }
+
+  textarea.focus();
+  textarea.setSelectionRange(textarea.value.length, textarea.value.length);
+
+  const finishEdit = (saved) => {
+    if (saved) {
+      const newText = String(textarea.value || "").trim();
+      if (newText && newText !== currentText) {
+        window.pip.editChatMessage(messageId, newText).catch(() => {});
+      }
+    }
+    // Restore the original bubble content (will be re-rendered via chat:update)
+    // For immediate feedback, we can update the text locally
+    if (!saved) {
+      bubbleBody.innerHTML = `
+        <p class="message-item-text">${escapeHtml(currentText)}</p>
+        <span class="message-item-time">${messageItem.querySelector(".message-item-time")?.textContent || ""}</span>
+      `;
+    }
+  };
+
+  saveButton.addEventListener("click", () => finishEdit(true));
+  cancelButton.addEventListener("click", () => finishEdit(false));
+
+  textarea.addEventListener("keydown", (e) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      finishEdit(true);
+    }
+    if (e.key === "Escape") {
+      finishEdit(false);
+    }
+  });
+}
 
 chatRecipientDrawerButton?.addEventListener("click", () => {
   setChatRecipientDrawerVisibility(!isChatRecipientDrawerVisible);

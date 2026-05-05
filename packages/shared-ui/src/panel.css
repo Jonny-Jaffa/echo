@@ -85,7 +85,6 @@
   min-height: 0;
   grid-template-rows: auto minmax(220px, 1fr) auto;
   align-content: stretch;
-  overflow: hidden;
   position: relative;
 }
 
@@ -489,6 +488,146 @@
   position: absolute;
   right: 0;
   bottom: 0;
+}
+
+/* Deleted message styling */
+.message-item.is-deleted .message-bubble {
+  opacity: 0.6;
+}
+
+.message-item.is-deleted .message-bubble-body {
+  justify-content: center;
+}
+
+.message-item-text-deleted {
+  font-style: italic;
+  font-size: 12px;
+  opacity: 0.7;
+}
+
+/* Right-click context menu for messages */
+.message-context-menu {
+  position: fixed;
+  z-index: 10000;
+  background: #ffffff;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+  padding: 4px;
+  min-width: 160px;
+}
+
+.message-context-menu-item {
+  display: block;
+  width: 100%;
+  padding: 8px 12px;
+  border: none;
+  background: none;
+  font: inherit;
+  font-size: 13px;
+  text-align: left;
+  cursor: pointer;
+  border-radius: 4px;
+  color: var(--text);
+  white-space: nowrap;
+}
+
+.message-context-menu-item:hover {
+  background: #f5f5f5;
+}
+
+.message-context-menu-item.is-danger {
+  color: #dc2626;
+}
+
+.message-context-menu-item.is-danger:hover {
+  background: #fef2f2;
+}
+
+/* "(edited)" indicator on messages */
+.message-item-edited {
+  font-size: 11px;
+  font-style: italic;
+  opacity: 0.6;
+  margin-left: 4px;
+}
+
+/* Inline edit textarea for messages */
+.message-edit-input {
+  width: 100%;
+  min-height: 36px;
+  border: 1px solid var(--field-focus);
+  border-radius: 8px;
+  padding: 8px 10px;
+  background: white;
+  color: var(--text);
+  font: inherit;
+  font-size: 13px;
+  resize: none;
+  outline: none;
+}
+
+.message-edit-input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px rgba(18, 18, 18, 0.1);
+}
+
+.message-edit-actions {
+  display: flex;
+  gap: 6px;
+  margin-top: 6px;
+  justify-content: flex-end;
+}
+
+.message-edit-save,
+.message-edit-cancel {
+  width: 24px;
+  min-width: 24px;
+  height: 24px;
+  border: 0;
+  border-radius: 4px;
+  padding: 0;
+  cursor: pointer;
+  position: relative;
+  text-indent: -9999px;
+  overflow: hidden;
+  background: transparent;
+  color: var(--muted);
+}
+
+.message-edit-save::before,
+.message-edit-cancel::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  width: 16px;
+  height: 16px;
+  margin: auto;
+  background-color: currentColor;
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  -webkit-mask-position: center;
+  mask-position: center;
+  -webkit-mask-size: contain;
+  mask-size: contain;
+}
+
+.message-edit-save::before {
+  -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 448 512'%3E%3Cpath d='M64 80c-8.8 0-16 7.2-16 16l0 320c0 8.8 7.2 16 16 16l320 0c8.8 0 16-7.2 16-16l0-242.7c0-4.2-1.7-8.3-4.7-11.3L320 86.6 320 176c0 17.7-14.3 32-32 32l-160 0c-17.7 0-32-14.3-32-32l0-96-32 0zm80 0l0 80 128 0 0-80-128 0zM0 96C0 60.7 28.7 32 64 32l242.7 0c17 0 33.3 6.7 45.3 18.7L429.3 128c12 12 18.7 28.3 18.7 45.3L448 416c0 35.3-28.7 64-64 64L64 480c-35.3 0-64-28.7-64-64L0 96zM160 320a64 64 0 1 1 128 0 64 64 0 1 1 -128 0z'/%3E%3C/svg%3E");
+  mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 448 512'%3E%3Cpath d='M64 80c-8.8 0-16 7.2-16 16l0 320c0 8.8 7.2 16 16 16l320 0c8.8 0 16-7.2 16-16l0-242.7c0-4.2-1.7-8.3-4.7-11.3L320 86.6 320 176c0 17.7-14.3 32-32 32l-160 0c-17.7 0-32-14.3-32-32l0-96-32 0zm80 0l0 80 128 0 0-80-128 0zM0 96C0 60.7 28.7 32 64 32l242.7 0c17 0 33.3 6.7 45.3 18.7L429.3 128c12 12 18.7 28.3 18.7 45.3L448 416c0 35.3-28.7 64-64 64L64 480c-35.3 0-64-28.7-64-64L0 96zM160 320a64 64 0 1 1 128 0 64 64 0 1 1 -128 0z'/%3E%3C/svg%3E");
+}
+
+.message-edit-cancel::before {
+  -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Cpath d='M367.2 412.5L99.5 144.8c-22.4 31.4-35.5 69.8-35.5 111.2 0 106 86 192 192 192 41.5 0 79.9-13.1 111.2-35.5zm45.3-45.3c22.4-31.4 35.5-69.8 35.5-111.2 0-106-86-192-192-192-41.5 0-79.9 13.1-111.2 35.5L412.5 367.2zM0 256a256 256 0 1 1 512 0 256 256 0 1 1 -512 0z'/%3E%3C/svg%3E");
+  mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Cpath d='M367.2 412.5L99.5 144.8c-22.4 31.4-35.5 69.8-35.5 111.2 0 106 86 192 192 192 41.5 0 79.9-13.1 111.2-35.5zm45.3-45.3c22.4-31.4 35.5-69.8 35.5-111.2 0-106-86-192-192-192-41.5 0-79.9 13.1-111.2 35.5L412.5 367.2zM0 256a256 256 0 1 1 512 0 256 256 0 1 1 -512 0z'/%3E%3C/svg%3E");
+}
+
+.message-edit-save:hover {
+  color: var(--accent);
+}
+
+.message-edit-cancel:hover {
+  color: #dc2626;
 }
 
 .message-compose {

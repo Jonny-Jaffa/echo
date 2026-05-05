@@ -194,6 +194,7 @@ let draggedMessageThreadKey = "";
 let draggedMessageThreadSource = "";
 let panelDisplayMode = "messages";
 let isPanelDisplayModeMenuVisible = false;
+let isEditingMessage = false;
 let messageSound = DEFAULT_ROOM_ALERT_SOUND;
 let messageVolume = 80;
 const activeNotificationsByButtonId = new Map();
@@ -1627,6 +1628,11 @@ function renderChatMessages() {
     return;
   }
 
+  // Don't re-render messages while an inline edit is in progress
+  if (isEditingMessage) {
+    return;
+  }
+
   const wasPinnedToBottom =
     messageList.scrollHeight -
       messageList.scrollTop -
@@ -1644,15 +1650,30 @@ function renderChatMessages() {
   messageList.innerHTML = messages
     .map((message) => {
       const isOutgoing = String(message?.senderRoomId || "").trim() === currentRoomId;
+      const isDeleted = Boolean(message.deleted);
+      const messageId = String(message.messageId || "").trim();
       const incomingStyle = isOutgoing
         ? ""
         : ` style="--message-bubble-incoming: ${escapeHtml(getIncomingMessageBubbleColor(message))}; --message-bubble-text: white; --message-bubble-time: #ededed;"`;
 
+      if (isDeleted) {
+        return `
+          <article class="message-item ${isOutgoing ? "is-outgoing" : "is-incoming"} is-deleted"${incomingStyle}>
+            <div class="message-bubble">
+              <div class="message-bubble-body is-single-line">
+                <p class="message-item-text message-item-text-deleted">Message deleted</p>
+              </div>
+            </div>
+          </article>
+        `;
+      }
+
+      const editedLabel = message.edited ? " <span class=\"message-item-edited\">(edited)</span>" : "";
       return `
-        <article class="message-item ${isOutgoing ? "is-outgoing" : "is-incoming"}"${incomingStyle}>
+        <article class="message-item ${isOutgoing ? "is-outgoing" : "is-incoming"}"${incomingStyle} data-message-id="${escapeHtml(messageId)}">
           <div class="message-bubble">
             <div class="message-bubble-body">
-              <p class="message-item-text">${escapeHtml(message.text || "")}</p>
+              <p class="message-item-text">${escapeHtml(message.text || "")}${editedLabel}</p>
               <span class="message-item-time">${escapeHtml(formatMessageTime(message.timestamp))}</span>
             </div>
           </div>
@@ -3385,6 +3406,191 @@ messageComposeInput?.addEventListener("input", () => {
 messageComposeInput?.addEventListener("scroll", updateMessageComposerScrollbar, { passive: true });
 
 messageList?.addEventListener("scroll", updateMessageScrollbar, { passive: true });
+
+// Right-click context menu for editing and deleting messages
+messageList?.addEventListener("contextmenu", (event) => {
+  const target = event.target;
+
+  if (!(target instanceof HTMLElement)) {
+    return;
+  }
+
+  const messageItem = target.closest(".message-item[data-message-id]");
+
+  if (!messageItem) {
+    return;
+  }
+
+  const messageId = String(messageItem.getAttribute("data-message-id") || "").trim();
+
+  if (!messageId) {
+    return;
+  }
+
+  // Only allow editing/deleting outgoing messages (sent by this room)
+  if (!messageItem.classList.contains("is-outgoing")) {
+    return;
+  }
+
+  event.preventDefault();
+
+  // Remove any existing context menu
+  document.querySelector(".message-context-menu")?.remove();
+
+  const menu = document.createElement("div");
+  menu.className = "message-context-menu";
+  menu.innerHTML = `
+    <button class="message-context-menu-item" data-action="edit-message" data-message-id="${escapeHtml(messageId)}" type="button">
+      Edit message
+    </button>
+    <button class="message-context-menu-item is-danger" data-action="delete-message" data-message-id="${escapeHtml(messageId)}" type="button">
+      Delete for everyone
+    </button>
+  `;
+
+  // Position the menu near the click
+  const messageListRect = messageList.getBoundingClientRect();
+  const menuX = Math.min(event.clientX, messageListRect.right - 180);
+  const menuY = Math.min(event.clientY, messageListRect.bottom - 60);
+
+  menu.style.left = `${menuX}px`;
+  menu.style.top = `${menuY}px`;
+  document.body.appendChild(menu);
+
+  // Handle edit click
+  menu.querySelector("[data-action='edit-message']")?.addEventListener("click", () => {
+    const id = String(menu.querySelector("[data-action='edit-message']")?.getAttribute("data-message-id") || "").trim();
+    menu.remove();
+    if (id) {
+      startInlineEdit(id);
+    }
+  });
+
+  // Handle delete click
+  menu.querySelector("[data-action='delete-message']")?.addEventListener("click", async () => {
+    const id = String(menu.querySelector("[data-action='delete-message']")?.getAttribute("data-message-id") || "").trim();
+    if (id) {
+      const serverUrl = serverInput.value.trim();
+      if (serverUrl) {
+        try {
+          await fetch(`${serverUrl}/chat/messages`, {
+            method: "DELETE",
+            headers: {
+              "Content-Type": "application/json",
+              ...buildAuthenticatedHeaders(),
+            },
+            body: JSON.stringify({ messageId: id }),
+          });
+          await fetchChatMessages().catch(() => {});
+        } catch {
+          // Ignore delete errors
+        }
+      }
+    }
+    menu.remove();
+  });
+});
+
+function startInlineEdit(messageId) {
+  const messageItem = messageList?.querySelector(`.message-item[data-message-id="${escapeHtml(messageId)}"]`);
+
+  if (!messageItem) {
+    return;
+  }
+
+  const bubbleBody = messageItem.querySelector(".message-bubble-body");
+
+  if (!bubbleBody) {
+    return;
+  }
+
+  const textElement = bubbleBody.querySelector(".message-item-text");
+
+  if (!textElement) {
+    return;
+  }
+
+  const currentText = String(textElement.textContent || "").replace(/\s*\(edited\)\s*$/, "").trim();
+
+  // Set flag to prevent re-render from destroying the edit UI
+  isEditingMessage = true;
+
+  // Replace the bubble content with an edit textarea
+  bubbleBody.innerHTML = `
+    <textarea class="message-edit-input" maxlength="500" rows="2">${escapeHtml(currentText)}</textarea>
+    <div class="message-edit-actions">
+      <button class="message-edit-save" type="button">Save</button>
+      <button class="message-edit-cancel" type="button">Cancel</button>
+    </div>
+  `;
+
+  const textarea = bubbleBody.querySelector(".message-edit-input");
+  const saveButton = bubbleBody.querySelector(".message-edit-save");
+  const cancelButton = bubbleBody.querySelector(".message-edit-cancel");
+
+  if (!textarea || !saveButton || !cancelButton) {
+    isEditingMessage = false;
+    return;
+  }
+
+  textarea.focus();
+  textarea.setSelectionRange(textarea.value.length, textarea.value.length);
+
+  const finishEdit = async (saved) => {
+    // Clear the editing flag so re-renders can proceed
+    isEditingMessage = false;
+
+    if (saved) {
+      const newText = String(textarea.value || "").trim();
+      if (newText && newText !== currentText) {
+        const serverUrl = serverInput.value.trim();
+        if (serverUrl) {
+          try {
+            await fetch(`${serverUrl}/chat/messages`, {
+              method: "PATCH",
+              headers: {
+                "Content-Type": "application/json",
+                ...buildAuthenticatedHeaders(),
+              },
+              body: JSON.stringify({ messageId, text: newText }),
+            });
+            await fetchChatMessages().catch(() => {});
+          } catch {
+            // Ignore edit errors
+          }
+        }
+      }
+    }
+    // Restore the original bubble content (will be re-rendered via chat:update)
+    if (!saved) {
+      bubbleBody.innerHTML = `
+        <p class="message-item-text">${escapeHtml(currentText)}</p>
+        <span class="message-item-time">${messageItem.querySelector(".message-item-time")?.textContent || ""}</span>
+      `;
+    }
+  };
+
+  saveButton.addEventListener("click", () => finishEdit(true));
+  cancelButton.addEventListener("click", () => finishEdit(false));
+
+  textarea.addEventListener("keydown", (e) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      finishEdit(true);
+    }
+    if (e.key === "Escape") {
+      finishEdit(false);
+    }
+  });
+}
+
+// Dismiss context menu on click outside
+document.body.addEventListener("click", (event) => {
+  const contextMenu = document.querySelector(".message-context-menu");
+  if (contextMenu && !(event.target instanceof HTMLElement && event.target.closest(".message-context-menu"))) {
+    contextMenu.remove();
+  }
+});
 
 messageSendButton?.addEventListener("click", async () => {
   try {

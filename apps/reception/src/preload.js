@@ -14,6 +14,8 @@ contextBridge.exposeInMainWorld("pip", {
   pingRoom: (roomId) => ipcRenderer.invoke("room:ping", roomId),
   clearPing: (roomId) => ipcRenderer.invoke("room:clearPing", roomId),
   sendChatMessage: (payload) => ipcRenderer.invoke("chat:send", payload),
+  deleteChatMessage: (messageId) => ipcRenderer.invoke("chat:delete", messageId),
+  editChatMessage: (messageId, text) => ipcRenderer.invoke("chat:edit", messageId, text),
   dismissNotification: () => ipcRenderer.invoke("notification:dismiss"),
   dismissNotificationById: (notificationId) =>
     ipcRenderer.invoke("notification:dismissById", notificationId),

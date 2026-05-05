@@ -36,7 +36,7 @@ let serviceState = {
 };
 
 const WINDOW_WIDTH = 460;
-const WINDOW_EXPANDED_WIDTH = 1200;
+const WINDOW_EXPANDED_WIDTH = 800;
 const WINDOW_MINIMIZED_HEIGHT = 96;
 const WINDOW_ADMIN_WIDTH = 780;
 const WINDOW_ADMIN_HEIGHT = 800;
@@ -1126,6 +1126,16 @@ app.whenReady().then(async () => {
         emitChatMessages();
         emitState();
       },
+      onChatDeleted: () => {
+        chatMessages = server.getChatMessages();
+        emitChatMessages();
+        emitState();
+      },
+      onChatEdited: () => {
+        chatMessages = server.getChatMessages();
+        emitChatMessages();
+        emitState();
+      },
       onAuditEvent: (entry) => {
         appendAuditEntry(entry);
       },
@@ -1357,6 +1367,46 @@ app.whenReady().then(async () => {
       return {
         ok: true,
         payload: message,
+      };
+    } catch (error) {
+      return {
+        ok: false,
+        error: error.message,
+      };
+    }
+  });
+
+  ipcMain.handle("chat:delete", (_event, messageId) => {
+    try {
+      const deleted = server.deleteChatMessage(messageId, {
+        transport: "local",
+      });
+      chatMessages = server.getChatMessages();
+      emitChatMessages();
+      emitState();
+      return {
+        ok: deleted,
+        messageId,
+      };
+    } catch (error) {
+      return {
+        ok: false,
+        error: error.message,
+      };
+    }
+  });
+
+  ipcMain.handle("chat:edit", (_event, messageId, text) => {
+    try {
+      const edited = server.editChatMessage(messageId, text, {
+        transport: "local",
+      });
+      chatMessages = server.getChatMessages();
+      emitChatMessages();
+      emitState();
+      return {
+        ok: edited,
+        messageId,
       };
     } catch (error) {
       return {

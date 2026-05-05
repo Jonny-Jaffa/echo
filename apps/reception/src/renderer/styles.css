@@ -1488,6 +1488,7 @@ body[data-admin-mode="true"] .admin-panel {
   color: var(--muted);
   font-size: 10px;
   line-height: 1.2;
+  margin-top: 6px;
 }
 
 .action-remove-wrap {
