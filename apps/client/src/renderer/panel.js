@@ -40,6 +40,7 @@ const openRoleWindowButton = document.querySelector("#open-role-window-button");
 const selectedDeviceRoleLabel = document.querySelector("#selected-device-role-label");
 const receptionPingBanner = document.querySelector("#reception-ping-banner");
 const receptionOfflineBanner = document.querySelector("#reception-offline-banner");
+const launchAtStartupInput = document.querySelector("#launch-at-startup-input");
 const showPanelAtStartupInput = document.querySelector("#show-panel-at-startup-input");
 const alwaysOnTopInput = document.querySelector("#always-on-top-input");
 const messageSoundInput = document.querySelector("#message-sound-input");
@@ -3240,6 +3241,9 @@ async function init() {
   syncSetupFieldsFromSettings();
   setStatus("Connecting", "pending");
   updateHardwareStatus(hardwareStatus);
+  if (launchAtStartupInput) {
+    launchAtStartupInput.checked = Boolean(persistedSettings?.launchAtStartup);
+  }
   if (showPanelAtStartupInput) {
     showPanelAtStartupInput.checked = Boolean(persistedSettings?.showPanelAtStartup);
   }
@@ -3490,6 +3494,12 @@ roleCloseButton?.addEventListener("click", () => {
 
 openRoleWindowButton?.addEventListener("click", () => {
   window.pipPanel.openRoleWindow?.().catch(() => {});
+});
+
+launchAtStartupInput?.addEventListener("change", async () => {
+  await window.pipPanel.updateSettings({
+    launchAtStartup: launchAtStartupInput.checked,
+  }).catch(() => {});
 });
 
 showPanelAtStartupInput?.addEventListener("change", async () => {

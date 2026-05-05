@@ -1439,6 +1439,10 @@ app.whenReady().then(async () => {
           ? patch.serverAccessKey.trim()
           : clientSettings.serverAccessKey,
       roomId: patch.roomId || clientSettings.roomId,
+      launchAtStartup:
+        typeof patch.launchAtStartup === "boolean"
+          ? patch.launchAtStartup
+          : clientSettings.launchAtStartup,
       showPanelAtStartup:
         typeof patch.showPanelAtStartup === "boolean"
           ? patch.showPanelAtStartup
