@@ -565,6 +565,13 @@
   font-size: 13px;
   resize: none;
   outline: none;
+  box-sizing: border-box;
+}
+
+/* When editing, expand the bubble to its max-width so the textarea has room */
+.message-item.is-editing .message-bubble {
+  max-width: min(82%, 520px);
+  width: min(82%, 520px);
 }
 
 .message-edit-input:focus {

@@ -1989,6 +1989,9 @@ function startInlineEdit(messageId) {
 
   const currentText = String(textElement.textContent || "").replace(/\s*\(edited\)\s*$/, "").trim();
 
+  // Add editing class to expand the bubble to max-width
+  messageItem.classList.add("is-editing");
+
   // Replace the bubble content with an edit textarea
   bubbleBody.innerHTML = `
     <textarea class="message-edit-input" maxlength="500" rows="2">${escapeHtml(currentText)}</textarea>

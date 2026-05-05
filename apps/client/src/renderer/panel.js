@@ -3515,6 +3515,9 @@ function startInlineEdit(messageId) {
   // Set flag to prevent re-render from destroying the edit UI
   isEditingMessage = true;
 
+  // Add editing class to expand the bubble to max-width
+  messageItem.classList.add("is-editing");
+
   // Replace the bubble content with an edit textarea
   bubbleBody.innerHTML = `
     <textarea class="message-edit-input" maxlength="500" rows="2">${escapeHtml(currentText)}</textarea>
