@@ -191,7 +191,6 @@
             <aside class="settings-sidebar" aria-label="Settings sections">
               <button class="settings-sidebar-link is-active" type="button" data-settings-section-link="settings-general">General</button>
               <button class="settings-sidebar-link" type="button" data-settings-section-link="settings-buttons">Buttons</button>
-              <button class="settings-sidebar-link" type="button" data-settings-section-link="settings-message-groups">Messaging</button>
               <button class="settings-sidebar-link" type="button" data-settings-section-link="settings-connection">Connection</button>
             </aside>
             <div class="settings-content">
@@ -222,57 +221,6 @@
             </div>
             <div class="panel-actions" id="button-grid"></div>
             <div class="selected-room-volume" id="selected-room-volume"></div>
-          </section>
-
-          <section class="settings-section settings-tab-section" id="settings-message-groups" data-settings-section="settings-message-groups" hidden>
-            <div class="settings-section-head">
-              <div>
-                <h3>Messaging</h3>
-              </div>
-            </div>
-            <div class="message-group-settings-card">
-              <div class="message-group-settings-head">
-                <div class="message-group-settings-title">Message Groups</div>
-                <button class="settings-add-button" id="add-message-group-button" type="button">Add group</button>
-              </div>
-              <div class="message-group-list" id="message-group-list"></div>
-            </div>
-            <div class="selected-room-volume-card message-sound-card">
-              <div class="selected-room-volume-header">
-                <div class="selected-room-volume-title">Message Sound</div>
-              </div>
-              <div class="selected-room-volume-controls">
-                <label class="selected-room-sound-field">
-                  <span class="selected-room-control-label">Select Sound</span>
-                  <div class="selected-room-sound-row">
-                    <select class="selected-room-sound-select" id="message-sound-input"></select>
-                    <button
-                      class="selected-room-sound-test"
-                      id="message-sound-test-button"
-                      type="button"
-                      aria-label="Play message sound"
-                      title="Play message sound"
-                    >
-                      Play
-                    </button>
-                  </div>
-                </label>
-                <label class="selected-room-slider-field">
-                  <span class="selected-room-control-label">Volume</span>
-                  <div class="selected-room-slider-row">
-                    <input
-                      class="selected-room-volume-slider"
-                      id="message-volume-input"
-                      type="range"
-                      min="0"
-                      max="100"
-                      step="1"
-                    />
-                    <span class="selected-room-volume-value" id="message-volume-value">80%</span>
-                  </div>
-                </label>
-              </div>
-            </div>
           </section>
 
           <section class="settings-section settings-tab-section" id="settings-general" data-settings-section="settings-general">
