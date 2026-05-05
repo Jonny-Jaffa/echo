@@ -25,6 +25,8 @@ const messageThreadScrollRight = document.querySelector("#message-thread-scroll-
 const messageList = document.querySelector("#message-list");
 const messageComposeInput = document.querySelector("#message-compose-input");
 const messageSendButton = document.querySelector("#message-send-button");
+const messageGroupList = document.querySelector("#message-group-list");
+const addMessageGroupButton = document.querySelector("#add-message-group-button");
 const buttonGrid = document.querySelector("#button-grid");
 const statusDot = document.querySelector("#status-dot");
 const statusIndicator = document.querySelector("#status-indicator");
@@ -842,6 +844,9 @@ async function fetchConfig(options = {}) {
   renderButtons();
   if (shouldRenderSelectedRoomVolumeControl()) {
     renderSelectedRoomVolumeControl();
+  }
+  if (shouldRenderMessageGroupSettings()) {
+    renderMessageGroupSettings();
   }
   renderMessagingUi();
 }
@@ -2503,14 +2508,15 @@ function lockRoomSettingsRefresh(durationMs = ROOM_SETTINGS_INTERACTION_LOCK_MS)
 }
 
 function isRoomSettingsRefreshLocked() {
-  if (!selectedRoomVolume) {
+  if (!selectedRoomVolume && !messageGroupList) {
     return false;
   }
 
   const activeElement = document.activeElement;
   const hasFocusedRoomSetting =
     activeElement instanceof Element && (
-      selectedRoomVolume?.contains(activeElement)
+      selectedRoomVolume?.contains(activeElement) ||
+      messageGroupList?.contains(activeElement)
     );
 
   return hasFocusedRoomSetting || Date.now() < roomSettingsInteractionLockUntil;
@@ -2533,6 +2539,136 @@ function shouldRenderSelectedRoomVolumeControl() {
   }
 
   return !isRoomSettingsRefreshLocked();
+}
+
+function renderMessageGroupSettings() {
+  if (!messageGroupList) {
+    return;
+  }
+
+  const currentRoomId = getCurrentMessageRoomId();
+  messageGroupList.dataset.roomSettingsId = currentRoomId || "";
+  const availableRooms = (configState?.rooms || []).filter((room) => room.id !== currentRoomId);
+  const groups = currentRoomId ? roomMessageGroups?.[currentRoomId] || [] : [];
+
+  if (!currentRoomId) {
+    messageGroupList.innerHTML = '<p class="message-group-empty">Choose a room to configure message groups.</p>';
+    return;
+  }
+
+  if (availableRooms.length === 0) {
+    messageGroupList.innerHTML = '<p class="message-group-empty">No other rooms are available for group messaging yet.</p>';
+    return;
+  }
+
+  if (groups.length === 0) {
+    messageGroupList.innerHTML = '<p class="message-group-empty">No custom groups yet. Add one to start a shared room conversation.</p>';
+    return;
+  }
+
+  messageGroupList.innerHTML = groups
+    .map((group) => `
+      <div class="message-group-card" data-message-group-id="${escapeHtml(group.id)}">
+        <div class="message-group-head">
+          <input
+            class="message-group-name-input"
+            data-message-group-name-id="${escapeHtml(group.id)}"
+            type="text"
+            maxlength="${MAX_MESSAGE_GROUP_NAME_LENGTH}"
+            value="${escapeHtml(group.name)}"
+            placeholder="Group name"
+          />
+          <button
+            class="message-group-delete-button"
+            data-delete-message-group-id="${escapeHtml(group.id)}"
+            type="button"
+            aria-label="Delete group"
+            title="Delete group"
+          >
+            Delete
+          </button>
+        </div>
+        <div class="message-group-rooms">
+          ${availableRooms.map((room) => `
+            <label class="message-group-room-chip">
+              <input
+                data-message-group-room-id="${escapeHtml(group.id)}"
+                data-target-room-id="${escapeHtml(room.id)}"
+                type="checkbox"
+                ${group.roomIds.includes(room.id) ? "checked" : ""}
+              />
+              <span>${escapeHtml(room.name)}</span>
+            </label>
+          `).join("")}
+        </div>
+      </div>
+    `)
+    .join("");
+}
+
+function shouldRenderMessageGroupSettings() {
+  if (!messageGroupList) {
+    return false;
+  }
+
+  const selectedRoomId = getCurrentMessageRoomId();
+  const renderedRoomId = String(messageGroupList.dataset.roomSettingsId || "").trim();
+
+  if (!messageGroupList.innerHTML.trim()) {
+    return true;
+  }
+
+  if (selectedRoomId !== renderedRoomId) {
+    return true;
+  }
+
+  return !isRoomSettingsRefreshLocked();
+}
+
+function updateRoomMessageGroup(currentRoomId, groupId, updater) {
+  const groups = roomMessageGroups?.[currentRoomId] || [];
+  roomMessageGroups = {
+    ...roomMessageGroups,
+    [currentRoomId]: groups
+      .map((group, index) => normalizeRoomMessageGroup(
+        typeof updater === "function" && group.id === groupId ? updater(group) : group,
+        index,
+        currentRoomId,
+      ))
+      .filter(Boolean),
+  };
+}
+
+function addRoomMessageGroup(currentRoomId) {
+  const availableRooms = (configState?.rooms || []).filter((room) => room.id !== currentRoomId);
+  const firstTargetRoom = availableRooms[0]?.id || "";
+
+  if (!currentRoomId || !firstTargetRoom) {
+    return;
+  }
+
+  roomMessageGroups = {
+    ...roomMessageGroups,
+    [currentRoomId]: [
+      ...(roomMessageGroups?.[currentRoomId] || []),
+      {
+        id: `group-${createRandomId()}`,
+        name: "New group",
+        roomIds: [firstTargetRoom],
+      },
+    ],
+  };
+}
+
+async function persistMessageGroups() {
+  panelSettings = {
+    ...(panelSettings || {}),
+    roomMessageGroups: { ...roomMessageGroups },
+  };
+
+  await window.pipPanel.updateSettings({
+    roomMessageGroups,
+  }).catch(() => {});
 }
 
 async function persistPinnedMessageThreads() {
@@ -3107,6 +3243,7 @@ async function init() {
     renderButtons();
     renderSelectedRoomVolumeControl();
     renderButtonAppearancePicker();
+    renderMessageGroupSettings();
     renderMessagingUi();
   });
   startConfigRefresh();
@@ -3251,6 +3388,7 @@ roomSelect.addEventListener("change", async () => {
   clearAllPanelNotifications();
   renderButtons();
   renderSelectedRoomVolumeControl();
+  renderMessageGroupSettings();
   renderMessagingUi();
   await window.pipPanel.updateSettings({
     serverUrl: serverInput.value.trim(),
@@ -3378,6 +3516,111 @@ settingsSidebarLinks.forEach((link) => {
   link.addEventListener("click", () => {
     setActiveSettingsSidebarLink(String(link.getAttribute("data-settings-section-link") || ""));
   });
+});
+
+addMessageGroupButton?.addEventListener("click", async () => {
+  const currentRoomId = getCurrentMessageRoomId();
+
+  if (!currentRoomId) {
+    return;
+  }
+
+  addRoomMessageGroup(currentRoomId);
+  renderMessageGroupSettings();
+  renderMessagingUi();
+  await persistMessageGroups();
+});
+
+messageGroupList?.addEventListener("input", (event) => {
+  lockRoomSettingsRefresh();
+  const target = event.target;
+
+  if (!(target instanceof HTMLInputElement) || !target.dataset.messageGroupNameId) {
+    return;
+  }
+
+  const currentRoomId = getCurrentMessageRoomId();
+  const groupId = String(target.dataset.messageGroupNameId || "").trim();
+
+  if (!currentRoomId || !groupId) {
+    return;
+  }
+
+  updateRoomMessageGroup(currentRoomId, groupId, (group) => ({
+    ...group,
+    name: target.value,
+  }));
+  renderMessagingUi();
+});
+
+messageGroupList?.addEventListener("change", async (event) => {
+  lockRoomSettingsRefresh();
+  const target = event.target;
+
+  if (target instanceof HTMLInputElement && target.dataset.messageGroupNameId) {
+    await persistMessageGroups();
+    return;
+  }
+
+  if (!(target instanceof HTMLInputElement) || !target.dataset.messageGroupRoomId) {
+    return;
+  }
+
+  const currentRoomId = getCurrentMessageRoomId();
+  const groupId = String(target.dataset.messageGroupRoomId || "").trim();
+  const targetRoomId = String(target.dataset.targetRoomId || "").trim();
+
+  if (!currentRoomId || !groupId || !targetRoomId) {
+    return;
+  }
+
+  updateRoomMessageGroup(currentRoomId, groupId, (group) => ({
+    ...group,
+    roomIds: target.checked
+      ? [...new Set([...(group.roomIds || []), targetRoomId])]
+      : (group.roomIds || []).filter((roomId) => roomId !== targetRoomId),
+  }));
+  renderMessageGroupSettings();
+  renderMessagingUi();
+  await persistMessageGroups();
+});
+
+messageGroupList?.addEventListener("click", async (event) => {
+  lockRoomSettingsRefresh();
+  const target = event.target;
+
+  if (!(target instanceof HTMLElement)) {
+    return;
+  }
+
+  const deleteButton = target.closest("[data-delete-message-group-id]");
+
+  if (!deleteButton) {
+    return;
+  }
+
+  const currentRoomId = getCurrentMessageRoomId();
+  const groupId = String(deleteButton.getAttribute("data-delete-message-group-id") || "").trim();
+
+  if (!currentRoomId || !groupId) {
+    return;
+  }
+
+  roomMessageGroups = {
+    ...roomMessageGroups,
+    [currentRoomId]: (roomMessageGroups?.[currentRoomId] || []).filter((group) => group.id !== groupId),
+  };
+  renderMessageGroupSettings();
+  renderMessagingUi();
+  await persistMessageGroups();
+});
+
+messageGroupList?.addEventListener("focusin", () => {
+  lockRoomSettingsRefresh();
+});
+
+messageGroupList?.addEventListener("pointerdown", () => {
+  lockRoomSettingsRefresh();
 });
 
 selectedRoomVolume?.addEventListener("input", (event) => {
