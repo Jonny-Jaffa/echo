@@ -47,6 +47,7 @@ const messageSoundTestButton = document.querySelector("#message-sound-test-butto
 const messageVolumeInput = document.querySelector("#message-volume-input");
 const messageVolumeValue = document.querySelector("#message-volume-value");
 const selectedRoomVolume = document.querySelector("#selected-room-volume");
+const settingsRoomAlertSoundControls = document.querySelector("#settings-room-alert-sound-controls");
 const settingsSidebarLinks = [...document.querySelectorAll("[data-settings-section-link]")];
 const settingsTabSections = [...document.querySelectorAll("[data-settings-section]")];
 const requestedWindowView = String(new URLSearchParams(window.location.search).get("view") || "").trim().toLowerCase();
@@ -848,6 +849,7 @@ async function fetchConfig(options = {}) {
   if (shouldRenderMessageGroupSettings()) {
     renderMessageGroupSettings();
   }
+  renderRoomAlertSoundControl();
   renderMessagingUi();
 }
 
@@ -2308,6 +2310,57 @@ function renderMessageSoundSettings() {
   updateMessageVolumeLabel(messageVolume);
 }
 
+function renderRoomAlertSoundControl() {
+  if (!settingsRoomAlertSoundControls) {
+    return;
+  }
+
+  const room = getSelectedRoom();
+
+  if (!room?.id) {
+    settingsRoomAlertSoundControls.innerHTML = '<p class="message-group-empty">Choose a room to configure alert sounds.</p>';
+    return;
+  }
+
+  const volume = getRoomAlertVolume(room.id);
+  const sound = getRoomAlertSound(room.id);
+
+  settingsRoomAlertSoundControls.innerHTML = `
+    <label class="selected-room-sound-field">
+      <span class="selected-room-control-label">Select Sound</span>
+      <div class="selected-room-sound-row">
+        <select class="selected-room-sound-select" data-room-sound-id="${escapeHtml(room.id)}">
+          ${renderRoomAlertSoundOptions(sound)}
+        </select>
+        <button
+          class="selected-room-sound-test"
+          data-room-sound-test-id="${escapeHtml(room.id)}"
+          type="button"
+          aria-label="Play sound"
+          title="Play sound"
+        >
+          Play
+        </button>
+      </div>
+    </label>
+    <label class="selected-room-slider-field">
+      <span class="selected-room-control-label">Volume</span>
+      <div class="selected-room-slider-row">
+        <input
+          class="selected-room-volume-slider"
+          data-room-volume-id="${escapeHtml(room.id)}"
+          type="range"
+          min="0"
+          max="100"
+          step="1"
+          value="${volume}"
+        />
+        <span class="selected-room-volume-value" id="selected-room-volume-value">${volume}%</span>
+      </div>
+    </label>
+  `;
+}
+
 function renderRoomActionRows(roomId) {
   return getRoomActionEditorRows(roomId)
     .map(
@@ -2368,8 +2421,6 @@ function renderSelectedRoomVolumeControl() {
     return;
   }
 
-  const volume = getRoomAlertVolume(room.id);
-  const sound = getRoomAlertSound(room.id);
   const leftAuxSetting = getRoomLeftAuxSetting(room.id);
   const rightAuxSetting = getRoomRightAuxSetting(room.id);
   selectedRoomVolume.dataset.roomSettingsId = room.id;
@@ -2380,45 +2431,6 @@ function renderSelectedRoomVolumeControl() {
         <span class="selected-room-control-label">Actions</span>
         <div class="room-action-list">
           ${renderRoomActionRows(room.id)}
-        </div>
-      </div>
-      <div class="selected-room-alert-sound-card">
-        <div class="selected-room-volume-header">
-          <div class="selected-room-volume-title">Alert Sound</div>
-        </div>
-        <div class="selected-room-volume-controls">
-          <label class="selected-room-sound-field">
-            <span class="selected-room-control-label">Select Sound</span>
-            <div class="selected-room-sound-row">
-              <select class="selected-room-sound-select" data-room-sound-id="${escapeHtml(room.id)}">
-                ${renderRoomAlertSoundOptions(sound)}
-              </select>
-              <button
-                class="selected-room-sound-test"
-                data-room-sound-test-id="${escapeHtml(room.id)}"
-                type="button"
-                aria-label="Play sound"
-                title="Play sound"
-              >
-                Play
-              </button>
-            </div>
-          </label>
-          <label class="selected-room-slider-field">
-            <span class="selected-room-control-label">Volume</span>
-            <div class="selected-room-slider-row">
-              <input
-                class="selected-room-volume-slider"
-                data-room-volume-id="${escapeHtml(room.id)}"
-                type="range"
-                min="0"
-                max="100"
-                step="1"
-                value="${volume}"
-              />
-              <span class="selected-room-volume-value" id="selected-room-volume-value">${volume}%</span>
-            </div>
-          </label>
         </div>
       </div>
       <div class="selected-room-button-style-card">
@@ -3244,6 +3256,7 @@ async function init() {
     renderSelectedRoomVolumeControl();
     renderButtonAppearancePicker();
     renderMessageGroupSettings();
+    renderRoomAlertSoundControl();
     renderMessagingUi();
   });
   startConfigRefresh();
@@ -3389,6 +3402,7 @@ roomSelect.addEventListener("change", async () => {
   renderButtons();
   renderSelectedRoomVolumeControl();
   renderMessageGroupSettings();
+  renderRoomAlertSoundControl();
   renderMessagingUi();
   await window.pipPanel.updateSettings({
     serverUrl: serverInput.value.trim(),

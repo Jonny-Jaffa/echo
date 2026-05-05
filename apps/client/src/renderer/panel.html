@@ -191,7 +191,7 @@
             <aside class="settings-sidebar" aria-label="Settings sections">
               <button class="settings-sidebar-link is-active" type="button" data-settings-section-link="settings-general">General</button>
               <button class="settings-sidebar-link" type="button" data-settings-section-link="settings-buttons">Buttons</button>
-              <button class="settings-sidebar-link" type="button" data-settings-section-link="settings-message-groups">Messaging</button>
+              <button class="settings-sidebar-link" type="button" data-settings-section-link="settings-sounds">Sounds</button>
               <button class="settings-sidebar-link" type="button" data-settings-section-link="settings-connection">Connection</button>
             </aside>
             <div class="settings-content">
@@ -224,18 +224,17 @@
             <div class="selected-room-volume" id="selected-room-volume"></div>
           </section>
 
-          <section class="settings-section settings-tab-section" id="settings-message-groups" data-settings-section="settings-message-groups" hidden>
+          <section class="settings-section settings-tab-section" id="settings-sounds" data-settings-section="settings-sounds" hidden>
             <div class="settings-section-head">
               <div>
-                <h3>Messaging</h3>
+                <h3>Sounds</h3>
               </div>
             </div>
-            <div class="message-group-settings-card">
-              <div class="message-group-settings-head">
-                <div class="message-group-settings-title">Message Groups</div>
-                <button class="settings-add-button" id="add-message-group-button" type="button">Add group</button>
+            <div class="selected-room-alert-sound-card" id="settings-room-alert-sound">
+              <div class="selected-room-volume-header">
+                <div class="selected-room-volume-title">Alert Sound</div>
               </div>
-              <div class="message-group-list" id="message-group-list"></div>
+              <div class="selected-room-volume-controls" id="settings-room-alert-sound-controls"></div>
             </div>
             <div class="selected-room-volume-card message-sound-card">
               <div class="selected-room-volume-header">
