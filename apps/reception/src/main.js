@@ -575,10 +575,27 @@ function refreshTrayMenu() {
         }),
       },
       {
-        label: configState?.display?.alwaysOnTop ? "Disable Always On Top" : "Enable Always On Top",
-        click: () => updateDisplaySettings({
-          alwaysOnTop: !configState.display.alwaysOnTop,
-        }),
+        type: "separator",
+      },
+      {
+        label: "Run at startup",
+        type: "checkbox",
+        checked: configState?.display?.launchAtStartup !== false,
+        click: (menuItem) => {
+          updateDisplaySettings({
+            launchAtStartup: menuItem.checked,
+          });
+        },
+      },
+      {
+        label: "Always on top",
+        type: "checkbox",
+        checked: Boolean(configState?.display?.alwaysOnTop),
+        click: (menuItem) => {
+          updateDisplaySettings({
+            alwaysOnTop: menuItem.checked,
+          });
+        },
       },
       {
         type: "separator",
