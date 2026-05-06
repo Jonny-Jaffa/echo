@@ -16,6 +16,7 @@ contextBridge.exposeInMainWorld("pipPanel", {
   getRoleState: () => ipcRenderer.invoke("panel:getRoleState"),
   getHardwareStatus: () => ipcRenderer.invoke("panel:getHardwareStatus"),
   setSettingsExpanded: (expanded) => ipcRenderer.invoke("panel:setSettingsExpanded", expanded),
+  setBannerVisible: (bannerVisible) => ipcRenderer.invoke("panel:setBannerVisible", bannerVisible),
   onHardwareStatus: (callback) => {
     const listener = (_event, status) => {
       if (typeof callback === "function") {

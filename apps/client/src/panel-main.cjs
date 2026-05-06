@@ -13,6 +13,7 @@ const SURGERY_SETTINGS_WINDOW_WIDTH = 780;
 const SURGERY_WINDOW_HEIGHT = 420;
 const SURGERY_WINDOW_BUTTONS_HEIGHT = 245;
 const SURGERY_WINDOW_BOTH_HEIGHT = 631;
+const SURGERY_BANNER_HEIGHT = 36;
 const SURGERY_SETTINGS_WINDOW_HEIGHT = 800;
 const DEFAULT_SURGERY_SOUND = "notification_sound_01";
 const SURGERY_SOUND_FILE_MAP = Object.fromEntries(
@@ -1158,14 +1159,42 @@ function setWindowSettingsExpanded(details) {
     return;
   }
 
+  const bannerOffset = currentBannerVisible ? SURGERY_BANNER_HEIGHT : 0;
   const targetHeight =
-    getPanelDisplayModeHeight(mode) + (mode === "buttons" ? 0 : messageComposerHeightOffset);
+    getPanelDisplayModeHeight(mode) + (mode === "buttons" ? 0 : messageComposerHeightOffset) + bannerOffset;
   const minimumHeight = targetHeight;
   const [currentX, currentY] = mainWindow.getPosition();
   const [, currentHeight] = mainWindow.getSize();
   const nextY = currentY + currentHeight - targetHeight;
 
   mainWindow.setMinimumSize(SURGERY_WINDOW_WIDTH, minimumHeight);
+  mainWindow.setBounds({
+    x: currentX,
+    y: nextY,
+    width: SURGERY_WINDOW_WIDTH,
+    height: targetHeight,
+  }, true);
+}
+
+let currentBannerVisible = false;
+
+function setWindowBannerVisible(bannerVisible) {
+  const isVisible = Boolean(bannerVisible);
+
+  if (!mainWindow || mainWindow.isDestroyed() || isVisible === currentBannerVisible) {
+    currentBannerVisible = isVisible;
+    return;
+  }
+
+  currentBannerVisible = isVisible;
+
+  const [currentX, currentY] = mainWindow.getPosition();
+  const [, currentHeight] = mainWindow.getSize();
+  const heightDelta = isVisible ? SURGERY_BANNER_HEIGHT : -SURGERY_BANNER_HEIGHT;
+  const targetHeight = currentHeight + heightDelta;
+  const nextY = currentY - heightDelta; // Expand from bottom up (move Y up when adding height)
+
+  mainWindow.setMinimumSize(SURGERY_WINDOW_WIDTH, targetHeight);
   mainWindow.setBounds({
     x: currentX,
     y: nextY,
@@ -1392,6 +1421,10 @@ app.whenReady().then(async () => {
   });
   ipcMain.handle("panel:setSettingsExpanded", (_event, expanded) => {
     setWindowSettingsExpanded(expanded);
+    return { ok: true };
+  });
+  ipcMain.handle("panel:setBannerVisible", (_event, bannerVisible) => {
+    setWindowBannerVisible(bannerVisible);
     return { ok: true };
   });
   ipcMain.handle("panel:updateSettings", async (_event, patch = {}) => {

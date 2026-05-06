@@ -3191,6 +3191,7 @@ function showReceptionPingBanner() {
   }
   receptionPingBanner.classList.remove("hidden");
   document.body.dataset.bannerVisible = "true";
+  window.pipPanel?.setBannerVisible?.(true);
 }
 
 function hideReceptionPingBanner() {
@@ -3207,6 +3208,7 @@ function showReceptionOfflineBanner() {
   }
   receptionOfflineBanner.classList.remove("hidden");
   document.body.dataset.bannerVisible = "true";
+  window.pipPanel?.setBannerVisible?.(true);
 }
 
 function hideReceptionOfflineBanner() {
@@ -3222,6 +3224,7 @@ function updateBannerVisibility() {
     (receptionPingBanner && !receptionPingBanner.classList.contains("hidden")) ||
     (receptionOfflineBanner && !receptionOfflineBanner.classList.contains("hidden"));
   document.body.dataset.bannerVisible = anyBannerVisible ? "true" : "false";
+  window.pipPanel?.setBannerVisible?.(anyBannerVisible);
 }
 
 function clearReceptionPing() {
