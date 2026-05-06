@@ -11,8 +11,8 @@ const SURGERY_WINDOW_WIDTH = 373;
 const SURGERY_WINDOW_EXPANDED_WIDTH = 780;
 const SURGERY_SETTINGS_WINDOW_WIDTH = 780;
 const SURGERY_WINDOW_HEIGHT = 420;
-const SURGERY_WINDOW_BUTTONS_HEIGHT = 238;
-const SURGERY_WINDOW_BOTH_HEIGHT = 617;
+const SURGERY_WINDOW_BUTTONS_HEIGHT = 245;
+const SURGERY_WINDOW_BOTH_HEIGHT = 631;
 const SURGERY_SETTINGS_WINDOW_HEIGHT = 800;
 const DEFAULT_SURGERY_SOUND = "notification_sound_01";
 const SURGERY_SOUND_FILE_MAP = Object.fromEntries(
@@ -115,7 +115,7 @@ let clientSettings = {
   deviceId: process.env.PIP_DEVICE_ID || randomUUID(),
   launchAtStartup: true,
   showPanelAtStartup: true,
-  alwaysOnTop: false,
+  alwaysOnTop: true,
   messageSound: DEFAULT_SURGERY_SOUND,
   messageVolume: 80,
   roomAlertVolumes: {},

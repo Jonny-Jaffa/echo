@@ -214,7 +214,10 @@ export function normalizeConfig(config) {
       accessKey: normalizeAccessKey(config.auth?.accessKey),
     },
     display: {
-      alwaysOnTop: Boolean(config.display?.alwaysOnTop),
+      alwaysOnTop:
+        typeof config.display?.alwaysOnTop === "boolean"
+          ? config.display.alwaysOnTop
+          : true,
       autoHideMs: Math.max(0, Number(config.display?.autoHideMs) || 0),
       compactMode: config.display?.compactMode !== false,
       expanded: Boolean(config.display?.expanded),

@@ -716,18 +716,19 @@ select {
   justify-items: stretch;
   padding: 0;
   border-radius: 14px;
-  background: rgba(255, 255, 255, 0.7);
+  background: var(--row-accent, #0f766e);
   box-shadow: 0 4px 12px rgba(16, 35, 31, 0.1);
   overflow: hidden;
 }
 
 .compact-room-title {
   margin: 0;
-  padding: 8px 6px 4px;
+  padding: 8px 6px 2px;
   border-radius: 14px 14px 0 0;
   font-size: 14px;
   line-height: 1.1;
-  font-weight: 700;
+  font-weight: 600;
+  font-family: "Roboto Condensed", "Arial Narrow", "Avenir Next Condensed", sans-serif;
   color: white;
   background: var(--row-accent, #0f766e);
   text-align: center;
@@ -742,6 +743,7 @@ select {
   gap: 1px;
   width: 92px;
   margin: 0 auto;
+  padding: 0 0 5px;
 }
 
 .compact-room-alert-button {
@@ -749,12 +751,16 @@ select {
   align-self: start;
   width: 45px;
   min-width: 45px;
-  min-height: 45px;
+  min-height: 33px;
+  padding: 2px 0;
+  background: transparent !important;
+  color: white !important;
 }
 
 .compact-room-alert-button::before {
   width: 24px;
   height: 24px;
+  color: white !important;
 }
 
 .compact-room-message-button {
@@ -762,12 +768,16 @@ select {
   align-self: start;
   width: 45px;
   min-width: 45px;
-  min-height: 45px;
+  min-height: 33px;
+  padding: 2px 0;
+  background: transparent !important;
+  color: white !important;
 }
 
 .compact-room-message-button::before {
   width: 24px;
   height: 24px;
+  color: white !important;
 }
 
 .compact-message-list {
@@ -820,6 +830,23 @@ select {
   overflow: hidden;
 }
 
+.alert-row.is-active .alert-message,
+.alert-row.is-queued .alert-message {
+  animation: alert-slide-in 0.45s ease-out;
+}
+
+@keyframes alert-slide-in {
+  from {
+    transform: translateX(-100%);
+    opacity: 0;
+  }
+
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
 .alert-row.is-idle .alert-message,
 .alert-row.is-idle .meta {
   color: var(--muted);
@@ -861,6 +888,8 @@ select {
   font-weight: 500;
   line-height: 1.1;
   flex-shrink: 0;
+  position: relative;
+  z-index: 1;
 }
 
 .alert-message {
@@ -1044,6 +1073,11 @@ select {
 }
 
 .dismiss.secondary.ping-button.is-pinging::before {
+  animation: ping-pulse 1.15s ease-in-out infinite;
+  transform-origin: center;
+}
+
+.dismiss.secondary.message-room-button.is-unread::before {
   animation: ping-pulse 1.15s ease-in-out infinite;
   transform-origin: center;
 }

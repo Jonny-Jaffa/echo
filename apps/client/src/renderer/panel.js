@@ -93,7 +93,7 @@ const BUTTON_SOLID_SWATCHES = [
   "#DB2777",
 ];
 const BUTTON_GRADIENT_SWATCHES = [
-  "linear-gradient(135deg, #FDD905 0%, #F59E0B 100%)",
+  "linear-gradient(135deg, #FDD905 0%, #f59e0b 100%)",
   "linear-gradient(135deg, #D0069A 0%, #7C3AED 100%)",
   "linear-gradient(135deg, #1997E6 0%, #0BC120 100%)",
   "linear-gradient(135deg, #0F766E 0%, #14B8A6 100%)",
@@ -104,19 +104,19 @@ const BUTTON_GRADIENT_SWATCHES = [
   "linear-gradient(135deg, #047857 0%, #84CC16 100%)",
   "linear-gradient(135deg, #0891B2 0%, #2563EB 100%)",
   "linear-gradient(135deg, #7C2D12 0%, #CA8A04 100%)",
-  "linear-gradient(135deg, #FFFFFF 0%, #E5E7EB 100%)",
-  "radial-gradient(circle at 30% 30%, #FDD905 0%, #E67E22 100%)",
-  "radial-gradient(circle at 30% 30%, #D0069A 0%, #7C3AED 100%)",
-  "radial-gradient(circle at 30% 30%, #34D399 0%, #059669 100%)",
-  "radial-gradient(circle at 30% 30%, #2DD4BF 0%, #0F766E 100%)",
-  "radial-gradient(circle at 30% 30%, #60A5FA 0%, #2563EB 100%)",
-  "radial-gradient(circle at 30% 30%, #F87171 0%, #DC2626 100%)",
-  "radial-gradient(circle at 30% 30%, #6B7280 0%, #111827 100%)",
-  "radial-gradient(circle at 30% 30%, #FB7185 0%, #BE123C 100%)",
-  "radial-gradient(circle at 30% 30%, #A3E635 0%, #4D7C0F 100%)",
-  "radial-gradient(circle at 30% 30%, #22D3EE 0%, #0891B2 100%)",
-  "radial-gradient(circle at 30% 30%, #FBBF24 0%, #B45309 100%)",
-  "radial-gradient(circle at 30% 30%, #FFFFFF 0%, #D1D5DB 100%)",
+  "linear-gradient(135deg, #fca5f1 0%, #b5ffff 100%)",
+  "radial-gradient(circle at 50% 50%, #FDD905 40%, #f59e0b 100%)",
+  "radial-gradient(circle at 50% 50%, #D0069A 40%, #7C3AED 100%)",
+  "radial-gradient(circle at 50% 50%, #34D399 40%, #059669 100%)",
+  "radial-gradient(circle at 50% 50%, #2DD4BF 40%, #0F766E 100%)",
+  "radial-gradient(circle at 50% 50%, #60A5FA 40%, #2563EB 100%)",
+  "radial-gradient(circle at 50% 50%, #F87171 40%, #DC2626 100%)",
+  "radial-gradient(circle at 50% 50%, #6B7280 40%, #111827 100%)",
+  "radial-gradient(circle at 50% 50%, #FB7185 40%, #BE123C 100%)",
+  "radial-gradient(circle at 50% 50%, #A3E635 40%, #4D7C0F 100%)",
+  "radial-gradient(circle at 50% 50%, #22D3EE 40%, #0891B2 100%)",
+  "radial-gradient(circle at 50% 50%, #FBBF24 40%, #B45309 100%)",
+  "radial-gradient(circle at 50% 50%, #FFFFFF 40%, #D1D5DB 100%)",
 ];
 const BUTTON_BACKGROUND_SWATCHES = [...BUTTON_SOLID_SWATCHES, ...BUTTON_GRADIENT_SWATCHES];
 const BUTTON_TEXT_SWATCHES = ["#000000", "#FFFFFF"];
@@ -1507,7 +1507,7 @@ function renderMessageThreads() {
   messageThreadList.innerHTML = orderedThreads
     .map((thread) => `
       <button
-        class="message-thread-chip ${thread.key === activeMessageThreadKey ? "is-active" : ""} ${thread.key === "reception" ? "is-reception" : ""} ${thread.key === "all" ? "is-all-rooms" : ""}"
+        class="message-thread-chip ${thread.key === activeMessageThreadKey ? "is-active" : ""} ${thread.key === "reception" ? "is-reception" : ""} ${thread.key === "all" ? "is-all-rooms" : ""} ${thread.unread ? "is-unread" : ""}"
         style="--thread-accent: ${escapeHtml(getMessageThreadAccent(thread))};"
         data-message-thread-key="${escapeHtml(thread.key)}"
         data-message-thread-drag-source="threads"
@@ -1521,6 +1521,36 @@ function renderMessageThreads() {
     `)
     .join("");
   requestAnimationFrame(updateMessageThreadScrollButtons);
+}
+
+function updateMessageThreadUnreadState() {
+  if (!messageThreadList) {
+    return;
+  }
+
+  const threads = ensureActiveMessageThread();
+  const unreadByKey = new Map(threads.map((thread) => [thread.key, Boolean(thread.unread)]));
+
+  messageThreadList.querySelectorAll(".message-thread-chip").forEach((chip) => {
+    if (!(chip instanceof HTMLElement)) {
+      return;
+    }
+
+    const threadKey = String(chip.getAttribute("data-message-thread-key") || "").trim();
+    const isUnread = unreadByKey.get(threadKey) === true;
+    const hasDot = chip.querySelector(".message-thread-dot");
+
+    chip.classList.toggle("is-unread", isUnread);
+
+    if (isUnread && !hasDot) {
+      const dot = document.createElement("span");
+      dot.className = "message-thread-dot";
+      dot.setAttribute("aria-hidden", "true");
+      chip.appendChild(dot);
+    } else if (!isUnread && hasDot) {
+      hasDot.remove();
+    }
+  });
 }
 
 function updateMessageThreadScrollButtons() {
@@ -1720,7 +1750,7 @@ function updateMessageBubbleLayouts() {
 }
 
 function renderMessagingUi() {
-  renderMessageThreads();
+  updateMessageThreadUnreadState();
   syncMessageContext();
   renderChatMessages();
   syncMessageComposerState();
@@ -1831,6 +1861,7 @@ function selectMessageThread(threadKey, { closeDrawer = false } = {}) {
     setMessageThreadDrawerVisibility(false);
   }
 
+  renderMessageThreads();
   renderMessagingUi();
 }
 
@@ -3159,6 +3190,7 @@ function showReceptionPingBanner() {
     return;
   }
   receptionPingBanner.classList.remove("hidden");
+  document.body.dataset.bannerVisible = "true";
 }
 
 function hideReceptionPingBanner() {
@@ -3166,6 +3198,7 @@ function hideReceptionPingBanner() {
     return;
   }
   receptionPingBanner.classList.add("hidden");
+  updateBannerVisibility();
 }
 
 function showReceptionOfflineBanner() {
@@ -3173,6 +3206,7 @@ function showReceptionOfflineBanner() {
     return;
   }
   receptionOfflineBanner.classList.remove("hidden");
+  document.body.dataset.bannerVisible = "true";
 }
 
 function hideReceptionOfflineBanner() {
@@ -3180,6 +3214,14 @@ function hideReceptionOfflineBanner() {
     return;
   }
   receptionOfflineBanner.classList.add("hidden");
+  updateBannerVisibility();
+}
+
+function updateBannerVisibility() {
+  const anyBannerVisible =
+    (receptionPingBanner && !receptionPingBanner.classList.contains("hidden")) ||
+    (receptionOfflineBanner && !receptionOfflineBanner.classList.contains("hidden"));
+  document.body.dataset.bannerVisible = anyBannerVisible ? "true" : "false";
 }
 
 function clearReceptionPing() {
@@ -3282,6 +3324,7 @@ async function init() {
     renderButtonAppearancePicker();
     renderMessageGroupSettings();
     renderRoomAlertSoundControl();
+    renderMessageThreads();
     renderMessagingUi();
   });
   startConfigRefresh();
@@ -3616,6 +3659,7 @@ roomSelect.addEventListener("change", async () => {
   renderSelectedRoomVolumeControl();
   renderMessageGroupSettings();
   renderRoomAlertSoundControl();
+  renderMessageThreads();
   renderMessagingUi();
   await window.pipPanel.updateSettings({
     serverUrl: serverInput.value.trim(),
@@ -4162,6 +4206,7 @@ document.body.addEventListener("drop", async (event) => {
       [currentRoomId]: reorderIds(getCurrentRoomMessageThreadOrder(), draggedMessageThreadKey, targetThreadKey),
     };
     saveRoomMessageThreadOrder();
+    renderMessageThreads();
     renderMessagingUi();
   }
 });
@@ -4342,6 +4387,7 @@ setupServerAccessKeyInput?.addEventListener("keydown", (event) => {
 window.addEventListener("focus", async () => {
   try {
     await fetchConfig();
+    renderMessageThreads();
     await fetchChatMessages();
   } catch {
     // Ignore refresh failures on focus and keep the current panel state visible.
