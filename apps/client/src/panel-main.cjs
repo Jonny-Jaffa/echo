@@ -12,8 +12,8 @@ const SURGERY_WINDOW_EXPANDED_WIDTH = 780;
 const SURGERY_SETTINGS_WINDOW_WIDTH = 780;
 const SURGERY_WINDOW_HEIGHT = 420;
 const SURGERY_WINDOW_BUTTONS_HEIGHT = 245;
-const SURGERY_WINDOW_BOTH_HEIGHT = 631;
-const SURGERY_BANNER_HEIGHT = 46;
+const SURGERY_WINDOW_BOTH_HEIGHT = 626;
+const SURGERY_BANNER_HEIGHT = 50;
 const SURGERY_SETTINGS_WINDOW_HEIGHT = 800;
 const DEFAULT_SURGERY_SOUND = "notification_sound_01";
 const SURGERY_SOUND_FILE_MAP = Object.fromEntries(
@@ -1245,6 +1245,29 @@ function refreshTrayMenu() {
       checked: clientSettings.launchAtStartup,
       click: (menuItem) => {
         setOpenAtLogin(menuItem.checked);
+      },
+    },
+    {
+      label: "Show at startup",
+      type: "checkbox",
+      checked: clientSettings.showPanelAtStartup,
+      click: (menuItem) => {
+        clientSettings.showPanelAtStartup = menuItem.checked;
+        saveClientSettings();
+        setOpenAtLogin(clientSettings.launchAtStartup);
+      },
+    },
+    {
+      label: "Always on top",
+      type: "checkbox",
+      checked: clientSettings.alwaysOnTop,
+      click: (menuItem) => {
+        clientSettings.alwaysOnTop = menuItem.checked;
+        saveClientSettings();
+        if (mainWindow && !mainWindow.isDestroyed()) {
+          mainWindow.setAlwaysOnTop(clientSettings.alwaysOnTop);
+        }
+        refreshTrayMenu();
       },
     },
     { type: "separator" },
