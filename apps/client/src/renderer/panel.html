@@ -71,6 +71,14 @@
         </div>
       </section>
 
+      <aside class="thread-rail message-thread-bar no-drag" id="message-thread-rail" aria-label="Message threads">
+        <div class="message-thread-scroll-wrap">
+          <button class="message-thread-scroll-button is-scroll-left" id="message-thread-scroll-left" type="button" aria-label="Scroll up" title="Scroll up" hidden>Scroll up</button>
+          <div class="message-thread-list" id="message-thread-list"></div>
+          <button class="message-thread-scroll-button is-scroll-right" id="message-thread-scroll-right" type="button" aria-label="Scroll down" title="Scroll down" hidden>Scroll down</button>
+        </div>
+      </aside>
+
       <section class="panel-card drag-region">
         <div class="status-row drag-region">
           <div class="brand-lockup">
@@ -149,15 +157,18 @@
           <div class="panel-actions quick-action-grid" id="quick-action-grid"></div>
         </section>
         <section class="message-shell room-message-shell">
-          <div class="message-thread-bar">
-            <div class="message-thread-scroll-wrap">
-              <button class="message-thread-scroll-button is-scroll-left" id="message-thread-scroll-left" type="button" aria-label="Scroll left" title="Scroll left" hidden>Scroll left</button>
-              <div class="message-thread-list" id="message-thread-list"></div>
-              <button class="message-thread-scroll-button is-scroll-right" id="message-thread-scroll-right" type="button" aria-label="Scroll right" title="Scroll right" hidden>Scroll right</button>
-            </div>
-          </div>
           <div class="message-context-bar">
             <div class="message-context-copy">
+              <button
+                class="thread-rail-toggle"
+                id="thread-rail-toggle-button"
+                type="button"
+                aria-label="Collapse message threads"
+                aria-expanded="true"
+                title="Collapse message threads"
+              >
+                Message threads
+              </button>
               <span class="message-context-label" id="message-context-label">Reception</span>
             </div>
             <div class="message-context-actions">

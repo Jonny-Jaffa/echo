@@ -1,5 +1,8 @@
 :root {
   color-scheme: light;
+  --thread-rail-width: 84px;
+  --thread-rail-top: 8px;
+  --panel-width: 373px;
   --bg: #eff6f2;
   --panel: rgba(255, 255, 255, 0.94);
   --text: #10231f;
@@ -27,6 +30,8 @@
   --icon-arrow-left: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 256 512'%3E%3Cpath d='M9.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L77.3 256 214.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z'/%3E%3C/svg%3E");
   --icon-pin: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 384 512'%3E%3Cpath d='M32 32C32 14.3 46.3 0 64 0L320 0c17.7 0 32 14.3 32 32s-14.3 32-32 32l-29.5 0 10.3 134.1c37.1 21.2 65.8 56.4 78.2 99.7l3.8 13.4c2.8 9.7 .8 20-5.2 28.1S362 352 352 352L32 352c-10 0-19.5-4.7-25.5-12.7s-8-18.4-5.2-28.1L5 297.8c12.4-43.3 41-78.5 78.2-99.7L93.5 64 64 64C46.3 64 32 49.7 32 32zM160 400l64 0 0 112c0 17.7-14.3 32-32 32s-32-14.3-32-32l0-112z'/%3E%3C/svg%3E");
   --icon-chevron: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 320 512'%3E%3Cpath d='M96 96l128 160L96 416'/%3E%3C/svg%3E");
+  --icon-caret-right: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 256 512'%3E%3Cpath d='M247.1 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L179.2 256 41.9 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z'/%3E%3C/svg%3E");
+  --icon-caret-left: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 256 512'%3E%3Cpath d='M9.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L77.3 256 214.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z'/%3E%3C/svg%3E");
   --icon-bin: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 448 512'%3E%3Cpath d='M135.2 17.7C140.6 7.1 151.6 0 163.5 0H284.5c11.9 0 22.9 7.1 28.3 17.7L328 48H432c8.8 0 16 7.2 16 16V96c0 8.8-7.2 16-16 16H416V464c0 26.5-21.5 48-48 48H80c-26.5 0-48-21.5-48-48V112H16C7.2 112 0 104.8 0 96V64c0-8.8 7.2-16 16-16H120l15.2-30.3zM96 112V464H352V112H96zm64 64c0-8.8 7.2-16 16-16s16 7.2 16 16V400c0 8.8-7.2 16-16 16s-16-7.2-16-16V176zm96-16c8.8 0 16 7.2 16 16V400c0 8.8-7.2 16-16 16s-16-7.2-16-16V176c0-8.8 7.2-16 16-16z'/%3E%3C/svg%3E");
 }
 
@@ -38,7 +43,7 @@ body {
   margin: 0;
   min-height: 100vh;
   font-family: "Avenir Next", "Segoe UI", sans-serif;
-  background: none;
+  background: transparent;
   color: var(--text);
 }
 
@@ -102,7 +107,7 @@ label {
 .panel-shell {
   padding: 0;
   display: grid;
-  gap: 8px;
+  gap: 0;
   align-items: start;
   min-height: 100vh;
   overflow: auto;
@@ -111,6 +116,10 @@ label {
 body[data-window-view="main"] .panel-shell,
 body[data-window-view="main"] .panel-card {
   overflow: clip;
+}
+
+body[data-window-view="main"]:not([data-view="waiting"]) .panel-shell {
+  grid-template-columns: var(--thread-rail-width) minmax(0, 1fr);
 }
 
 body[data-window-view="main"][data-view="waiting"] .panel-shell {
@@ -126,6 +135,9 @@ body[data-window-view="main"] .panel-card {
   padding-bottom: 0;
   grid-template-rows: auto auto auto auto minmax(0, 1fr);
   align-content: stretch;
+  min-width: var(--panel-width);
+  position: relative;
+  z-index: 1;
 }
 
 body[data-window-view="main"][data-quick-actions-visible="true"] .panel-card {
@@ -148,6 +160,7 @@ body[data-window-view="main"] .message-compose {
 }
 
 body[data-window-view="settings"] .waiting-state,
+body[data-window-view="settings"] .thread-rail,
 body[data-window-view="settings"] .message-shell,
 body[data-window-view="settings"] .quick-actions,
 body[data-window-view="settings"] .panel-quick-actions-button,
@@ -157,6 +170,7 @@ body[data-window-view="settings"] .panel-expand-button {
 }
 
 body[data-window-view="role"] .waiting-state,
+body[data-window-view="role"] .thread-rail,
 body[data-window-view="role"] .panel-card {
   display: none;
 }
@@ -183,6 +197,10 @@ body[data-window-view="settings"] .panel-card {
 }
 
 body[data-view="waiting"] .panel-card {
+  display: none;
+}
+
+body[data-view="waiting"] .thread-rail {
   display: none;
 }
 
@@ -787,7 +805,7 @@ body[data-window-view="settings"] .settings-content {
   padding: 12px;
   border: 1px solid var(--line);
   border-radius: 16px;
-  background: rgba(255, 255, 255, 0.92);
+  background: var(--panel);
 }
 
 .message-group-head {
@@ -902,7 +920,7 @@ body[data-window-view="settings"] .settings-content {
 .room-message-shell.message-shell {
   gap: 0;
   row-gap: 0;
-  grid-template-rows: auto auto minmax(220px, 1fr) auto;
+  grid-template-rows: auto minmax(220px, 1fr) auto;
   padding-left: 7px;
   padding-right: 7px;
   --active-room-accent: var(--accent);
@@ -932,6 +950,7 @@ body[data-window-view="main"][data-panel-mode="both"] .room-message-shell {
 }
 
 .room-message-shell .message-context-copy {
+  position: relative;
   min-width: 0;
   display: flex;
   align-items: stretch;
@@ -960,6 +979,7 @@ body[data-window-view="main"][data-panel-mode="both"] .room-message-shell {
   font-size: 15px;
   font-weight: 500;
   white-space: nowrap;
+  cursor: pointer;
 }
 
 .room-message-shell .message-context-label::before {
@@ -978,7 +998,7 @@ body[data-window-view="main"][data-panel-mode="both"] .room-message-shell {
 .room-message-shell .message-context-label::after {
   content: "";
   position: absolute;
-  left: 17px;
+  left: 21px;
   width: 22px;
   height: 22px;
   background-color: var(--message-context-short-label-color);
@@ -1000,25 +1020,93 @@ body[data-window-view="main"][data-panel-mode="both"] .room-message-shell {
   gap: 8px;
 }
 
-.room-message-shell .message-thread-bar {
-  display: flex;
-  min-height: 34px;
-  margin: 0 0 10px;
-  padding-left: 0;
-  padding-right: 0;
-  align-items: center;
+.thread-rail {
+  width: var(--thread-rail-width);
+  min-height: 100vh;
+  max-height: 100vh;
+  height: 100vh;
+  padding: var(--thread-rail-top) 10px 10px 12px;
+  display: grid;
+  grid-template-rows: minmax(0, auto) minmax(0, 1fr);
+  align-content: start;
+  justify-items: center;
+  gap: 8px;
   overflow: hidden;
-}
-
-.room-message-shell .message-thread-scroll-wrap {
+  background: transparent;
   position: relative;
-  flex: 1;
-  min-width: 0;
+  z-index: 3;
+  -webkit-app-region: no-drag;
 }
 
-.room-message-shell .message-thread-scroll-button {
+.thread-rail.message-thread-bar {
+  grid-template-columns: 1fr;
+  align-items: start;
+}
+
+body[data-thread-rail-collapsed="true"] .thread-rail {
+  padding-right: 10px;
+}
+
+.thread-rail.hidden {
+  display: none;
+}
+
+.thread-rail-toggle {
   position: absolute;
-  top: 50%;
+  left: 5px;
+  top: 0;
+  z-index: 3;
+  width: 14px;
+  min-width: 14px;
+  height: 38px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: white;
+  cursor: pointer;
+  text-indent: -9999px;
+  overflow: hidden;
+  box-shadow: none;
+  margin: 0;
+  padding: 0;
+}
+
+.thread-rail-toggle::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  width: 6px;
+  height: 13px;
+  margin: auto;
+  background-color: currentColor;
+  -webkit-mask-image: var(--icon-caret-right);
+  mask-image: var(--icon-caret-right);
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  -webkit-mask-position: center;
+  mask-position: center;
+  -webkit-mask-size: contain;
+  mask-size: contain;
+}
+
+body[data-thread-rail-collapsed="true"] .thread-rail-toggle::before {
+  -webkit-mask-image: var(--icon-caret-left);
+  mask-image: var(--icon-caret-left);
+}
+
+.thread-rail .message-thread-scroll-wrap {
+  position: relative;
+  min-height: 0;
+  display: grid;
+  justify-items: center;
+  align-self: start;
+  width: 100%;
+  transform: translateY(-11px);
+}
+
+.thread-rail .message-thread-scroll-button {
+  position: absolute;
+  left: 50%;
   z-index: 2;
   width: 24px;
   height: 24px;
@@ -1030,24 +1118,26 @@ body[data-window-view="main"][data-panel-mode="both"] .room-message-shell {
   cursor: pointer;
   text-indent: -9999px;
   overflow: hidden;
-  transform: translateY(-50%);
+  transform: translateX(-50%);
   transition: opacity 0.15s ease;
-  box-shadow: 0 2px 6px rgba(16, 35, 31, 0.14);
+  box-shadow: none;
 }
 
-.room-message-shell .message-thread-scroll-button[hidden] {
-  display: none;
+.thread-rail .message-thread-scroll-button[hidden] {
+  visibility: hidden;
+  display: block;
+  pointer-events: none;
 }
 
-.room-message-shell .message-thread-scroll-button.is-scroll-left {
-  left: 2px;
+.thread-rail .message-thread-scroll-button.is-scroll-left {
+  top: -28px;
 }
 
-.room-message-shell .message-thread-scroll-button.is-scroll-right {
-  right: 2px;
+.thread-rail .message-thread-scroll-button.is-scroll-right {
+  bottom: -28px;
 }
 
-.room-message-shell .message-thread-scroll-button::before {
+.thread-rail .message-thread-scroll-button::before {
   content: "";
   position: absolute;
   inset: 0;
@@ -1063,36 +1153,46 @@ body[data-window-view="main"][data-panel-mode="both"] .room-message-shell {
   mask-size: contain;
 }
 
-.room-message-shell .message-thread-scroll-button.is-scroll-left::before {
-  -webkit-mask-image: var(--icon-arrow-left);
-  mask-image: var(--icon-arrow-left);
+.thread-rail .message-thread-scroll-button.is-scroll-left::before {
+  -webkit-mask-image: var(--icon-chevron-up);
+  mask-image: var(--icon-chevron-up);
 }
 
-.room-message-shell .message-thread-scroll-button.is-scroll-right::before {
-  -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 256 512'%3E%3Cpath d='M246.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L178.7 256 41.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z'/%3E%3C/svg%3E");
-  mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 256 512'%3E%3Cpath d='M246.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L178.7 256 41.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z'/%3E%3C/svg%3E");
+.thread-rail .message-thread-scroll-button.is-scroll-right::before {
+  -webkit-mask-image: var(--icon-chevron-up);
+  mask-image: var(--icon-chevron-up);
+  transform: rotate(180deg);
 }
 
-.room-message-shell .message-thread-scroll-button:hover {
-  background: rgba(255, 255, 255, 1);
+.thread-rail .message-thread-scroll-button:hover {
+  background: var(--panel);
 }
 
-.room-message-shell .message-thread-bar.hidden {
+.thread-rail .message-thread-list {
+  width: 100%;
+  height: calc((42px * 5) + (10px * 4) + 20px);
+  max-height: calc((42px * 5) + (10px * 4) + 20px);
+  align-self: start;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  scrollbar-width: none;
+  justify-content: flex-start;
+  align-content: start;
+  flex-direction: column;
+}
+
+.thread-rail .message-thread-list.has-overflow {
+  padding-top: 10px;
+  padding-bottom: 10px;
+}
+
+body[data-thread-rail-collapsed="true"] .thread-rail .message-thread-scroll-wrap {
   display: none;
 }
 
-.room-message-shell .message-thread-list {
-  width: 100%;
-  gap: 8px;
-  padding: 1px 26px 2px 26px;
-  overflow-x: auto;
-  scrollbar-width: none;
-  justify-content: center;
-}
-
-.room-message-shell .message-thread-list.has-overflow {
-  justify-content: flex-start;
-}
 
 .message-thread-label,
 .message-recipient-label {
@@ -1411,6 +1511,49 @@ body[data-window-view="main"][data-panel-mode="both"] .room-message-shell {
 .room-message-shell .message-thread-chip.is-all-rooms.is-active {
   color: white;
   box-shadow: 0 0 0 2px rgba(16, 35, 31, 0.12);
+}
+
+.thread-rail .message-thread-chip {
+  position: relative;
+  width: 42px;
+  min-width: 42px;
+  height: 42px;
+  min-height: 42px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid rgba(255, 255, 255, 0.62);
+  border-radius: 999px;
+  background: var(--thread-accent, var(--accent));
+  color: white;
+  font-family: "Roboto Condensed", "Arial Narrow", "Avenir Next Condensed", "Segoe UI", sans-serif;
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1;
+  box-shadow: none;
+}
+
+.thread-rail .message-thread-chip.is-active {
+  border-width: 4px;
+  border-color: rgba(255, 255, 255, 0.9);
+  background: var(--thread-accent, var(--accent));
+  color: white;
+  box-shadow: none;
+}
+
+.thread-rail .message-thread-chip.is-reception {
+  background: #000000;
+}
+
+.thread-rail .message-thread-chip.is-all-rooms {
+  background: #879293;
+}
+
+.thread-rail .message-thread-dot {
+  position: absolute;
+  top: -1px;
+  right: -1px;
 }
 
 .message-thread-dot {

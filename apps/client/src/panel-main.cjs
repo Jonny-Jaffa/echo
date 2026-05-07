@@ -7,8 +7,10 @@ const { pathToFileURL } = require("node:url");
 const { app, BrowserWindow, ipcMain, Menu, Tray, nativeImage } = require("electron");
 
 const DISCOVERY_PORT = 3210;
-const SURGERY_WINDOW_WIDTH = 373;
-const SURGERY_WINDOW_EXPANDED_WIDTH = 780;
+const SURGERY_PANEL_WIDTH = 373;
+const SURGERY_THREAD_RAIL_WIDTH = 84;
+const SURGERY_WINDOW_WIDTH = SURGERY_PANEL_WIDTH + SURGERY_THREAD_RAIL_WIDTH;
+const SURGERY_WINDOW_EXPANDED_WIDTH = 780 + SURGERY_THREAD_RAIL_WIDTH;
 const SURGERY_SETTINGS_WINDOW_WIDTH = 780;
 const SURGERY_WINDOW_HEIGHT = 420;
 const SURGERY_WINDOW_BUTTONS_HEIGHT = 245;
@@ -416,7 +418,9 @@ function createWindow({ showInitially = true } = {}) {
     show: false,
     skipTaskbar: false,
     frame: false,
-    transparent: false,
+    transparent: true,
+    backgroundColor: "#00000000",
+    hasShadow: false,
     alwaysOnTop: clientSettings.alwaysOnTop,
     icon: windowIcon,
     webPreferences: {

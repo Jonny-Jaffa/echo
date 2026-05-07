@@ -431,6 +431,10 @@ select {
   box-shadow: none;
 }
 
+#notification-card {
+  background: none;
+}
+
 .chat-empty-state {
   font-size: 13px;
   color: var(--muted);
@@ -624,6 +628,11 @@ select {
 .reception-message-shell .message-context-bar,
 .reception-message-shell .message-compose {
   -webkit-app-region: no-drag;
+}
+
+.reception-message-shell .message-context-bar {
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
 }
 
 .reception-message-shell .message-item + .message-item {

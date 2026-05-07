@@ -18,10 +18,13 @@ const quickActions = document.querySelector("#quick-actions");
 const quickActionGrid = document.querySelector("#quick-action-grid");
 const messageShell = document.querySelector(".message-shell");
 const messageCollapseButton = document.querySelector("#message-collapse-button");
+const messageContextBar = document.querySelector(".message-context-bar");
 const messageContextLabel = document.querySelector("#message-context-label");
 const messageThreadList = document.querySelector("#message-thread-list");
+const messageThreadRail = document.querySelector("#message-thread-rail");
 const messageThreadScrollLeft = document.querySelector("#message-thread-scroll-left");
 const messageThreadScrollRight = document.querySelector("#message-thread-scroll-right");
+const threadRailToggleButton = document.querySelector("#thread-rail-toggle-button");
 const messageList = document.querySelector("#message-list");
 const messageComposeInput = document.querySelector("#message-compose-input");
 const messageSendButton = document.querySelector("#message-send-button");
@@ -65,6 +68,8 @@ const PANEL_DEVICE_ID_STORAGE_KEY = "pip-panel-device-id";
 const LEGACY_STORAGE_KEY = "patient-ping-panel";
 const LEGACY_PANEL_DEVICE_ID_STORAGE_KEY = "patient-ping-panel-device-id";
 const MESSAGE_THREAD_ORDER_STORAGE_KEY = "pip-panel-message-thread-order";
+const MESSAGE_THREAD_RAIL_COLLAPSED_STORAGE_KEY = "pip-panel-message-thread-rail-collapsed";
+const MESSAGE_THREAD_PAGE_SIZE = 5;
 const CONFIG_REFRESH_MS = 3000;
 const DEFAULT_BUTTON_APPEARANCE = {
   defaultBackground: "#FDD905",
@@ -189,6 +194,7 @@ let activeMessageThreadKey = "";
 const unreadMessageThreadKeys = new Set();
 let areQuickActionsVisible = false;
 let isMessageThreadDrawerVisible = false;
+let isMessageThreadRailCollapsed = loadMessageThreadRailCollapsed();
 let buttonAppearancePickerState = null;
 let draggedMessageThreadKey = "";
 let draggedMessageThreadSource = "";
@@ -617,6 +623,43 @@ function saveRoomMessageThreadOrder() {
   );
 }
 
+function loadMessageThreadRailCollapsed() {
+  return localStorage.getItem(MESSAGE_THREAD_RAIL_COLLAPSED_STORAGE_KEY) === "true";
+}
+
+function setMessageThreadRailCollapsed(collapsed) {
+  isMessageThreadRailCollapsed = Boolean(collapsed);
+  document.body.dataset.threadRailCollapsed = isMessageThreadRailCollapsed ? "true" : "false";
+  localStorage.setItem(
+    MESSAGE_THREAD_RAIL_COLLAPSED_STORAGE_KEY,
+    isMessageThreadRailCollapsed ? "true" : "false",
+  );
+
+  if (threadRailToggleButton) {
+    threadRailToggleButton.setAttribute("aria-expanded", isMessageThreadRailCollapsed ? "false" : "true");
+    threadRailToggleButton.setAttribute(
+      "aria-label",
+      isMessageThreadRailCollapsed ? "Expand message threads" : "Collapse message threads",
+    );
+    threadRailToggleButton.title = isMessageThreadRailCollapsed
+      ? "Expand message threads"
+      : "Collapse message threads";
+  }
+
+  requestAnimationFrame(updateMessageThreadScrollButtons);
+}
+
+function updateMessageThreadRailAlignment() {
+  if (!messageThreadRail || !messageContextBar || messageThreadRail.classList.contains("hidden")) {
+    return;
+  }
+
+  const contextRect = messageContextBar.getBoundingClientRect();
+  const nextTop = Math.max(8, Math.round(contextRect.top || 8));
+  messageThreadRail.style.setProperty("--thread-rail-top", `${nextTop}px`);
+  requestAnimationFrame(updateMessageThreadScrollButtons);
+}
+
 function reorderIds(sourceIds = [], draggedId, targetId) {
   const ids = [...new Set(sourceIds)].filter(Boolean);
   const fromIndex = ids.indexOf(draggedId);
@@ -791,6 +834,8 @@ async function setPanelDisplayMode(mode, options = {}) {
   document.body.dataset.quickActionsVisible = areQuickActionsVisible ? "true" : "false";
   quickActions?.classList.toggle("hidden", !areQuickActionsVisible);
   messageShell?.classList.toggle("hidden", !showMessages);
+  messageThreadRail?.classList.toggle("hidden", !showMessages);
+  requestAnimationFrame(updateMessageThreadRailAlignment);
 
   if (!showMessages) {
     setMessageThreadDrawerVisibility(false);
@@ -1503,7 +1548,8 @@ function renderMessageThreads() {
   const threads = ensureActiveMessageThread();
   syncMessageThreadOrder(threads);
   const orderedThreads = orderMessageThreads(threads);
-  messageThreadList.closest(".message-thread-bar")?.classList.toggle("hidden", orderedThreads.length === 0);
+  const shouldShowRail = orderedThreads.length > 0 && (panelDisplayMode === "messages" || panelDisplayMode === "both");
+  messageThreadList.closest(".message-thread-bar")?.classList.toggle("hidden", !shouldShowRail);
   messageThreadList.innerHTML = orderedThreads
     .map((thread) => `
       <button
@@ -1520,6 +1566,7 @@ function renderMessageThreads() {
       </button>
     `)
     .join("");
+  updateMessageThreadRailAlignment();
   requestAnimationFrame(updateMessageThreadScrollButtons);
 }
 
@@ -1558,13 +1605,64 @@ function updateMessageThreadScrollButtons() {
     return;
   }
 
-  const hasOverflow = messageThreadList.scrollWidth > messageThreadList.clientWidth;
-  const atStart = messageThreadList.scrollLeft <= 2;
-  const atEnd = messageThreadList.scrollLeft + messageThreadList.clientWidth >= messageThreadList.scrollWidth - 2;
+  const hasOverflow = messageThreadList.scrollHeight > messageThreadList.clientHeight;
+  const atStart = messageThreadList.scrollTop <= 2;
+  const atEnd = messageThreadList.scrollTop + messageThreadList.clientHeight >= messageThreadList.scrollHeight - 2;
 
   messageThreadScrollLeft.hidden = !hasOverflow || atStart;
   messageThreadScrollRight.hidden = !hasOverflow || atEnd;
   messageThreadList.classList.toggle("has-overflow", hasOverflow);
+}
+
+function getMessageThreadListPaddingTop() {
+  if (!messageThreadList) {
+    return 0;
+  }
+
+  return Number.parseFloat(window.getComputedStyle(messageThreadList).paddingTop) || 0;
+}
+
+function getFirstVisibleMessageThreadIndex() {
+  if (!messageThreadList) {
+    return 0;
+  }
+
+  const chips = [...messageThreadList.querySelectorAll(".message-thread-chip")];
+  const visibleTop = messageThreadList.scrollTop + getMessageThreadListPaddingTop() - 1;
+  const firstVisibleIndex = chips.findIndex((chip) =>
+    chip.offsetTop + chip.offsetHeight > visibleTop,
+  );
+
+  return firstVisibleIndex >= 0 ? firstVisibleIndex : Math.max(0, chips.length - 1);
+}
+
+function scrollMessageThreadPage(direction) {
+  if (!messageThreadList) {
+    return;
+  }
+
+  const chips = [...messageThreadList.querySelectorAll(".message-thread-chip")];
+
+  if (chips.length === 0) {
+    return;
+  }
+
+  const currentIndex = getFirstVisibleMessageThreadIndex();
+  const currentPageIndex = Math.floor(currentIndex / MESSAGE_THREAD_PAGE_SIZE);
+  const targetPageIndex = Math.min(
+    Math.max(currentPageIndex + direction, 0),
+    Math.floor((chips.length - 1) / MESSAGE_THREAD_PAGE_SIZE),
+  );
+  const targetIndex = targetPageIndex * MESSAGE_THREAD_PAGE_SIZE;
+  const paddingTop = getMessageThreadListPaddingTop();
+  const maxScrollTop = Math.max(0, messageThreadList.scrollHeight - messageThreadList.clientHeight);
+  const targetTop = Math.min(
+    Math.max(chips[targetIndex].offsetTop - paddingTop, 0),
+    maxScrollTop,
+  );
+
+  messageThreadList.scrollTo({ top: targetTop, behavior: "auto" });
+  updateMessageThreadScrollButtons();
 }
 
 function hexToRgba(hex, alpha) {
@@ -1755,6 +1853,7 @@ function renderMessagingUi() {
   renderChatMessages();
   syncMessageComposerState();
   updateMessageComposerHeight();
+  updateMessageThreadRailAlignment();
 }
 
 function updateMessageComposerHeight() {
@@ -3270,6 +3369,7 @@ function applyPersistedSettings(nextSettings = {}) {
 
 async function init() {
   document.body.dataset.windowView = windowView;
+  setMessageThreadRailCollapsed(isMessageThreadRailCollapsed);
 
   if (isRoleWindow) {
     rolePanel?.classList.remove("hidden");
@@ -4225,25 +4325,30 @@ if (messageThreadList) {
 }
 
 window.addEventListener("resize", () => {
-  requestAnimationFrame(updateMessageThreadScrollButtons);
+  requestAnimationFrame(() => {
+    updateMessageThreadRailAlignment();
+    updateMessageThreadScrollButtons();
+  });
 });
 
 messageThreadScrollLeft?.addEventListener("click", () => {
-  if (!messageThreadList) {
-    return;
-  }
-
-  const scrollAmount = Math.max(120, messageThreadList.clientWidth * 0.5);
-  messageThreadList.scrollBy({ left: -scrollAmount, behavior: "smooth" });
+  scrollMessageThreadPage(-1);
 });
 
 messageThreadScrollRight?.addEventListener("click", () => {
-  if (!messageThreadList) {
-    return;
-  }
+  scrollMessageThreadPage(1);
+});
 
-  const scrollAmount = Math.max(120, messageThreadList.clientWidth * 0.5);
-  messageThreadList.scrollBy({ left: scrollAmount, behavior: "smooth" });
+threadRailToggleButton?.addEventListener("click", () => {
+  setMessageThreadRailCollapsed(!isMessageThreadRailCollapsed);
+});
+
+messageContextLabel?.addEventListener("click", (event) => {
+  const labelRect = messageContextLabel.getBoundingClientRect();
+
+  if (event.clientX - labelRect.left <= 55) {
+    setMessageThreadRailCollapsed(!isMessageThreadRailCollapsed);
+  }
 });
 
 messageThreadList?.addEventListener("click", (event) => {
