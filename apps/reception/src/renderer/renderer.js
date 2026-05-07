@@ -143,6 +143,10 @@ function getRoomById(roomId, state = appState) {
   return (state?.config?.rooms || []).find((room) => room.id === roomId) || null;
 }
 
+function getVisibleRooms(state = appState) {
+  return (state?.config?.rooms || []).filter((room) => !room.hidden);
+}
+
 function renderSelectedDeviceRole(roleState = appState?.app) {
   if (!selectedDeviceRoleLabel) {
     return;
@@ -305,7 +309,7 @@ function renderAlertList(state) {
     ...(state.activeNotification ? [state.activeNotification] : []),
     ...(state.queuedNotifications || []),
   ];
-  const rooms = state.config?.rooms || [];
+  const rooms = getVisibleRooms(state);
 
   if (state.config?.display?.compactMode) {
     alertList.innerHTML = renderCompactAlertList(state, rooms, alerts);
@@ -499,7 +503,7 @@ function isReceptionAllRoomsMessage(message, state = appState) {
     return true;
   }
 
-  const roomIds = (state?.config?.rooms || []).map((room) => String(room.id || "").trim()).filter(Boolean);
+  const roomIds = getVisibleRooms(state).map((room) => String(room.id || "").trim()).filter(Boolean);
   const recipientRoomIds = [...new Set(
     Array.isArray(message?.recipientRoomIds)
       ? message.recipientRoomIds.map((roomId) => String(roomId || "").trim()).filter(Boolean)
@@ -524,7 +528,7 @@ function isRoomAllRoomsMessage(message, state = appState) {
     return false;
   }
 
-  const allOtherRoomIds = (state?.config?.rooms || [])
+  const allOtherRoomIds = getVisibleRooms(state)
     .map((room) => String(room.id || "").trim())
     .filter((roomId) => roomId && roomId !== senderRoomId)
     .sort();
@@ -542,7 +546,7 @@ function isRoomAllRoomsMessage(message, state = appState) {
 }
 
 function areAllRoomsSelected(state = appState) {
-  return isAllChatRoomsThreadSelected && (state?.config?.rooms || []).length > 0;
+  return isAllChatRoomsThreadSelected && getVisibleRooms(state).length > 0;
 }
 
 function getActiveSingleChatRoom(state = appState) {
@@ -565,7 +569,7 @@ function selectChatRoom(roomId) {
 }
 
 function selectAllChatRooms(state = appState) {
-  isAllChatRoomsThreadSelected = (state?.config?.rooms || []).length > 0;
+  isAllChatRoomsThreadSelected = getVisibleRooms(state).length > 0;
   selectedChatRoomIds.clear();
   hasUnreadAllRoomsMessage = false;
 }
@@ -646,7 +650,7 @@ function syncMessageContext(state = appState) {
     isAllRoomsSelected
       ? "linear-gradient(90deg, #d5d9d9, #f5f6f6)"
       : activeRoom
-      ? `linear-gradient(180deg, color-mix(in srgb, ${accent} 10%, white), color-mix(in srgb, ${accent} 4%, white))`
+      ? `linear-gradient(90deg, color-mix(in srgb, ${accent} 10%, white), color-mix(in srgb, ${accent} 4%, white))`
       : "linear-gradient(90deg, #d5d9d9, #f5f6f6)",
   );
   chatCard.style.setProperty("--message-bubble-incoming", activeRoom?.color || "#418191");
@@ -722,7 +726,7 @@ function reconcileIncomingChatMessages(nextMessages = [], previousMessages = [])
 }
 
 function renderChatRecipients(state) {
-  const rooms = state?.config?.rooms || [];
+  const rooms = getVisibleRooms(state);
   const roomIds = rooms.map((room) => room.id);
   for (const roomId of [...selectedChatRoomIds]) {
     if (!rooms.some((room) => room.id === roomId)) {
@@ -999,7 +1003,7 @@ function applyState(state) {
     hasRestoredMessageSectionVisibility = true;
 
     if (isMessageSectionVisible && selectedChatRoomIds.size === 0 && !isAllChatRoomsThreadSelected) {
-      const rooms = state?.config?.rooms || [];
+      const rooms = getVisibleRooms(state);
       const firstRoom = rooms[0];
 
       if (firstRoom?.id) {
@@ -1177,12 +1181,9 @@ function renderRooms() {
               <span>Short label</span>
               <input data-entity="room" data-index="${index}" data-key="shortName" type="text" maxlength="6" value="${escapeHtml(room.shortName || getDefaultRoomShortLabel(room.name, room.id, index))}" />
             </label>
-            <label class="field colour-field">
-              <span>Colour</span>
-              <div class="room-colour-picker" role="group" aria-label="Colour for ${escapeHtml(room.name)}">
-                ${renderRoomColourSwatches(room, index)}
-              </div>
-              <small class="room-colour-help">Dot means already used by another room.</small>
+            <label class="field checkbox-field room-visibility-field">
+              <input data-entity="room" data-index="${index}" data-key="hidden" type="checkbox" ${room.hidden ? "checked" : ""} />
+              <span>Hide from UI</span>
             </label>
             <div class="field room-remove-field">
               <span>&nbsp;</span>
@@ -1190,6 +1191,13 @@ function renderRooms() {
                 <button class="danger-button inline-remove-button" data-remove="room" data-index="${index}" type="button">Remove</button>
               </div>
             </div>
+            <label class="field colour-field room-colour-field">
+              <span>Colour</span>
+              <div class="room-colour-picker" role="group" aria-label="Colour for ${escapeHtml(room.name)}">
+                ${renderRoomColourSwatches(room, index)}
+              </div>
+              <small class="room-colour-help">Dot means already used by another room.</small>
+            </label>
           </div>
         </article>
       `,
@@ -1348,6 +1356,11 @@ function updateDraftField(target) {
   const key = target.dataset.key;
 
   if (entity === "room") {
+    if (target instanceof HTMLInputElement && target.type === "checkbox") {
+      draftConfig.rooms[index][key] = target.checked;
+      return;
+    }
+
     const maxLength = key === "name" ? 10 : key === "shortName" ? 6 : Infinity;
     draftConfig.rooms[index][key] = Number.isFinite(maxLength)
       ? target.value.slice(0, maxLength)
@@ -1681,6 +1694,7 @@ addRoomButton?.addEventListener("click", () => {
     id: `room-${nextRoomNumber}`,
     name: `Room ${nextRoomNumber}`,
     shortName: getDefaultRoomShortLabel(`Room ${nextRoomNumber}`, `room-${nextRoomNumber}`, nextRoomNumber - 1),
+    hidden: false,
     notifications: (baseRoom.notifications || []).map((notification, notificationIndex) => ({
       ...notification,
       id: `room-${nextRoomNumber}-action-${notificationIndex + 1}`,
@@ -1793,7 +1807,7 @@ chatAllRoomsButton?.addEventListener("click", () => {
 chatSendButton?.addEventListener("click", async () => {
   const text = String(chatComposeInput?.value || "").trim();
   const recipientRoomIds = isAllChatRoomsThreadSelected
-    ? (appState?.config?.rooms || []).map((room) => room.id)
+    ? getVisibleRooms(appState).map((room) => room.id)
     : [...selectedChatRoomIds];
 
   if (!text || recipientRoomIds.length === 0) {

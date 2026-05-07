@@ -191,6 +191,7 @@ export function normalizeConfig(config) {
         shortName: normalizeRoomShortName(room.shortName, room.name, room.id, index),
         color: String(room.color || "#0f766e").trim(),
         icon: String(room.icon || "").trim(),
+        hidden: Boolean(room.hidden),
         receptionSound: normalizeReceptionSound(room.receptionSound),
         notifications: normalizeNotifications(
           Array.isArray(room.notifications) ? room.notifications : fallbackNotifications,

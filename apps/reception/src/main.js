@@ -43,6 +43,7 @@ const WINDOW_ADMIN_HEIGHT = 800;
 const GADGET_HEADER_HEIGHT = 0;
 const GADGET_ROW_HEIGHT = 40;
 const GADGET_FRAME_PADDING = 7;
+const GADGET_WINDOW_HEIGHT_TRIM = 4;
 const STARTUP_LOG_PATH = path.join(os.tmpdir(), "pip-reception.log");
 const DEFAULT_RECEPTION_SOUND = "notification_sound_01";
 const RECEPTION_SOUND_FILE_MAP = Object.fromEntries(
@@ -1000,11 +1001,11 @@ function persistWindowPosition() {
 
 function getGadgetHeight(config) {
   if (Number.isFinite(measuredGadgetHeight) && measuredGadgetHeight > 0) {
-    return Math.max(WINDOW_MINIMIZED_HEIGHT, Math.ceil(measuredGadgetHeight));
+    return Math.max(WINDOW_MINIMIZED_HEIGHT, Math.ceil(measuredGadgetHeight) - GADGET_WINDOW_HEIGHT_TRIM);
   }
 
   const roomCount = Math.max(1, config.rooms?.length || 0);
-  return GADGET_HEADER_HEIGHT + roomCount * GADGET_ROW_HEIGHT + GADGET_FRAME_PADDING + 60;
+  return GADGET_HEADER_HEIGHT + roomCount * GADGET_ROW_HEIGHT + GADGET_FRAME_PADDING + 60 - GADGET_WINDOW_HEIGHT_TRIM;
 }
 
 function initializeConfigPath() {

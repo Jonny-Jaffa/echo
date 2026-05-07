@@ -239,6 +239,10 @@ function getMessageThreadAccent(thread) {
   return room?.color || "var(--accent)";
 }
 
+function getVisibleConfigRooms() {
+  return (configState?.rooms || []).filter((room) => !room.hidden);
+}
+
 function renderSelectedDeviceRole(settings = panelSettings) {
   if (!selectedDeviceRoleLabel) {
     return;
@@ -1226,7 +1230,8 @@ function sendIdentify() {
 function renderRooms(preferredRoomId = "") {
   const currentValue =
     preferredRoomId || roomSelect.value || window.pipPanel.defaultRoomId;
-  const roomOptions = (configState.rooms || [])
+  const visibleRooms = getVisibleConfigRooms();
+  const roomOptions = visibleRooms
     .map(
       (room) => `
         <option value="${escapeHtml(room.id)}" ${room.id === currentValue ? "selected" : ""}>
@@ -1244,7 +1249,7 @@ function renderRooms(preferredRoomId = "") {
   }
 
   if (![...roomSelect.options].some((option) => option.value === currentValue)) {
-    roomSelect.value = configState.rooms?.[0]?.id || "";
+    roomSelect.value = visibleRooms[0]?.id || "";
   }
 
   preferredRoomId = roomSelect.value || currentValue || window.pipPanel.defaultRoomId;
@@ -1384,7 +1389,7 @@ function isAllRoomsMessage(message) {
       ? message.recipientRoomIds.map((roomId) => String(roomId || "").trim()).filter(Boolean)
       : [],
   )].sort();
-  const allOtherRoomIds = (configState?.rooms || [])
+  const allOtherRoomIds = getVisibleConfigRooms()
     .map((room) => String(room?.id || "").trim())
     .filter((roomId) => roomId && roomId !== senderRoomId)
     .sort();
@@ -1401,7 +1406,7 @@ function isReceptionAllRoomsMessage(message) {
     return true;
   }
 
-  const roomIds = (configState?.rooms || [])
+  const roomIds = getVisibleConfigRooms()
     .map((room) => String(room?.id || "").trim())
     .filter(Boolean)
     .sort();
@@ -1455,7 +1460,7 @@ function getMessageThreadItems() {
     return [];
   }
 
-  const rooms = (configState?.rooms || []).filter((room) => room.id !== currentRoomId);
+  const rooms = getVisibleConfigRooms().filter((room) => room.id !== currentRoomId);
   const configuredGroupThreads = getConfiguredMessageGroupThreads(currentRoomId);
   const observedGroupThreads = getObservedMessageGroupThreads(currentRoomId);
   const groupThreadsByKey = new Map();
@@ -2765,7 +2770,7 @@ function renderMessageGroupSettings() {
 
   const currentRoomId = getCurrentMessageRoomId();
   messageGroupList.dataset.roomSettingsId = currentRoomId || "";
-  const availableRooms = (configState?.rooms || []).filter((room) => room.id !== currentRoomId);
+  const availableRooms = getVisibleConfigRooms().filter((room) => room.id !== currentRoomId);
   const groups = currentRoomId ? roomMessageGroups?.[currentRoomId] || [] : [];
 
   if (!currentRoomId) {
@@ -2857,7 +2862,7 @@ function updateRoomMessageGroup(currentRoomId, groupId, updater) {
 }
 
 function addRoomMessageGroup(currentRoomId) {
-  const availableRooms = (configState?.rooms || []).filter((room) => room.id !== currentRoomId);
+  const availableRooms = getVisibleConfigRooms().filter((room) => room.id !== currentRoomId);
   const firstTargetRoom = availableRooms[0]?.id || "";
 
   if (!currentRoomId || !firstTargetRoom) {
@@ -3075,7 +3080,7 @@ async function sendChatMessage() {
     return;
   }
 
-  const availableRoomIds = (configState?.rooms || [])
+  const availableRoomIds = getVisibleConfigRooms()
     .map((room) => room.id)
     .filter((roomId) => roomId !== currentRoom.id);
   const activeGroupThread = activeThreadKey.startsWith("group:")
