@@ -1,6 +1,6 @@
 :root {
   color-scheme: light;
-  --thread-rail-width: 84px;
+  --thread-rail-width: 63px;
   --thread-rail-top: 8px;
   --panel-width: 373px;
   --bg: #eff6f2;
@@ -1025,7 +1025,7 @@ body[data-window-view="main"][data-panel-mode="both"] .room-message-shell {
   min-height: 100vh;
   max-height: 100vh;
   height: 100vh;
-  padding: var(--thread-rail-top) 10px 10px 12px;
+  padding: var(--thread-rail-top) 8px 10px 5px;
   display: grid;
   grid-template-rows: minmax(0, auto) minmax(0, 1fr);
   align-content: start;
@@ -1570,6 +1570,10 @@ body[data-thread-rail-collapsed="true"] .thread-rail .message-thread-scroll-wrap
   will-change: background-color;
 }
 
+.thread-rail .message-thread-chip.is-reception.is-unread {
+  animation-name: reception-thread-pulse;
+}
+
 @keyframes ping-pulse {
   0% {
     background-color: var(--thread-accent, var(--accent));
@@ -1581,6 +1585,20 @@ body[data-thread-rail-collapsed="true"] .thread-rail .message-thread-scroll-wrap
 
   100% {
     background-color: var(--thread-accent, var(--accent));
+  }
+}
+
+@keyframes reception-thread-pulse {
+  0% {
+    background-color: #000000;
+  }
+
+  50% {
+    background-color: #3f4444;
+  }
+
+  100% {
+    background-color: #000000;
   }
 }
 

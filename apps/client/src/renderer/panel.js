@@ -1113,8 +1113,12 @@ function connectSocket() {
 
     if (message.type === "chat:message" && message.payload) {
       const threadKey = getIncomingMessageThreadKey(message.payload);
+      const shouldRevealIncomingThread =
+        threadKey &&
+        threadKey !== (activeMessageThreadKey || "reception") &&
+        (panelDisplayMode === "messages" || panelDisplayMode === "both");
 
-      if (threadKey && threadKey !== activeMessageThreadKey) {
+      if (shouldRevealIncomingThread) {
         unreadMessageThreadKeys.add(threadKey);
       }
 
@@ -1122,7 +1126,12 @@ function connectSocket() {
         playRoomMessageSound().catch(() => {});
       }
       chatMessages = [...chatMessages, message.payload].slice(-200);
+      renderMessageThreads();
       renderMessagingUi();
+
+      if (shouldRevealIncomingThread) {
+        revealMessageThreadInRail(threadKey);
+      }
     }
   });
 
@@ -1663,6 +1672,50 @@ function scrollMessageThreadPage(direction) {
 
   messageThreadList.scrollTo({ top: targetTop, behavior: "auto" });
   updateMessageThreadScrollButtons();
+}
+
+function scrollMessageThreadToKey(threadKey) {
+  if (!messageThreadList) {
+    return;
+  }
+
+  const normalizedThreadKey = String(threadKey || "").trim();
+
+  if (!normalizedThreadKey) {
+    return;
+  }
+
+  const chips = [...messageThreadList.querySelectorAll(".message-thread-chip")];
+  const targetIndex = chips.findIndex((chip) =>
+    String(chip.getAttribute("data-message-thread-key") || "").trim() === normalizedThreadKey,
+  );
+
+  if (targetIndex < 0) {
+    return;
+  }
+
+  const targetPageIndex = Math.floor(targetIndex / MESSAGE_THREAD_PAGE_SIZE);
+  const pageStartIndex = targetPageIndex * MESSAGE_THREAD_PAGE_SIZE;
+  const paddingTop = getMessageThreadListPaddingTop();
+  const maxScrollTop = Math.max(0, messageThreadList.scrollHeight - messageThreadList.clientHeight);
+  const targetTop = Math.min(
+    Math.max(chips[pageStartIndex].offsetTop - paddingTop, 0),
+    maxScrollTop,
+  );
+
+  messageThreadList.scrollTo({ top: targetTop, behavior: "auto" });
+  updateMessageThreadScrollButtons();
+}
+
+function revealMessageThreadInRail(threadKey) {
+  if (!threadKey || !messageThreadRail || messageThreadRail.classList.contains("hidden")) {
+    return;
+  }
+
+  setMessageThreadRailCollapsed(false);
+  requestAnimationFrame(() => {
+    scrollMessageThreadToKey(threadKey);
+  });
 }
 
 function hexToRgba(hex, alpha) {
