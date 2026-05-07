@@ -326,8 +326,9 @@ select {
   --icon-size: 16px;
 }
 
+.compact-mode-button:hover,
 .compact-mode-button.is-active {
-  background: rgba(16, 35, 31, 0.08);
+  background: transparent;
 }
 
 .compact-mode-dropdown {
@@ -839,8 +840,8 @@ select {
   overflow: hidden;
 }
 
-.alert-row.is-active .alert-message,
-.alert-row.is-queued .alert-message {
+.alert-row.is-new-alert .alert-message,
+.compact-message-row.is-new-alert .alert-message {
   animation: alert-slide-in 0.45s ease-out;
 }
 

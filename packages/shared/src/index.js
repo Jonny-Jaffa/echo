@@ -19,6 +19,7 @@ const DEFAULT_BUTTON_APPEARANCE = {
   defaultBackground: "#FDD905",
   activeBackground: "#000000",
 };
+const ROOM_SHORT_NAME_MAX_LENGTH = 7;
 
 export function normalizeRuntimeRole(
   runtimeRole,
@@ -265,7 +266,7 @@ export function normalizeRoomShortName(value, roomName = "", roomId = "", index 
   const explicitValue = String(value || "").trim();
 
   if (explicitValue) {
-    return explicitValue.slice(0, 6);
+    return explicitValue.slice(0, ROOM_SHORT_NAME_MAX_LENGTH);
   }
 
   return buildDefaultRoomShortName(roomName, roomId, index);
@@ -276,13 +277,13 @@ export function buildDefaultRoomShortName(roomName = "", roomId = "", index = 0)
   const surgeryMatch = labelSource.match(/surg(?:ery)?[\s-]*(\d+)/i);
 
   if (surgeryMatch?.[1]) {
-    return `S${surgeryMatch[1]}`.slice(0, 6);
+    return `S${surgeryMatch[1]}`.slice(0, ROOM_SHORT_NAME_MAX_LENGTH);
   }
 
   const roomMatch = labelSource.match(/room[\s-]*(\d+)/i);
 
   if (roomMatch?.[1]) {
-    return `R${roomMatch[1]}`.slice(0, 6);
+    return `R${roomMatch[1]}`.slice(0, ROOM_SHORT_NAME_MAX_LENGTH);
   }
 
   const words = String(roomName || "")
@@ -291,7 +292,7 @@ export function buildDefaultRoomShortName(roomName = "", roomId = "", index = 0)
     .filter(Boolean);
 
   if (words.length >= 2) {
-    return words.map((word) => word[0]).join("").slice(0, 6).toUpperCase();
+    return words.map((word) => word[0]).join("").slice(0, ROOM_SHORT_NAME_MAX_LENGTH).toUpperCase();
   }
 
   if (words[0]) {

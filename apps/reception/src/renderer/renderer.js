@@ -77,6 +77,11 @@ const RECEPTION_SOUND_OPTIONS = Array.from({ length: 17 }, (_value, index) => {
 const PINNED_CHAT_ROOMS_STORAGE_KEY = "pip-reception-pinned-chat-rooms";
 const CHAT_ROOM_ORDER_STORAGE_KEY = "pip-reception-chat-room-order";
 const RECEPTION_ALL_ROOMS_MESSAGE_GROUP_KEY = "reception-all-rooms";
+const ROOM_SHORT_NAME_MAX_LENGTH = 7;
+const NEUTRAL_MESSAGE_LIST_BACKGROUND =
+  "linear-gradient(90deg, rgba(135, 146, 147, 0.16), rgba(135, 146, 147, 0.04))";
+const NEUTRAL_MESSAGE_STRIP_BACKGROUND =
+  "linear-gradient(90deg, rgba(135, 146, 147, 0.16), rgba(255, 255, 255, 0.86))";
 const ROOM_COLOUR_PALETTE = [
   "#d0069a",
   "#e07c0b",
@@ -92,10 +97,28 @@ const ROOM_COLOUR_PALETTE = [
   "#475569",
 ];
 
+function hexToRgba(hex, alpha) {
+  const normalized = String(hex || "").trim().replace(/^#/, "");
+  const expanded = normalized.length === 3
+    ? normalized.split("").map((character) => `${character}${character}`).join("")
+    : normalized;
+
+  if (!/^[0-9a-f]{6}$/i.test(expanded)) {
+    return `rgba(40, 143, 162, ${alpha})`;
+  }
+
+  const red = Number.parseInt(expanded.slice(0, 2), 16);
+  const green = Number.parseInt(expanded.slice(2, 4), 16);
+  const blue = Number.parseInt(expanded.slice(4, 6), 16);
+
+  return `rgba(${red}, ${green}, ${blue}, ${alpha})`;
+}
+
 let appState = null;
 let draftConfig = null;
 let lastReportedGadgetHeight = 0;
 const pendingPingRooms = new Map();
+const visibleAlertCountsByRoom = new Map();
 const selectedChatRoomIds = new Set();
 const unreadChatRoomIds = new Set();
 let hasUnreadAllRoomsMessage = false;
@@ -121,19 +144,19 @@ function getDefaultRoomShortLabel(roomName = "", roomId = "", index = 0) {
   const surgeryMatch = labelSource.match(/surg(?:ery)?[\s-]*(\d+)/i);
 
   if (surgeryMatch?.[1]) {
-    return `S${surgeryMatch[1]}`.slice(0, 6);
+    return `S${surgeryMatch[1]}`.slice(0, ROOM_SHORT_NAME_MAX_LENGTH);
   }
 
   const roomMatch = labelSource.match(/room[\s-]*(\d+)/i);
 
   if (roomMatch?.[1]) {
-    return `R${roomMatch[1]}`.slice(0, 6);
+    return `R${roomMatch[1]}`.slice(0, ROOM_SHORT_NAME_MAX_LENGTH);
   }
 
   const words = String(roomName || "").trim().split(/\s+/).filter(Boolean);
 
   if (words.length >= 2) {
-    return words.map((word) => word[0]).join("").slice(0, 6).toUpperCase();
+    return words.map((word) => word[0]).join("").slice(0, ROOM_SHORT_NAME_MAX_LENGTH).toUpperCase();
   }
 
   return words[0]?.slice(0, 3) || `R${index + 1}`;
@@ -304,6 +327,33 @@ function populateMessageSoundSelectOptions(selectedValue) {
   );
 }
 
+function shouldAnimateVisibleAlert(roomId, alertCount) {
+  const normalizedRoomId = String(roomId || "").trim();
+  const normalizedAlertCount = Math.max(0, Math.round(Number(alertCount) || 0));
+
+  if (!normalizedRoomId) {
+    return false;
+  }
+
+  const previousState = visibleAlertCountsByRoom.get(normalizedRoomId);
+  const previousAlertCount =
+    typeof previousState === "object" && previousState !== null
+      ? Math.max(0, Math.round(Number(previousState.count) || 0))
+      : Math.max(0, Math.round(Number(previousState) || 0));
+  const shouldRepeatInitialAnimation =
+    Boolean(previousState?.repeatInitialAnimation) &&
+    previousAlertCount === normalizedAlertCount &&
+    normalizedAlertCount > 0;
+  const shouldStartInitialAnimation = previousAlertCount === 0 && normalizedAlertCount > 0;
+
+  visibleAlertCountsByRoom.set(normalizedRoomId, {
+    count: normalizedAlertCount,
+    repeatInitialAnimation: shouldStartInitialAnimation,
+  });
+
+  return shouldStartInitialAnimation || shouldRepeatInitialAnimation;
+}
+
 function renderAlertList(state) {
   const alerts = [
     ...(state.activeNotification ? [state.activeNotification] : []),
@@ -326,13 +376,14 @@ function renderAlertList(state) {
           state.activeNotification &&
           alert.notificationId === state.activeNotification.notificationId,
       );
+      const shouldAnimateAlert = shouldAnimateVisibleAlert(room.id, roomAlertCount);
       const formattedTime = alert ? formatRelativeTime(alert.timestamp) : "";
       const rowMessage = alert ? alert.message : "";
       const isWaitingForReply = pendingPingRooms.has(room.id);
 
       return `
         <article
-          class="alert-row ${alert ? (isActive ? "is-active" : "is-queued") : "is-idle"}"
+          class="alert-row ${alert ? (isActive ? "is-active" : "is-queued") : "is-idle"} ${shouldAnimateAlert ? "is-new-alert" : ""}"
           style="--row-accent: ${escapeHtml(room.color || "#0f766e")}"
         >
           <div class="alert-copy">
@@ -408,6 +459,7 @@ function renderCompactAlertList(state, rooms, alerts) {
       const roomAlerts = alerts.filter((alert) => alert.roomId === room.id);
       const roomAlertCount = roomAlerts.length;
       const alert = roomAlerts[0];
+      const shouldAnimateAlert = shouldAnimateVisibleAlert(room.id, roomAlertCount);
 
       if (!alert) {
         return "";
@@ -422,7 +474,7 @@ function renderCompactAlertList(state, rooms, alerts) {
 
       return `
         <article
-          class="compact-message-row ${isActive ? "is-active" : "is-queued"}"
+          class="compact-message-row ${isActive ? "is-active" : "is-queued"} ${shouldAnimateAlert ? "is-new-alert" : ""}"
           style="--row-accent: ${escapeHtml(room.color || "#0f766e")}"
         >
           <div class="alert-copy">
@@ -640,18 +692,18 @@ function syncMessageContext(state = appState) {
   chatCard.style.setProperty(
     "--message-context-strip-background",
     isAllRoomsSelected
-      ? "linear-gradient(90deg, #d0d4d4, #ffffff)"
+      ? NEUTRAL_MESSAGE_STRIP_BACKGROUND
       : activeRoom
       ? `linear-gradient(90deg, color-mix(in srgb, ${accent} 15%, white), color-mix(in srgb, ${accent} 4%, white) 72%, #ffffff)`
-      : "linear-gradient(90deg, #d0d4d4, #ffffff)",
+      : NEUTRAL_MESSAGE_STRIP_BACKGROUND,
   );
   chatCard.style.setProperty(
     "--message-list-background",
     isAllRoomsSelected
-      ? "linear-gradient(90deg, #d5d9d9, #f5f6f6)"
+      ? NEUTRAL_MESSAGE_LIST_BACKGROUND
       : activeRoom
-      ? `linear-gradient(90deg, color-mix(in srgb, ${accent} 10%, white), color-mix(in srgb, ${accent} 4%, white))`
-      : "linear-gradient(90deg, #d5d9d9, #f5f6f6)",
+      ? `linear-gradient(90deg, ${hexToRgba(activeRoom.color, 0.16)}, ${hexToRgba(activeRoom.color, 0.04)})`
+      : NEUTRAL_MESSAGE_LIST_BACKGROUND,
   );
   chatCard.style.setProperty("--message-bubble-incoming", activeRoom?.color || "#418191");
 }
@@ -1179,7 +1231,7 @@ function renderRooms() {
             </label>
             <label class="field">
               <span>Short label</span>
-              <input data-entity="room" data-index="${index}" data-key="shortName" type="text" maxlength="6" value="${escapeHtml(room.shortName || getDefaultRoomShortLabel(room.name, room.id, index))}" />
+              <input data-entity="room" data-index="${index}" data-key="shortName" type="text" maxlength="${ROOM_SHORT_NAME_MAX_LENGTH}" value="${escapeHtml(room.shortName || getDefaultRoomShortLabel(room.name, room.id, index))}" />
             </label>
             <label class="field checkbox-field room-visibility-field">
               <input data-entity="room" data-index="${index}" data-key="hidden" type="checkbox" ${room.hidden ? "checked" : ""} />
@@ -1361,7 +1413,7 @@ function updateDraftField(target) {
       return;
     }
 
-    const maxLength = key === "name" ? 10 : key === "shortName" ? 6 : Infinity;
+    const maxLength = key === "name" ? 10 : key === "shortName" ? ROOM_SHORT_NAME_MAX_LENGTH : Infinity;
     draftConfig.rooms[index][key] = Number.isFinite(maxLength)
       ? target.value.slice(0, maxLength)
       : target.value;
@@ -1516,12 +1568,15 @@ compactModeOptions.forEach((option) => {
   });
 });
 
-document.addEventListener("click", (event) => {
+document.addEventListener("pointerdown", (event) => {
   const dropdown = document.querySelector(".compact-mode-dropdown");
-  if (dropdown && !dropdown.contains(event.target)) {
-    compactModeButton?.setAttribute("aria-expanded", "false");
-    compactModeMenu?.classList.add("hidden");
+
+  if (!(event.target instanceof Node) || !dropdown || dropdown.contains(event.target)) {
+    return;
   }
+
+  compactModeButton?.setAttribute("aria-expanded", "false");
+  compactModeMenu?.classList.add("hidden");
 });
 
 document.body.addEventListener("dragstart", (event) => {

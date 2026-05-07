@@ -70,6 +70,7 @@ const LEGACY_PANEL_DEVICE_ID_STORAGE_KEY = "patient-ping-panel-device-id";
 const MESSAGE_THREAD_ORDER_STORAGE_KEY = "pip-panel-message-thread-order";
 const MESSAGE_THREAD_RAIL_COLLAPSED_STORAGE_KEY = "pip-panel-message-thread-rail-collapsed";
 const MESSAGE_THREAD_PAGE_SIZE = 5;
+const NEO_BUTTON_LABEL_MAX_LENGTH = 7;
 const CONFIG_REFRESH_MS = 3000;
 const DEFAULT_BUTTON_APPEARANCE = {
   defaultBackground: "#FDD905",
@@ -460,7 +461,7 @@ function normalizeRoomActionNotification(notification, index, roomId = "") {
     label,
     message: String(notification?.message || label || fallbackLabel).trim().slice(0, 21) || fallbackLabel,
     color: String(notification?.color || "#2563eb").trim(),
-    icon: String(notification?.icon || "").trim().slice(0, 20),
+    icon: String(notification?.icon || "").trim().slice(0, NEO_BUTTON_LABEL_MAX_LENGTH),
     deviceButton,
   };
 }
@@ -827,13 +828,28 @@ function renderPanelDisplayModeMenu() {
 
 async function setPanelDisplayMode(mode, options = {}) {
   const nextMode = normalizePanelDisplayMode(mode);
+  const previousMode = panelDisplayMode;
   const persist = options.persist !== false;
   const resize = options.resize !== false;
+  const shouldResizeBeforeDomUpdate =
+    !isSettingsWindow && resize && nextMode === "buttons" && previousMode !== "buttons";
+
+  const resizePanelWindow = (resizeOptions = {}) => window.pipPanel
+    .setSettingsExpanded?.({
+      mode: nextMode,
+      previousMode,
+      messageComposerHeightOffset: getMessageComposerHeightOffset(),
+      ...resizeOptions,
+    })
+    .catch(() => {});
+
+  if (shouldResizeBeforeDomUpdate) {
+    await resizePanelWindow({ animate: false });
+  }
 
   panelDisplayMode = nextMode;
-  areQuickActionsVisible = nextMode === "buttons" || nextMode === "both";
-  const showMessages = nextMode === "messages" || nextMode === "both";
-
+  areQuickActionsVisible = panelDisplayMode === "buttons" || panelDisplayMode === "both";
+  const showMessages = panelDisplayMode === "messages" || panelDisplayMode === "both";
   document.body.dataset.panelMode = panelDisplayMode;
   document.body.dataset.quickActionsVisible = areQuickActionsVisible ? "true" : "false";
   quickActions?.classList.toggle("hidden", !areQuickActionsVisible);
@@ -848,13 +864,8 @@ async function setPanelDisplayMode(mode, options = {}) {
   updateMessageScrollbar();
   renderPanelDisplayModeMenu();
 
-  if (!isSettingsWindow && resize) {
-    await window.pipPanel
-      .setSettingsExpanded?.({
-        mode: panelDisplayMode,
-        messageComposerHeightOffset: getMessageComposerHeightOffset(),
-      })
-      .catch(() => {});
+  if (!isSettingsWindow && resize && !shouldResizeBeforeDomUpdate) {
+    await resizePanelWindow();
   }
 
   if (!isSettingsWindow && persist) {
@@ -1751,19 +1762,24 @@ function syncMessageContext() {
     || null;
   const activeRoom = configState?.rooms?.find((room) => room.id === activeThread?.key);
   const isAllRoomsThread = activeThread?.key === "all";
+  const specialThreadAccent = isAllRoomsThread ? "#879293" : "#000000";
+  const specialListBackground =
+    `linear-gradient(90deg, ${hexToRgba(specialThreadAccent, 0.16)}, ${hexToRgba(specialThreadAccent, 0.04)})`;
+  const specialStripBackground =
+    `linear-gradient(90deg, ${hexToRgba(specialThreadAccent, 0.16)}, rgba(255, 255, 255, 0.86))`;
   const accent = getMessageThreadAccent(activeThread);
   const labelColor = isAllRoomsThread ? "#3f4444" : activeRoom?.color || "var(--accent)";
   const iconColor = isAllRoomsThread ? "white" : "white";
   const listBackground = isAllRoomsThread
-    ? "linear-gradient(90deg, #d5d9d9, #f5f6f6)"
+    ? specialListBackground
     : activeRoom?.color
       ? `linear-gradient(90deg, ${hexToRgba(activeRoom.color, 0.16)}, ${hexToRgba(activeRoom.color, 0.04)})`
-      : "linear-gradient(90deg, #d5d9d9, #f5f6f6)";
+      : specialListBackground;
   const stripBackground = isAllRoomsThread
-    ? "linear-gradient(90deg, #d0d4d4, #ffffff)"
+    ? specialStripBackground
     : activeRoom?.color
       ? `linear-gradient(90deg, ${hexToRgba(activeRoom.color, 0.16)}, #ffffff)`
-      : "linear-gradient(90deg, #d0d4d4, #ffffff)";
+      : specialStripBackground;
   const fullLabel = getThreadFullLabel(activeThread);
 
   messageContextLabel.textContent = fullLabel;
@@ -2065,7 +2081,7 @@ function getRoomButtonPreviewText(roomId) {
       firstNotification?.label ||
       firstNotification?.message ||
       "15MIN",
-  ).trim() || "15MIN";
+  ).trim().slice(0, NEO_BUTTON_LABEL_MAX_LENGTH) || "15MIN";
 }
 
 function getButtonAppearanceModeKeys(mode) {
@@ -2119,6 +2135,7 @@ function renderButtonAppearanceSummary(roomId, mode) {
   const background = appearance[modeKeys.background];
   const textColour = appearance[modeKeys.text];
   const previewText = getRoomButtonPreviewText(roomId);
+  const compactPreviewClass = previewText.length >= NEO_BUTTON_LABEL_MAX_LENGTH ? "has-compact-label" : "";
 
   return `
     <button
@@ -2132,7 +2149,7 @@ function renderButtonAppearanceSummary(roomId, mode) {
         <span>${mode === "active" ? "Pressed state" : "Normal state"}</span>
       </span>
       <span
-        class="button-style-trigger-preview"
+        class="button-style-trigger-preview ${compactPreviewClass}"
         style="--button-background: ${escapeHtml(background)}; --button-text: ${escapeHtml(textColour)};"
       >
         ${escapeHtml(previewText)}
@@ -2162,6 +2179,7 @@ function renderButtonAppearancePicker() {
   const background = appearance[modeKeys.background];
   const textColour = appearance[modeKeys.text];
   const previewText = getRoomButtonPreviewText(room.id);
+  const compactPreviewClass = previewText.length >= NEO_BUTTON_LABEL_MAX_LENGTH ? "has-compact-label" : "";
   const existingPopover = pickerHost.querySelector(".button-style-popover");
   const popoverHtml = `
     <div class="button-style-popover" role="dialog" aria-label="${escapeHtml(modeKeys.title)}">
@@ -2175,7 +2193,7 @@ function renderButtonAppearancePicker() {
       <div class="button-style-popover-body">
         <div class="button-style-preview-wrap">
           <button
-            class="panel-button is-preview button-style-live-preview"
+            class="panel-button is-preview button-style-live-preview ${compactPreviewClass}"
             type="button"
             style="
               --button-background: ${escapeHtml(background)};
@@ -2357,7 +2375,7 @@ function updateRoomActionSetting(roomId, buttonIndex, key, value) {
           icon: "",
           deviceButton: Number(buttonIndex),
         };
-  const normalizedValue = String(value ?? "").trim().slice(0, key === "icon" ? 20 : 21);
+  const normalizedValue = String(value ?? "").trim().slice(0, key === "icon" ? NEO_BUTTON_LABEL_MAX_LENGTH : 21);
   const nextNotification = {
     ...currentNotification,
     [key]: normalizedValue,
@@ -2585,7 +2603,7 @@ function renderRoomActionRows(roomId) {
               data-room-action-button="${action.buttonIndex}"
               data-room-action-key="icon"
               type="text"
-              maxlength="20"
+              maxlength="${NEO_BUTTON_LABEL_MAX_LENGTH}"
               value="${escapeHtml(action.icon)}"
             />
           </label>
@@ -3042,9 +3060,11 @@ function getResolvedPanelButtons() {
 function renderButton(button, options = {}) {
   const interactive = options.interactive !== false;
   const buttonAppearance = getButtonAppearanceSettings();
+  const buttonLabel = String(button.buttonLabel || button.label || "");
+  const labelLength = buttonLabel.length;
 
   const attributes = [
-    `class="panel-button ${button.isActive ? "is-active" : ""} ${interactive ? "" : "is-preview"}"`,
+    `class="panel-button ${button.isActive ? "is-active" : ""} ${interactive ? "" : "is-preview"} ${labelLength >= NEO_BUTTON_LABEL_MAX_LENGTH ? "has-compact-label" : ""}"`,
     `style="
         --button-background: ${escapeHtml(buttonAppearance.defaultBackground)};
         --button-active-background: ${escapeHtml(buttonAppearance.activeBackground)};
@@ -3066,7 +3086,7 @@ function renderButton(button, options = {}) {
     <button
       ${attributes.join("\n      ")}
     >
-      <span class="panel-button-text">${escapeHtml(button.buttonLabel || button.label || "")}</span>
+      <span class="panel-button-text">${escapeHtml(buttonLabel)}</span>
     </button>
   `;
 }
@@ -3576,15 +3596,13 @@ panelDisplayModeMenu?.addEventListener("click", async (event) => {
 
 document.addEventListener("pointerdown", (event) => {
   const target = event.target;
+  const displayModeDropdown = quickActionsToggleButton?.closest(".panel-display-mode");
 
   if (!(target instanceof Node) || !isPanelDisplayModeMenuVisible) {
     return;
   }
 
-  if (
-    panelDisplayModeMenu?.contains(target) ||
-    quickActionsToggleButton?.contains?.(target)
-  ) {
+  if (displayModeDropdown?.contains(target)) {
     return;
   }
 

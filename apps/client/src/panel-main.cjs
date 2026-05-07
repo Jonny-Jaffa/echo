@@ -4,11 +4,11 @@ const dgram = require("node:dgram");
 const { randomUUID } = require("node:crypto");
 const { exec } = require("node:child_process");
 const { pathToFileURL } = require("node:url");
-const { app, BrowserWindow, ipcMain, Menu, Tray, nativeImage } = require("electron");
+const { app, BrowserWindow, ipcMain, Menu, Tray, nativeImage, screen } = require("electron");
 
 const DISCOVERY_PORT = 3210;
 const SURGERY_PANEL_WIDTH = 373;
-const SURGERY_THREAD_RAIL_WIDTH = 84;
+const SURGERY_THREAD_RAIL_WIDTH = 63;
 const SURGERY_WINDOW_WIDTH = SURGERY_PANEL_WIDTH + SURGERY_THREAD_RAIL_WIDTH;
 const SURGERY_WINDOW_EXPANDED_WIDTH = 780 + SURGERY_THREAD_RAIL_WIDTH;
 const SURGERY_SETTINGS_WINDOW_WIDTH = 780;
@@ -49,6 +49,7 @@ const DEFAULT_RIGHT_AUX_SETTING = {
   action: "none",
 };
 const ROOM_ACTION_BUTTON_COUNT = 8;
+const NEO_BUTTON_LABEL_MAX_LENGTH = 7;
 const MAX_MESSAGE_GROUP_NAME_LENGTH = 24;
 const DEFAULT_PINNED_MESSAGE_THREAD_KEYS = [];
 const RUNTIME_ROLE_ROOM = "room";
@@ -71,6 +72,17 @@ function getPanelDisplayModeHeight(mode) {
     : normalizedMode === "both"
       ? SURGERY_WINDOW_BOTH_HEIGHT
       : SURGERY_WINDOW_HEIGHT;
+}
+
+function getPanelDisplayModeWidth(mode) {
+  return normalizePanelDisplayMode(mode) === "buttons"
+    ? SURGERY_PANEL_WIDTH
+    : SURGERY_WINDOW_WIDTH;
+}
+
+function clampWindowXToVisibleWidth(x, visibleWidth, workArea) {
+  const maxX = workArea.x + workArea.width - visibleWidth;
+  return Math.min(Math.max(x, workArea.x), Math.max(workArea.x, maxX));
 }
 
 function normalizeRuntimeRole(runtimeRole, fallback = RUNTIME_ROLE_ROOM) {
@@ -149,7 +161,7 @@ function normalizeRoomActionNotification(notification, index, roomId = "") {
     label,
     message: String(notification?.message || label || fallbackLabel).trim().slice(0, 20) || fallbackLabel,
     color: String(notification?.color || "#2563eb").trim(),
-    icon: String(notification?.icon || "").trim().slice(0, 20),
+    icon: String(notification?.icon || "").trim().slice(0, NEO_BUTTON_LABEL_MAX_LENGTH),
     deviceButton,
   };
 }
@@ -409,9 +421,9 @@ function createWindow({ showInitially = true } = {}) {
     ? appIcon.resize({ width: 32, height: 32 })
     : undefined;
   mainWindow = new BrowserWindow({
-    width: SURGERY_WINDOW_WIDTH,
+    width: getPanelDisplayModeWidth(clientSettings.panelDisplayMode),
     height: getPanelDisplayModeHeight(clientSettings.panelDisplayMode),
-    minWidth: SURGERY_WINDOW_WIDTH,
+    minWidth: getPanelDisplayModeWidth(clientSettings.panelDisplayMode),
     minHeight: getPanelDisplayModeHeight(clientSettings.panelDisplayMode),
     autoHideMenuBar: true,
     title: "Pip Surgery",
@@ -1157,6 +1169,10 @@ function setWindowSettingsExpanded(details) {
   const messageComposerHeightOffset = typeof details === "object" && details !== null
     ? Math.min(120, Math.max(0, Math.round(Number(details.messageComposerHeightOffset) || 0)))
     : 0;
+  const previousMode = typeof details === "object" && details !== null && typeof details.previousMode === "string"
+    ? normalizePanelDisplayMode(details.previousMode)
+    : normalizePanelDisplayMode(clientSettings.panelDisplayMode);
+  const shouldAnimateResize = !(typeof details === "object" && details !== null && details.animate === false);
   isSettingsPanelExpanded = mode === "both";
 
   if (!mainWindow || mainWindow.isDestroyed()) {
@@ -1168,16 +1184,26 @@ function setWindowSettingsExpanded(details) {
     getPanelDisplayModeHeight(mode) + (mode === "buttons" ? 0 : messageComposerHeightOffset) + bannerOffset;
   const minimumHeight = targetHeight;
   const [currentX, currentY] = mainWindow.getPosition();
-  const [, currentHeight] = mainWindow.getSize();
+  const [currentWidth, currentHeight] = mainWindow.getSize();
+  const targetWidth = getPanelDisplayModeWidth(mode);
+  const previousVisibleWidth = getPanelDisplayModeWidth(previousMode);
+  const currentRight = currentX + previousVisibleWidth;
   const nextY = currentY + currentHeight - targetHeight;
-
-  mainWindow.setMinimumSize(SURGERY_WINDOW_WIDTH, minimumHeight);
-  mainWindow.setBounds({
+  const workArea = screen.getDisplayMatching({
     x: currentX,
+    y: currentY,
+    width: currentWidth,
+    height: currentHeight,
+  }).workArea;
+  const nextX = clampWindowXToVisibleWidth(currentRight - targetWidth, targetWidth, workArea);
+
+  mainWindow.setMinimumSize(targetWidth, minimumHeight);
+  mainWindow.setBounds({
+    x: nextX,
     y: nextY,
-    width: SURGERY_WINDOW_WIDTH,
+    width: targetWidth,
     height: targetHeight,
-  }, true);
+  }, shouldAnimateResize);
 }
 
 let currentBannerVisible = false;
@@ -1193,16 +1219,16 @@ function setWindowBannerVisible(bannerVisible) {
   currentBannerVisible = isVisible;
 
   const [currentX, currentY] = mainWindow.getPosition();
-  const [, currentHeight] = mainWindow.getSize();
+  const [currentWidth, currentHeight] = mainWindow.getSize();
   const heightDelta = isVisible ? SURGERY_BANNER_HEIGHT : -SURGERY_BANNER_HEIGHT;
   const targetHeight = currentHeight + heightDelta;
   const nextY = currentY - heightDelta; // Expand from bottom up (move Y up when adding height)
 
-  mainWindow.setMinimumSize(SURGERY_WINDOW_WIDTH, targetHeight);
+  mainWindow.setMinimumSize(currentWidth, targetHeight);
   mainWindow.setBounds({
     x: currentX,
     y: nextY,
-    width: SURGERY_WINDOW_WIDTH,
+    width: currentWidth,
     height: targetHeight,
   }, true);
 }

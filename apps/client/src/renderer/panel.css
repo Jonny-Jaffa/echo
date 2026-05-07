@@ -122,6 +122,10 @@ body[data-window-view="main"]:not([data-view="waiting"]) .panel-shell {
   grid-template-columns: var(--thread-rail-width) minmax(0, 1fr);
 }
 
+body[data-window-view="main"][data-panel-mode="buttons"]:not([data-view="waiting"]) .panel-shell {
+  grid-template-columns: minmax(0, 1fr);
+}
+
 body[data-window-view="main"][data-view="waiting"] .panel-shell {
   overflow: auto;
 }
@@ -1102,6 +1106,14 @@ body[data-thread-rail-collapsed="true"] .thread-rail-toggle::before {
   align-self: start;
   width: 100%;
   transform: translateY(-11px);
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+  transition:
+    transform 180ms ease,
+    opacity 160ms ease,
+    visibility 0s linear 0s;
+  will-change: transform, opacity;
 }
 
 .thread-rail .message-thread-scroll-button {
@@ -1190,7 +1202,21 @@ body[data-thread-rail-collapsed="true"] .thread-rail-toggle::before {
 }
 
 body[data-thread-rail-collapsed="true"] .thread-rail .message-thread-scroll-wrap {
-  display: none;
+  transform: translate3d(22px, -11px, 0);
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition:
+    transform 180ms ease,
+    opacity 140ms ease,
+    visibility 0s linear 180ms;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .thread-rail .message-thread-scroll-wrap,
+  body[data-thread-rail-collapsed="true"] .thread-rail .message-thread-scroll-wrap {
+    transition: none;
+  }
 }
 
 
@@ -2390,6 +2416,11 @@ body[data-thread-rail-collapsed="true"] .thread-rail .message-thread-scroll-wrap
   overflow: hidden;
 }
 
+.button-style-trigger-preview.has-compact-label {
+  font-size: 10px;
+  line-height: 1.08;
+}
+
 .button-style-popover {
   position: absolute;
   z-index: 20;
@@ -2702,6 +2733,15 @@ body[data-thread-rail-collapsed="true"] .thread-rail .message-thread-scroll-wrap
   color: inherit;
   line-height: 1.15;
   text-wrap: balance;
+}
+
+.panel-button.has-compact-label {
+  padding-inline: 5px;
+}
+
+.panel-button.has-compact-label .panel-button-text {
+  font-size: 11px;
+  line-height: 1.08;
 }
 
 @media (max-width: 560px) {

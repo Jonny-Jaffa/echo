@@ -76,32 +76,32 @@
   ],
   "actions": [
     {
-      "id": "available-15",
+      "id": "action-1",
       "label": "Finished in 15mins",
       "message": "Finished in 15mins",
       "color": "#2563eb",
-      "icon": "15MIN"
+      "icon": "15 MIN"
     },
     {
-      "id": "available-30",
+      "id": "action-2",
       "label": "Finished in 30mins",
       "message": "Finished in 30mins",
       "color": "#2563eb",
-      "icon": "30MIN"
+      "icon": "30 MIN"
     },
     {
-      "id": "rebook-patient",
+      "id": "action-3",
       "label": "Rebook the patient",
       "message": "Rebook Patient",
       "color": "#2563eb",
       "icon": "REBOOK"
     },
     {
-      "id": "send-next-patient",
-      "label": "Send next patient",
-      "message": "Send next patient",
+      "id": "action-4",
+      "label": "Room",
+      "message": "Prep another room",
       "color": "#2563eb",
-      "icon": "NEXT"
+      "icon": "ROOM"
     },
     {
       "id": "action-5",
@@ -115,7 +115,7 @@
       "label": "Come up",
       "message": "Come up",
       "color": "#2563eb",
-      "icon": "COMEUP"
+      "icon": "COME UP"
     },
     {
       "id": "action-7",
@@ -126,28 +126,28 @@
     },
     {
       "id": "action-8",
-      "label": "Tea please",
-      "message": "Tea please",
+      "label": "Consent",
+      "message": "Clinipad",
       "color": "#2563eb",
-      "icon": "TEA"
+      "icon": "CONSENT"
     }
   ],
   "buttonMappings": [
     {
       "deviceButton": 0,
-      "actionId": "available-15"
+      "actionId": "action-1"
     },
     {
       "deviceButton": 1,
-      "actionId": "available-30"
+      "actionId": "action-2"
     },
     {
       "deviceButton": 2,
-      "actionId": "rebook-patient"
+      "actionId": "action-3"
     },
     {
       "deviceButton": 3,
-      "actionId": "send-next-patient"
+      "actionId": "action-4"
     },
     {
       "deviceButton": 4,

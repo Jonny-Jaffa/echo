@@ -73,9 +73,7 @@
 }
 
 .panel-icon-button:hover,
-.panel-icon-button[aria-expanded="true"],
-.icon-action-button:hover,
-.icon-action-button.is-active {
+.icon-action-button:hover {
   background: rgba(16, 35, 31, 0.06);
 }
 

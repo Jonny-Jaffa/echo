@@ -50,6 +50,7 @@ const DEFAULT_RIGHT_AUX_SETTING = {
   action: "none",
 };
 const ROOM_ACTION_BUTTON_COUNT = 8;
+const NEO_BUTTON_LABEL_MAX_LENGTH = 7;
 const PARTY_LCD_HEADLINE = "LETS PARTY!";
 const DEFAULT_SURGERY_SOUND = "notification_sound_01";
 const SURGERY_SOUND_FILE_MAP = Object.fromEntries(
@@ -351,7 +352,7 @@ function normalizeRoomActionNotification(notification, index, roomId = "") {
     label,
     message: String(notification?.message || label || fallbackLabel).trim().slice(0, 20) || fallbackLabel,
     color: String(notification?.color || "#2563eb").trim(),
-    icon: String(notification?.icon || "").trim().slice(0, 20),
+    icon: String(notification?.icon || "").trim().slice(0, NEO_BUTTON_LABEL_MAX_LENGTH),
     deviceButton,
   };
 }
