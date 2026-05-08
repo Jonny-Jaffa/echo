@@ -74,6 +74,7 @@ let lcdClockTimer = null;
 let lcdFlashTimer = null;
 let lcdFlashVisible = false;
 let lcdFlashHex = null;
+let lcdFlashLabel = "Reception";
 let partyModeActive = false;
 let partyModeTimer = null;
 let partyModeFrame = 0;
@@ -166,6 +167,11 @@ function getDeviceId() {
 
 function getStreamDeckSerial() {
   return runtimeSettings.streamDeckSerial;
+}
+
+function normalizeReceptionPingMessage(value) {
+  const normalized = String(value || "").trim().replace(/\s+/g, " ").slice(0, 40);
+  return normalized || "Reception";
 }
 
 function applyRuntimeSettings(nextSettings = {}) {
@@ -752,7 +758,7 @@ function connectSocket() {
       if (runtimeSettings.playPingAudio) {
         playPingSound();
       }
-      startLcdPingFlash("#16a34a");
+      startLcdPingFlash("#16a34a", message.payload?.message);
       return;
     }
 
@@ -2017,8 +2023,9 @@ function stopLcdClockUpdates() {
   }
 }
 
-function startLcdPingFlash(hexColor) {
+function startLcdPingFlash(hexColor, label = "Reception") {
   lcdFlashHex = hexColor;
+  lcdFlashLabel = normalizeReceptionPingMessage(label);
   lcdFlashVisible = true;
 
   if (lcdFlashTimer) {
@@ -2040,6 +2047,7 @@ function startLcdPingFlash(hexColor) {
 
 function stopLcdPingFlash() {
   lcdFlashHex = null;
+  lcdFlashLabel = "Reception";
   lcdFlashVisible = false;
 
   if (lcdFlashTimer) {
@@ -2170,7 +2178,7 @@ async function renderNeoLcdFlashImage(hexColor) {
     width: 248,
     height: 58,
     accentHex: hexColor || "#0f766e",
-    label: "RECEPTION",
+    label: normalizeReceptionPingMessage(lcdFlashLabel).toUpperCase(),
   });
 
   if (canvasBuffer) {
@@ -2181,12 +2189,14 @@ async function renderNeoLcdFlashImage(hexColor) {
   const width = 248;
   const height = 58;
   const accent = hexColor || "#0f766e";
+  const label = normalizeReceptionPingMessage(lcdFlashLabel).toUpperCase();
+  const fontSize = label.length > 18 ? 14 : label.length > 12 ? 17 : 22;
 
   const svg = `
     <svg width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" xmlns="http://www.w3.org/2000/svg">
       <rect x="0" y="0" width="${width}" height="${height}" rx="10" fill="${accent}" />
       <rect x="4" y="4" width="${width - 8}" height="${height - 8}" rx="8" fill="#07110f" opacity="0.18" />
-      <text x="124" y="29" text-anchor="middle" dominant-baseline="middle" font-family="Avenir Next, Segoe UI, Arial, sans-serif" font-size="22" font-weight="800" fill="#ffffff">RECEPTION</text>
+      <text x="124" y="29" text-anchor="middle" dominant-baseline="middle" font-family="Avenir Next, Segoe UI, Arial, sans-serif" font-size="${fontSize}" font-weight="800" fill="#ffffff">${escapeXml(label)}</text>
     </svg>
   `;
 
@@ -2515,8 +2525,10 @@ async function renderNeoCanvasImage(payload) {
         ctx.textAlign = "center";
         ctx.textBaseline = "middle";
         ctx.fillStyle = "#ffffff";
-        ctx.font = "800 22px 'Segoe UI', 'Avenir Next', Arial, sans-serif";
-        ctx.fillText(String(payload.label || ""), payload.width / 2, payload.height / 2);
+        const label = String(payload.label || "");
+        const fontSize = label.length > 18 ? 14 : label.length > 12 ? 17 : 22;
+        ctx.font = "800 " + fontSize + "px 'Segoe UI', 'Avenir Next', Arial, sans-serif";
+        ctx.fillText(label, payload.width / 2, payload.height / 2);
       } else if (payload.kind === "lcd-party") {
         const colors = Array.isArray(payload.colors) ? payload.colors.filter(Boolean) : [];
         const headline = String(payload.headline || "");

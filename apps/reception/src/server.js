@@ -662,12 +662,15 @@ async function createReceptionServer({
         return;
       }
 
+      const currentConfig = getConfig();
+
       broadcast(clients, {
         type: "room:ping",
         payload: {
           roomId: room.id,
           roomName: room.name,
           roomShortName: room.shortName,
+          message: String(currentConfig?.display?.receptionPingMessage || "Reception").trim() || "Reception",
           pingedAt: new Date().toISOString(),
         },
       });

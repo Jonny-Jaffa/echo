@@ -32,6 +32,9 @@ contextBridge.exposeInMainWorld("pip", {
   onChatUpdate: (callback) => {
     ipcRenderer.on("chat:update", (_event, payload) => callback(payload));
   },
+  onMessagePopupOpen: (callback) => {
+    ipcRenderer.on("message-popup:open", (_event, payload) => callback(payload));
+  },
   onPingCleared: (callback) => {
     ipcRenderer.on("room:pingCleared", (_event, payload) => callback(payload));
   },

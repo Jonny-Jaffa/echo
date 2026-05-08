@@ -177,7 +177,9 @@ body[data-window-view="role"] .admin-panel {
   max-width: 200px;
 }
 
-.retention-hint {
+.retention-hint,
+.settings-hint {
+  margin: 0;
   font-size: 12px;
   color: var(--muted);
   line-height: 1.4;
@@ -816,8 +818,8 @@ select {
 }
 
 .compact-message-row .action-row {
-  grid-template-columns: 72px 48px;
-  min-width: 0;
+  grid-template-columns: 72px 48px 36px;
+  min-width: 132px;
 }
 
 
@@ -986,9 +988,9 @@ select {
 
 .room-alert-count {
   width: 8px;
-  font-size: 9px;
+  font-size: 12px;
   line-height: 1;
-  font-weight: 700;
+  font-weight: 600;
   color: var(--row-accent, var(--accent));
   text-align: center;
 }
@@ -1168,8 +1170,9 @@ body[data-admin-mode="true"] {
 }
 
 body[data-admin-mode="true"] .admin-panel {
-  min-height: calc(100vh - 10px);
-  max-height: calc(100vh - 10px);
+  height: 100vh;
+  min-height: 100vh;
+  max-height: 100vh;
   overflow: hidden;
 }
 

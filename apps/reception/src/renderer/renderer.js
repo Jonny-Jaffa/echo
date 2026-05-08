@@ -43,6 +43,7 @@ const selectedDeviceRoleLabel = document.querySelector("#selected-device-role-la
 const launchAtStartupInput = document.querySelector("#launch-at-startup-input");
 const alwaysOnTopInput = document.querySelector("#always-on-top-input");
 const messageRetentionInput = document.querySelector("#message-retention-input");
+const receptionPingMessageInput = document.querySelector("#reception-ping-message-input");
 const audioNotificationSoundInput = document.querySelector("#audio-notification-sound-input");
 const audioPlayTestButton = document.querySelector("#audio-play-test-button");
 const audioMasterVolumeInput = document.querySelector("#audio-master-volume-input");
@@ -96,6 +97,11 @@ const ROOM_COLOUR_PALETTE = [
   "#047857",
   "#475569",
 ];
+
+function normalizeReceptionPingMessage(value) {
+  const normalized = String(value || "").trim().replace(/\s+/g, " ").slice(0, 40);
+  return normalized || "Reception";
+}
 
 function hexToRgba(hex, alpha) {
   const normalized = String(hex || "").trim().replace(/^#/, "");
@@ -168,6 +174,10 @@ function getRoomById(roomId, state = appState) {
 
 function getVisibleRooms(state = appState) {
   return (state?.config?.rooms || []).filter((room) => !room.hidden);
+}
+
+function canUseAllRoomsThread(state = appState) {
+  return getVisibleRooms(state).length > 1;
 }
 
 function renderSelectedDeviceRole(roleState = appState?.app) {
@@ -493,6 +503,9 @@ function renderCompactAlertList(state, rooms, alerts) {
                 <button class="dismiss icon-confirm" data-action="${isActive ? "dismiss" : "dismiss-row"}" data-notification-id="${escapeHtml(alert.notificationId)}" type="button" aria-label="Confirm" title="Confirm">Confirm</button>
               </div>
             </div>
+            <div class="action-slot icon-slot">
+              <button class="dismiss secondary message-room-button ${unreadChatRoomIds.has(room.id) ? "is-unread" : ""}" data-action="message-room" data-room-id="${escapeHtml(room.id)}" type="button" aria-label="Message ${escapeHtml(room.name)}" title="Message ${escapeHtml(room.name)}">Message</button>
+            </div>
           </div>
         </article>
       `;
@@ -547,6 +560,10 @@ function getRelevantChatMessages(state) {
 }
 
 function isReceptionAllRoomsMessage(message, state = appState) {
+  if (!canUseAllRoomsThread(state)) {
+    return false;
+  }
+
   if (String(message?.senderType || "").trim() !== "reception") {
     return false;
   }
@@ -563,13 +580,17 @@ function isReceptionAllRoomsMessage(message, state = appState) {
   )];
 
   return (
-    roomIds.length > 0 &&
+    roomIds.length > 1 &&
     recipientRoomIds.length === roomIds.length &&
     roomIds.every((roomId) => recipientRoomIds.includes(roomId))
   );
 }
 
 function isRoomAllRoomsMessage(message, state = appState) {
+  if (!canUseAllRoomsThread(state)) {
+    return false;
+  }
+
   if (String(message?.senderType || "").trim() !== "room" || !message?.sendToReception) {
     return false;
   }
@@ -598,7 +619,7 @@ function isRoomAllRoomsMessage(message, state = appState) {
 }
 
 function areAllRoomsSelected(state = appState) {
-  return isAllChatRoomsThreadSelected && getVisibleRooms(state).length > 0;
+  return isAllChatRoomsThreadSelected && canUseAllRoomsThread(state);
 }
 
 function getActiveSingleChatRoom(state = appState) {
@@ -621,9 +642,20 @@ function selectChatRoom(roomId) {
 }
 
 function selectAllChatRooms(state = appState) {
-  isAllChatRoomsThreadSelected = getVisibleRooms(state).length > 0;
+  isAllChatRoomsThreadSelected = canUseAllRoomsThread(state);
   selectedChatRoomIds.clear();
   hasUnreadAllRoomsMessage = false;
+}
+
+function selectHeaderMessageTarget(state = appState) {
+  const rooms = getVisibleRooms(state);
+
+  if (rooms.length === 1) {
+    selectChatRoom(rooms[0].id);
+    return;
+  }
+
+  selectAllChatRooms(state);
 }
 
 function persistMessageSectionVisibility() {
@@ -659,6 +691,7 @@ function syncMessageSectionVisibility() {
 function syncMessageContext(state = appState) {
   const activeRoom = getActiveSingleChatRoom(state);
   const isAllRoomsSelected = areAllRoomsSelected(state);
+  const canShowAllRoomsThread = canUseAllRoomsThread(state);
   const accent = isAllRoomsSelected ? "#879293" : activeRoom?.color || "var(--accent)";
   const label = isAllRoomsSelected
     ? "All Rooms"
@@ -677,9 +710,19 @@ function syncMessageContext(state = appState) {
   }
 
   chatAllRoomsButton?.classList.toggle("is-active", isAllRoomsSelected);
-  chatAllRoomsButton?.classList.toggle("is-hidden", isAllRoomsSelected);
-  chatAllRoomsButton?.classList.toggle("is-unread", hasUnreadAllRoomsMessage && !isAllRoomsSelected);
-  chatAllHeaderButton?.classList.toggle("is-unread", hasUnreadAllRoomsMessage && !isAllRoomsSelected);
+  chatAllRoomsButton?.classList.toggle("is-hidden", !canShowAllRoomsThread || isAllRoomsSelected);
+  chatAllRoomsButton?.classList.toggle("is-unread", canShowAllRoomsThread && hasUnreadAllRoomsMessage && !isAllRoomsSelected);
+  chatAllHeaderButton?.classList.toggle("is-unread", canShowAllRoomsThread && hasUnreadAllRoomsMessage && !isAllRoomsSelected);
+  if (chatAllHeaderButton) {
+    const singleRoom = getVisibleRooms(state)[0] || null;
+    const headerLabel = canShowAllRoomsThread
+      ? "Message All Rooms"
+      : singleRoom
+        ? `Message ${singleRoom.name}`
+        : "Message rooms";
+    chatAllHeaderButton.setAttribute("aria-label", headerLabel);
+    chatAllHeaderButton.setAttribute("title", headerLabel);
+  }
 
   if (!chatCard) {
     return;
@@ -787,6 +830,8 @@ function renderChatRecipients(state) {
   }
   if (rooms.length === 0) {
     isAllChatRoomsThreadSelected = false;
+  } else if (!canUseAllRoomsThread(state) && isAllChatRoomsThreadSelected) {
+    selectChatRoom(rooms[0].id);
   }
   pinnedChatRoomIds = pinnedChatRoomIds.filter((roomId) => roomIds.includes(roomId));
   chatRoomOrderIds = [
@@ -797,6 +842,7 @@ function renderChatRecipients(state) {
   saveChatRoomOrderIds();
 
   const allRoomsSelected = areAllRoomsSelected(state);
+  const canShowAllRoomsThread = canUseAllRoomsThread(state);
   const orderedRooms = orderRoomsByIds(rooms, chatRoomOrderIds);
   const visibleRoomIds = [
     ...pinnedChatRoomIds,
@@ -832,17 +878,18 @@ function renderChatRecipients(state) {
 
   if (chatRecipientDrawerList) {
     chatRecipientDrawerList.innerHTML = `
-      <div class="message-thread-drawer-item ${allRoomsSelected ? "is-active" : ""}">
-        <button
-          class="message-thread-drawer-select"
-          data-chat-all="true"
-          type="button"
-          ${rooms.length === 0 ? "disabled" : ""}
-        >
-          All Rooms
-        </button>
-        <span></span>
-      </div>
+      ${canShowAllRoomsThread
+        ? `<div class="message-thread-drawer-item ${allRoomsSelected ? "is-active" : ""}">
+            <button
+              class="message-thread-drawer-select"
+              data-chat-all="true"
+              type="button"
+            >
+              All Rooms
+            </button>
+            <span></span>
+          </div>`
+        : ""}
       ${orderedRooms.map((room) => {
         const isPinned = pinnedChatRoomIds.includes(room.id);
         const isUnread =
@@ -1041,6 +1088,16 @@ function updateChatComposerScrollbar() {
   compose.style.setProperty("--compose-scrollbar-thumb-height", `${Math.round(thumbHeight)}px`);
 }
 
+function focusChatComposer() {
+  if (!chatComposeInput || !isMessageSectionVisible) {
+    return;
+  }
+
+  chatComposeInput.focus({ preventScroll: true });
+  const textLength = chatComposeInput.value.length;
+  chatComposeInput.setSelectionRange(textLength, textLength);
+}
+
 function applyState(state) {
   appState = state;
 
@@ -1196,6 +1253,9 @@ function populateEditor(config) {
   alwaysOnTopInput.checked = Boolean(draftConfig.display.alwaysOnTop);
   if (messageRetentionInput) {
     messageRetentionInput.value = String(draftConfig.display?.messageRetentionMinutes ?? 60);
+  }
+  if (receptionPingMessageInput) {
+    receptionPingMessageInput.value = normalizeReceptionPingMessage(draftConfig.display?.receptionPingMessage);
   }
   populateReceptionSoundSelectOptions(draftConfig.audio?.notificationSound);
   populateMessageSoundSelectOptions(draftConfig.audio?.messageSound);
@@ -1450,6 +1510,7 @@ function buildConfigFromForm() {
       launchAtStartup: launchAtStartupInput.checked,
       alwaysOnTop: alwaysOnTopInput.checked,
       messageRetentionMinutes: Number(messageRetentionInput?.value) || 60,
+      receptionPingMessage: normalizeReceptionPingMessage(receptionPingMessageInput?.value),
       adminMode: false,
     },
     audio: {
@@ -1827,14 +1888,21 @@ chatComposeInput?.addEventListener("scroll", updateChatComposerScrollbar, { pass
 chatMessageList?.addEventListener("scroll", updateChatScrollbar, { passive: true });
 
 chatAllHeaderButton?.addEventListener("click", () => {
-  if (isMessageSectionVisible && areAllRoomsSelected(appState)) {
+  const visibleRooms = getVisibleRooms(appState);
+  const isSingleRoomSelected =
+    visibleRooms.length === 1 &&
+    !isAllChatRoomsThreadSelected &&
+    selectedChatRoomIds.size === 1 &&
+    selectedChatRoomIds.has(visibleRooms[0].id);
+
+  if (isMessageSectionVisible && (areAllRoomsSelected(appState) || isSingleRoomSelected)) {
     hideMessageSection({ persist: true });
     renderAlertList(appState);
     reportGadgetHeight();
     return;
   }
 
-  selectAllChatRooms(appState);
+  selectHeaderMessageTarget(appState);
   showMessageSection({ persist: true });
   renderAlertList(appState);
   renderChatRecipients(appState);
@@ -1850,6 +1918,17 @@ chatCollapseButton?.addEventListener("click", () => {
 });
 
 chatAllRoomsButton?.addEventListener("click", () => {
+  if (!canUseAllRoomsThread(appState)) {
+    selectHeaderMessageTarget(appState);
+    showMessageSection({ persist: true });
+    renderAlertList(appState);
+    renderChatRecipients(appState);
+    renderChatMessages(appState);
+    syncChatComposerState();
+    reportGadgetHeight();
+    return;
+  }
+
   selectAllChatRooms(appState);
   showMessageSection({ persist: true });
   renderAlertList(appState);
@@ -1918,6 +1997,10 @@ document.body.addEventListener("click", (event) => {
   const chatAllChip = target.closest("[data-chat-all]");
 
   if (chatAllChip) {
+    if (!canUseAllRoomsThread(appState)) {
+      return;
+    }
+
     if (isAllChatRoomsThreadSelected) {
       isAllChatRoomsThreadSelected = false;
       selectedChatRoomIds.clear();
@@ -2163,6 +2246,25 @@ openRoleWindowButton?.addEventListener("click", async () => {
 });
 
 window.pip.onStateUpdate(applyState);
+window.pip.onMessagePopupOpen?.((payload = {}) => {
+  if (!appState) {
+    return;
+  }
+
+  const roomId = String(payload.roomId || "").trim();
+
+  if (roomId) {
+    selectChatRoom(roomId);
+  }
+
+  showMessageSection({ persist: true });
+  renderAlertList(appState);
+  renderChatRecipients(appState);
+  renderChatMessages(appState);
+  syncChatComposerState();
+  reportGadgetHeight();
+  requestAnimationFrame(focusChatComposer);
+});
 window.pip.onChatUpdate((messages) => {
   if (!appState) {
     return;

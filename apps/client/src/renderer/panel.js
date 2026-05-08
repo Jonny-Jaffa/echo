@@ -137,6 +137,7 @@ const DEFAULT_RIGHT_AUX_SETTING = {
 const ROOM_ACTION_BUTTON_COUNT = 8;
 const DEFAULT_ROOM_ALERT_SOUND = "notification_sound_01";
 const MAX_MESSAGE_GROUP_NAME_LENGTH = 24;
+const CONFIGURED_MESSAGE_GROUPS_ENABLED = false;
 const DEFAULT_PINNED_MESSAGE_THREAD_KEYS = [];
 const LEGACY_ROOM_ALERT_SOUND_ALIASES = {
   ping: "notification_sound_01",
@@ -204,6 +205,7 @@ let isPanelDisplayModeMenuVisible = false;
 let isEditingMessage = false;
 let messageSound = DEFAULT_ROOM_ALERT_SOUND;
 let messageVolume = 80;
+let currentReceptionPingMessage = "Reception";
 const activeNotificationsByButtonId = new Map();
 const activeLocalAlertPlayers = new Set();
 
@@ -242,6 +244,14 @@ function getMessageThreadAccent(thread) {
 
 function getVisibleConfigRooms() {
   return (configState?.rooms || []).filter((room) => !room.hidden);
+}
+
+function canUseAllRoomsMessageThread() {
+  return getVisibleConfigRooms().length > 1;
+}
+
+function canUseMessageThreadRail() {
+  return getVisibleConfigRooms().length > 1;
 }
 
 function renderSelectedDeviceRole(settings = panelSettings) {
@@ -320,6 +330,15 @@ function normalizeHexColor(value, fallback) {
   }
 
   return fallback;
+}
+
+function normalizeReceptionPingMessage(value) {
+  const normalized = String(value || "").trim().replace(/\s+/g, " ").slice(0, 40);
+  return normalized || "Reception";
+}
+
+function getReceptionPingMessage() {
+  return normalizeReceptionPingMessage(currentReceptionPingMessage);
 }
 
 function normalizeButtonBackground(value, fallback) {
@@ -530,6 +549,10 @@ function normalizeRoomMessageGroup(messageGroup, index, roomId = "") {
 }
 
 function normalizeRoomMessageGroups(roomMessageGroupsMap) {
+  if (!CONFIGURED_MESSAGE_GROUPS_ENABLED) {
+    return {};
+  }
+
   if (!roomMessageGroupsMap || typeof roomMessageGroupsMap !== "object") {
     return {};
   }
@@ -635,6 +658,7 @@ function loadMessageThreadRailCollapsed() {
 function setMessageThreadRailCollapsed(collapsed) {
   isMessageThreadRailCollapsed = Boolean(collapsed);
   document.body.dataset.threadRailCollapsed = isMessageThreadRailCollapsed ? "true" : "false";
+  document.body.dataset.threadRailAvailable = canUseMessageThreadRail() ? "true" : "false";
   localStorage.setItem(
     MESSAGE_THREAD_RAIL_COLLAPSED_STORAGE_KEY,
     isMessageThreadRailCollapsed ? "true" : "false",
@@ -1097,13 +1121,16 @@ function connectSocket() {
       message.type === "room:ping" &&
       message.payload?.roomId === roomSelect.value
     ) {
+      currentReceptionPingMessage = normalizeReceptionPingMessage(message.payload?.message);
       playRoomAlertSound(message.payload.roomId).catch(() => {});
       showReceptionPingBanner();
+      window.pipPanel.showMessagePopup?.(getReceptionPingPopupPayload()).catch(() => {});
       return;
     }
 
     if (message.type === "room:pingCleared") {
       hideReceptionPingBanner();
+      window.pipPanel.closeReceptionPingPopup?.().catch(() => {});
       return;
     }
 
@@ -1128,6 +1155,7 @@ function connectSocket() {
 
     if (message.type === "chat:message" && message.payload) {
       const threadKey = getIncomingMessageThreadKey(message.payload);
+      const shouldNotifyIncomingChat = shouldPlayIncomingChatSound(message.payload);
       const shouldRevealIncomingThread =
         threadKey &&
         threadKey !== (activeMessageThreadKey || "reception") &&
@@ -1137,8 +1165,11 @@ function connectSocket() {
         unreadMessageThreadKeys.add(threadKey);
       }
 
-      if (shouldPlayIncomingChatSound(message.payload)) {
+      if (shouldNotifyIncomingChat) {
         playRoomMessageSound().catch(() => {});
+        window.pipPanel.showMessagePopup?.(
+          getIncomingMessagePopupPayload(message.payload, threadKey),
+        ).catch(() => {});
       }
       chatMessages = [...chatMessages, message.payload].slice(-200);
       renderMessageThreads();
@@ -1208,7 +1239,11 @@ function getIncomingMessageThreadKey(message) {
     return "reception";
   }
 
-  if (senderType === "room" && String(message?.messageGroupKey || "").trim()) {
+  if (
+    CONFIGURED_MESSAGE_GROUPS_ENABLED &&
+    senderType === "room" &&
+    String(message?.messageGroupKey || "").trim()
+  ) {
     return `group:${String(message.messageGroupKey).trim()}`;
   }
 
@@ -1221,6 +1256,24 @@ function getIncomingMessageThreadKey(message) {
   }
 
   return "";
+}
+
+function getIncomingMessagePopupPayload(message, threadKey = "") {
+  const senderType = String(message?.senderType || "").trim();
+  const senderRoomId = String(message?.senderRoomId || "").trim();
+  const senderRoom = configState?.rooms?.find((room) => room.id === senderRoomId) || null;
+  const sourceLabel =
+    senderType === "reception"
+      ? "Rec"
+      : String(message?.senderShortLabel || senderRoom?.shortName || senderRoom?.name || "Room").trim();
+
+  return {
+    messageId: String(message?.messageId || "").trim(),
+    threadKey: String(threadKey || getIncomingMessageThreadKey(message)).trim(),
+    sourceLabel: sourceLabel.slice(0, NEO_BUTTON_LABEL_MAX_LENGTH) || "Msg",
+    text: String(message?.text || "New message").trim(),
+    accentColor: getIncomingMessageBubbleColor(message),
+  };
 }
 
 function sendIdentify() {
@@ -1279,6 +1332,10 @@ function getCurrentMessageRoom() {
 }
 
 function getCurrentRoomMessageGroups() {
+  if (!CONFIGURED_MESSAGE_GROUPS_ENABLED) {
+    return [];
+  }
+
   const currentRoomId = getCurrentMessageRoomId();
   return currentRoomId ? roomMessageGroups?.[currentRoomId] || [] : [];
 }
@@ -1334,6 +1391,10 @@ function getConfiguredMessageGroupThreads(currentRoomId) {
 }
 
 function getObservedMessageGroupThreads(currentRoomId) {
+  if (!CONFIGURED_MESSAGE_GROUPS_ENABLED) {
+    return [];
+  }
+
   const threadsByKey = new Map();
 
   chatMessages.forEach((message) => {
@@ -1385,6 +1446,10 @@ function isMessageInCurrentRoomContext(message, currentRoomId) {
 }
 
 function isAllRoomsMessage(message) {
+  if (!canUseAllRoomsMessageThread()) {
+    return false;
+  }
+
   if (String(message?.senderType || "").trim() !== "room") {
     return isReceptionAllRoomsMessage(message);
   }
@@ -1405,10 +1470,14 @@ function isAllRoomsMessage(message) {
     .filter((roomId) => roomId && roomId !== senderRoomId)
     .sort();
 
-  return recipientRoomIds.join("|") === allOtherRoomIds.join("|");
+  return allOtherRoomIds.length > 0 && recipientRoomIds.join("|") === allOtherRoomIds.join("|");
 }
 
 function isReceptionAllRoomsMessage(message) {
+  if (!canUseAllRoomsMessageThread()) {
+    return false;
+  }
+
   if (String(message?.senderType || "").trim() !== "reception") {
     return false;
   }
@@ -1428,7 +1497,7 @@ function isReceptionAllRoomsMessage(message) {
   )].sort();
 
   return (
-    roomIds.length > 0 &&
+    roomIds.length > 1 &&
     recipientRoomIds.length === roomIds.length &&
     roomIds.every((roomId) => recipientRoomIds.includes(roomId))
   );
@@ -1497,7 +1566,7 @@ function getMessageThreadItems() {
   });
   const threads = [
     { key: "reception", label: "Reception", shortLabel: "Rec" },
-    { key: "all", label: "All" },
+    ...(canUseAllRoomsMessageThread() ? [{ key: "all", label: "All" }] : []),
     ...groupThreadsByKey.values(),
     ...rooms.map((room) => ({ key: room.id, label: room.name, shortLabel: getRoomShortLabel(room) })),
   ];
@@ -1573,7 +1642,11 @@ function renderMessageThreads() {
   const threads = ensureActiveMessageThread();
   syncMessageThreadOrder(threads);
   const orderedThreads = orderMessageThreads(threads);
-  const shouldShowRail = orderedThreads.length > 0 && (panelDisplayMode === "messages" || panelDisplayMode === "both");
+  const shouldShowRail =
+    canUseMessageThreadRail() &&
+    orderedThreads.length > 0 &&
+    (panelDisplayMode === "messages" || panelDisplayMode === "both");
+  document.body.dataset.threadRailAvailable = canUseMessageThreadRail() ? "true" : "false";
   messageThreadList.closest(".message-thread-bar")?.classList.toggle("hidden", !shouldShowRail);
   messageThreadList.innerHTML = orderedThreads
     .map((thread) => `
@@ -1989,6 +2062,16 @@ function updateMessageComposerScrollbar() {
   compose.style.setProperty("--compose-scrollbar-left", `${Math.round(thumbLeft)}px`);
   compose.style.setProperty("--compose-scrollbar-top", `${Math.round(thumbTop)}px`);
   compose.style.setProperty("--compose-scrollbar-thumb-height", `${Math.round(thumbHeight)}px`);
+}
+
+function focusMessageComposer() {
+  if (!messageComposeInput || messageShell?.classList.contains("hidden")) {
+    return;
+  }
+
+  messageComposeInput.focus({ preventScroll: true });
+  const textLength = messageComposeInput.value.length;
+  messageComposeInput.setSelectionRange(textLength, textLength);
 }
 
 function updateMessageScrollbar() {
@@ -2786,6 +2869,19 @@ function renderMessageGroupSettings() {
     return;
   }
 
+  const messageGroupSettingsCard = messageGroupList.closest(".message-group-settings-card");
+
+  if (!CONFIGURED_MESSAGE_GROUPS_ENABLED) {
+    messageGroupSettingsCard?.style.setProperty("display", "none");
+    addMessageGroupButton?.style.setProperty("display", "none");
+    messageGroupList.dataset.roomSettingsId = "";
+    messageGroupList.innerHTML = "";
+    return;
+  }
+
+  messageGroupSettingsCard?.style.removeProperty("display");
+  addMessageGroupButton?.style.removeProperty("display");
+
   const currentRoomId = getCurrentMessageRoomId();
   messageGroupList.dataset.roomSettingsId = currentRoomId || "";
   const availableRooms = getVisibleConfigRooms().filter((room) => room.id !== currentRoomId);
@@ -2847,6 +2943,10 @@ function renderMessageGroupSettings() {
 }
 
 function shouldRenderMessageGroupSettings() {
+  if (!CONFIGURED_MESSAGE_GROUPS_ENABLED) {
+    return false;
+  }
+
   if (!messageGroupList) {
     return false;
   }
@@ -2866,6 +2966,10 @@ function shouldRenderMessageGroupSettings() {
 }
 
 function updateRoomMessageGroup(currentRoomId, groupId, updater) {
+  if (!CONFIGURED_MESSAGE_GROUPS_ENABLED) {
+    return;
+  }
+
   const groups = roomMessageGroups?.[currentRoomId] || [];
   roomMessageGroups = {
     ...roomMessageGroups,
@@ -2880,6 +2984,10 @@ function updateRoomMessageGroup(currentRoomId, groupId, updater) {
 }
 
 function addRoomMessageGroup(currentRoomId) {
+  if (!CONFIGURED_MESSAGE_GROUPS_ENABLED) {
+    return;
+  }
+
   const availableRooms = getVisibleConfigRooms().filter((room) => room.id !== currentRoomId);
   const firstTargetRoom = availableRooms[0]?.id || "";
 
@@ -2901,6 +3009,18 @@ function addRoomMessageGroup(currentRoomId) {
 }
 
 async function persistMessageGroups() {
+  if (!CONFIGURED_MESSAGE_GROUPS_ENABLED) {
+    roomMessageGroups = {};
+    panelSettings = {
+      ...(panelSettings || {}),
+      roomMessageGroups: {},
+    };
+    await window.pipPanel.updateSettings({
+      roomMessageGroups: {},
+    }).catch(() => {});
+    return;
+  }
+
   panelSettings = {
     ...(panelSettings || {}),
     roomMessageGroups: { ...roomMessageGroups },
@@ -3057,6 +3177,35 @@ function getResolvedPanelButtons() {
   return buttons;
 }
 
+function getReceptionPingPopupPayload() {
+  const alertMessage = getReceptionPingMessage();
+
+  return {
+    kind: "receptionPing",
+    openMode: "receptionPing",
+    sourceLabel: "Rec",
+    text: alertMessage,
+    accentColor: "#111111",
+    buttons: getResolvedPanelButtons().map((button) => ({
+      id: button.id,
+      label: button.label,
+      buttonLabel: button.buttonLabel,
+      isActive: Boolean(button.isActive),
+      disabled: Boolean(button.disabled),
+    })),
+    buttonAppearance: getButtonAppearanceSettings(),
+    maxLabelLength: NEO_BUTTON_LABEL_MAX_LENGTH,
+  };
+}
+
+function refreshReceptionPingPopup() {
+  if (!receptionPingBanner || receptionPingBanner.classList.contains("hidden")) {
+    return;
+  }
+
+  window.pipPanel.showMessagePopup?.(getReceptionPingPopupPayload()).catch(() => {});
+}
+
 function renderButton(button, options = {}) {
   const interactive = options.interactive !== false;
   const buttonAppearance = getButtonAppearanceSettings();
@@ -3191,6 +3340,7 @@ async function sendPanelAction(buttonId) {
     actionId: action.id,
   });
   renderButtons();
+  refreshReceptionPingPopup();
 }
 
 async function cancelPanelAction(buttonId, notificationId) {
@@ -3215,6 +3365,7 @@ async function cancelPanelAction(buttonId, notificationId) {
 
   activeNotificationsByButtonId.delete(buttonId);
   renderButtons();
+  refreshReceptionPingPopup();
 }
 
 async function clearStartupNotifications() {
@@ -3322,6 +3473,7 @@ function handleNotificationResolution(payload) {
       if (trackedNotification?.notificationId === notificationId) {
         activeNotificationsByButtonId.delete(buttonId);
         renderButtons();
+        refreshReceptionPingPopup();
         return;
       }
     }
@@ -3336,6 +3488,7 @@ function handleNotificationResolution(payload) {
   if (activeNotificationsByButtonId.has(actionId)) {
     activeNotificationsByButtonId.delete(actionId);
     renderButtons();
+    refreshReceptionPingPopup();
   }
 }
 
@@ -3355,6 +3508,7 @@ function handleNotificationActivated(payload) {
     actionId,
   });
   renderButtons();
+  refreshReceptionPingPopup();
 }
 
 function clearAllPanelNotifications() {
@@ -3366,6 +3520,7 @@ function showReceptionPingBanner() {
   if (!receptionPingBanner) {
     return;
   }
+  receptionPingBanner.textContent = getReceptionPingMessage();
   receptionPingBanner.classList.remove("hidden");
   document.body.dataset.bannerVisible = "true";
   window.pipPanel?.setBannerVisible?.(true);
@@ -3489,7 +3644,7 @@ async function init() {
     launchAtStartupInput.checked = Boolean(persistedSettings?.launchAtStartup);
   }
   if (showPanelAtStartupInput) {
-    showPanelAtStartupInput.checked = Boolean(persistedSettings?.showPanelAtStartup);
+    showPanelAtStartupInput.checked = !Boolean(persistedSettings?.showPanelAtStartup);
   }
   if (alwaysOnTopInput) {
     alwaysOnTopInput.checked = Boolean(persistedSettings?.alwaysOnTop);
@@ -3825,6 +3980,68 @@ messageSendButton?.addEventListener("click", async () => {
   }
 });
 
+window.pipPanel.onMessagePopupOpen?.((payload = {}) => {
+  const openMode = String(payload.openMode || "").trim();
+  const normalizedOpenMode = normalizePanelDisplayMode(openMode);
+
+  if (payload.kind === "receptionPing" && openMode === "messages") {
+    const nextMode = panelDisplayMode === "buttons" || panelDisplayMode === "both"
+      ? "both"
+      : "messages";
+    clearReceptionPing();
+    setPanelDisplayMode(nextMode, { persist: false })
+      .then(() => requestAnimationFrame(focusMessageComposer))
+      .catch(() => requestAnimationFrame(focusMessageComposer));
+    return;
+  }
+
+  if (openMode && normalizedOpenMode === "messages") {
+    setPanelDisplayMode("messages", { persist: false }).catch(() => {});
+    return;
+  }
+
+  if (openMode && normalizedOpenMode === "buttons") {
+    setPanelDisplayMode("buttons", { persist: false }).catch(() => {});
+    return;
+  }
+
+  const threadKey = String(payload.threadKey || "").trim();
+  const selectTargetThread = () => {
+    if (threadKey) {
+      selectMessageThread(threadKey);
+      revealMessageThreadInRail(threadKey);
+    }
+    requestAnimationFrame(focusMessageComposer);
+  };
+
+  if (panelDisplayMode === "buttons") {
+    setPanelDisplayMode("both", { persist: false })
+      .then(selectTargetThread)
+      .catch(selectTargetThread);
+    return;
+  }
+
+  selectTargetThread();
+});
+
+window.pipPanel.onMessagePopupPanelAction?.((payload = {}) => {
+  const buttonId = String(payload.buttonId || "").trim();
+
+  if (!buttonId) {
+    return;
+  }
+
+  clearReceptionPing();
+  sendPanelAction(buttonId).catch((error) => {
+    console.error(error);
+    refreshReceptionPingPopup();
+  });
+});
+
+window.pipPanel.onMessagePopupDismissReceptionPing?.(() => {
+  clearReceptionPing();
+});
+
 roomSelect.addEventListener("change", async () => {
   preferredRoomId = roomSelect.value;
   if (setupRoomSelect) {
@@ -3936,7 +4153,7 @@ launchAtStartupInput?.addEventListener("change", async () => {
 
 showPanelAtStartupInput?.addEventListener("change", async () => {
   await window.pipPanel.updateSettings({
-    showPanelAtStartup: showPanelAtStartupInput.checked,
+    showPanelAtStartup: !showPanelAtStartupInput.checked,
   }).catch(() => {});
 });
 
@@ -3975,6 +4192,10 @@ settingsSidebarLinks.forEach((link) => {
 });
 
 addMessageGroupButton?.addEventListener("click", async () => {
+  if (!CONFIGURED_MESSAGE_GROUPS_ENABLED) {
+    return;
+  }
+
   const currentRoomId = getCurrentMessageRoomId();
 
   if (!currentRoomId) {
@@ -3988,6 +4209,10 @@ addMessageGroupButton?.addEventListener("click", async () => {
 });
 
 messageGroupList?.addEventListener("input", (event) => {
+  if (!CONFIGURED_MESSAGE_GROUPS_ENABLED) {
+    return;
+  }
+
   lockRoomSettingsRefresh();
   const target = event.target;
 
@@ -4010,6 +4235,10 @@ messageGroupList?.addEventListener("input", (event) => {
 });
 
 messageGroupList?.addEventListener("change", async (event) => {
+  if (!CONFIGURED_MESSAGE_GROUPS_ENABLED) {
+    return;
+  }
+
   lockRoomSettingsRefresh();
   const target = event.target;
 
@@ -4042,6 +4271,10 @@ messageGroupList?.addEventListener("change", async (event) => {
 });
 
 messageGroupList?.addEventListener("click", async (event) => {
+  if (!CONFIGURED_MESSAGE_GROUPS_ENABLED) {
+    return;
+  }
+
   lockRoomSettingsRefresh();
   const target = event.target;
 
@@ -4072,10 +4305,18 @@ messageGroupList?.addEventListener("click", async (event) => {
 });
 
 messageGroupList?.addEventListener("focusin", () => {
+  if (!CONFIGURED_MESSAGE_GROUPS_ENABLED) {
+    return;
+  }
+
   lockRoomSettingsRefresh();
 });
 
 messageGroupList?.addEventListener("pointerdown", () => {
+  if (!CONFIGURED_MESSAGE_GROUPS_ENABLED) {
+    return;
+  }
+
   lockRoomSettingsRefresh();
 });
 
@@ -4416,10 +4657,18 @@ messageThreadScrollRight?.addEventListener("click", () => {
 });
 
 threadRailToggleButton?.addEventListener("click", () => {
+  if (!canUseMessageThreadRail()) {
+    return;
+  }
+
   setMessageThreadRailCollapsed(!isMessageThreadRailCollapsed);
 });
 
 messageContextLabel?.addEventListener("click", (event) => {
+  if (!canUseMessageThreadRail()) {
+    return;
+  }
+
   const labelRect = messageContextLabel.getBoundingClientRect();
 
   if (event.clientX - labelRect.left <= 55) {

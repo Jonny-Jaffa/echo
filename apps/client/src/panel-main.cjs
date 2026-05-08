@@ -18,6 +18,11 @@ const SURGERY_WINDOW_BOTH_HEIGHT = 580;
 const SURGERY_BANNER_HEIGHT = 50;
 const SURGERY_SETTINGS_WINDOW_HEIGHT = 800;
 const DEFAULT_SURGERY_SOUND = "notification_sound_01";
+const MESSAGE_POPUP_WIDTH = 340;
+const MESSAGE_POPUP_MIN_HEIGHT = 62;
+const MESSAGE_POPUP_MAX_HEIGHT = 126;
+const RECEPTION_PING_POPUP_HEIGHT = 218;
+const MESSAGE_POPUP_MARGIN = 18;
 const SURGERY_SOUND_FILE_MAP = Object.fromEntries(
   Array.from({ length: 17 }, (_value, index) => {
     const soundNumber = String(index + 1).padStart(2, "0");
@@ -51,6 +56,7 @@ const DEFAULT_RIGHT_AUX_SETTING = {
 const ROOM_ACTION_BUTTON_COUNT = 8;
 const NEO_BUTTON_LABEL_MAX_LENGTH = 7;
 const MAX_MESSAGE_GROUP_NAME_LENGTH = 24;
+const CONFIGURED_MESSAGE_GROUPS_ENABLED = false;
 const DEFAULT_PINNED_MESSAGE_THREAD_KEYS = [];
 const RUNTIME_ROLE_ROOM = "room";
 const RUNTIME_ROLE_RECEPTION = "reception";
@@ -118,8 +124,11 @@ let clientHardwareStatus = {
 };
 let tray = null;
 let aboutWindow = null;
+let messagePopupWindow = null;
+let latestMessagePopupPayload = null;
 let isQuitting = false;
 let isSettingsPanelExpanded = false;
+let currentPanelDisplayMode = "messages";
 let preExpandWindowPosition = null;
 let clientSettings = {
   runtimeRole: RUNTIME_ROLE_ROOM,
@@ -230,6 +239,10 @@ function normalizeRoomMessageGroup(messageGroup, index, roomId = "") {
 }
 
 function normalizeRoomMessageGroups(roomMessageGroups) {
+  if (!CONFIGURED_MESSAGE_GROUPS_ENABLED) {
+    return {};
+  }
+
   if (!roomMessageGroups || typeof roomMessageGroups !== "object") {
     return {};
   }
@@ -253,6 +266,14 @@ function normalizeRoomMessageGroups(roomMessageGroups) {
         return [normalizedRoomId, groups];
       })
       .filter(Boolean),
+  );
+}
+
+function hasConfiguredRoomMessageGroupSettings(roomMessageGroups) {
+  return Boolean(
+    roomMessageGroups &&
+    typeof roomMessageGroups === "object" &&
+    Object.keys(roomMessageGroups).length > 0
   );
 }
 
@@ -475,6 +496,9 @@ function createWindow({ showInitially = true } = {}) {
   mainWindow.on("closed", () => {
     mainWindow = null;
   });
+  mainWindow.on("focus", () => {
+    closeMessagePopup();
+  });
 }
 
 function createSettingsWindow() {
@@ -660,6 +684,9 @@ function loadClientSettings() {
 
   try {
     const parsed = JSON.parse(fs.readFileSync(resolvedSettingsPath, "utf8"));
+    const shouldPurgeConfiguredMessageGroups =
+      !CONFIGURED_MESSAGE_GROUPS_ENABLED &&
+      hasConfiguredRoomMessageGroupSettings(parsed.roomMessageGroups);
     if (resolvedSettingsPath !== settingsPath) {
       fs.mkdirSync(path.dirname(settingsPath), { recursive: true });
       fs.copyFileSync(resolvedSettingsPath, settingsPath);
@@ -707,6 +734,10 @@ function loadClientSettings() {
       roomPinnedMessageThreads: normalizeRoomPinnedMessageThreads(parsed.roomPinnedMessageThreads),
       panelDisplayMode: normalizePanelDisplayMode(parsed.panelDisplayMode),
     };
+    currentPanelDisplayMode = clientSettings.panelDisplayMode;
+    if (shouldPurgeConfiguredMessageGroups) {
+      saveClientSettings();
+    }
   } catch {
     // Ignore corrupt settings and fall back to defaults/env.
   }
@@ -920,6 +951,169 @@ function showMainWindow() {
   mainWindow.setAlwaysOnTop(Boolean(clientSettings.alwaysOnTop));
   mainWindow.focus();
   refreshTrayMenu();
+}
+
+function estimateMessagePopupHeight(text = "") {
+  const normalizedText = String(text || "").trim();
+  const explicitLineCount = normalizedText
+    ? normalizedText.split(/\r?\n/).length
+    : 1;
+  const wrappedLineCount = Math.ceil(normalizedText.length / 32) || 1;
+  const lineCount = Math.max(explicitLineCount, wrappedLineCount);
+
+  return Math.min(
+    MESSAGE_POPUP_MAX_HEIGHT,
+    MESSAGE_POPUP_MIN_HEIGHT + Math.max(0, lineCount - 1) * 22,
+  );
+}
+
+function getMessagePopupBounds(options = {}) {
+  const popupHeight = Math.max(
+    MESSAGE_POPUP_MIN_HEIGHT,
+    Math.round(Number(options.height) || MESSAGE_POPUP_MIN_HEIGHT),
+  );
+  const popupWidth = Math.max(260, Math.round(Number(options.width) || MESSAGE_POPUP_WIDTH));
+  const referenceBounds =
+    mainWindow && !mainWindow.isDestroyed()
+      ? mainWindow.getBounds()
+      : null;
+  const targetDisplay = referenceBounds
+    ? screen.getDisplayMatching(referenceBounds)
+    : screen.getPrimaryDisplay();
+  const workArea = targetDisplay.workArea;
+
+  return {
+    x: workArea.x + workArea.width - popupWidth - MESSAGE_POPUP_MARGIN,
+    y: workArea.y + workArea.height - popupHeight - MESSAGE_POPUP_MARGIN,
+    width: popupWidth,
+    height: popupHeight,
+  };
+}
+
+function createMessagePopupWindow() {
+  if (messagePopupWindow && !messagePopupWindow.isDestroyed()) {
+    return messagePopupWindow;
+  }
+
+  messagePopupWindow = new BrowserWindow({
+    ...getMessagePopupBounds(),
+    show: false,
+    frame: false,
+    transparent: true,
+    backgroundColor: "#00000000",
+    hasShadow: false,
+    resizable: false,
+    minimizable: false,
+    maximizable: false,
+    fullscreenable: false,
+    alwaysOnTop: true,
+    skipTaskbar: true,
+    webPreferences: {
+      preload: path.join(__dirname, "message-popup-preload.cjs"),
+    },
+  });
+
+  messagePopupWindow.loadFile(path.join(__dirname, "renderer", "message-popup.html"));
+  messagePopupWindow.on("closed", () => {
+    messagePopupWindow = null;
+  });
+
+  return messagePopupWindow;
+}
+
+function sendMessagePopupPayload(payload) {
+  if (!messagePopupWindow || messagePopupWindow.isDestroyed()) {
+    return;
+  }
+
+  const sendPayload = () => {
+    if (messagePopupWindow && !messagePopupWindow.isDestroyed()) {
+      messagePopupWindow.webContents.send("message-popup:show", payload);
+    }
+  };
+
+  if (messagePopupWindow.webContents.isLoading()) {
+    messagePopupWindow.webContents.once("did-finish-load", sendPayload);
+    return;
+  }
+
+  sendPayload();
+}
+
+function closeMessagePopup() {
+  if (!messagePopupWindow || messagePopupWindow.isDestroyed()) {
+    messagePopupWindow = null;
+    return;
+  }
+
+  messagePopupWindow.close();
+}
+
+function shouldShowMessagePopup() {
+  if (!mainWindow || mainWindow.isDestroyed()) {
+    return true;
+  }
+
+  return (
+    !mainWindow.isVisible() ||
+    mainWindow.isMinimized() ||
+    !mainWindow.isFocused() ||
+    normalizePanelDisplayMode(currentPanelDisplayMode) === "buttons"
+  );
+}
+
+function showMessagePopup(payload = {}) {
+  if (!shouldShowMessagePopup()) {
+    return;
+  }
+
+  const kind = String(payload.kind || "message").trim() || "message";
+
+  latestMessagePopupPayload = {
+    ...payload,
+    kind,
+    openMode: String(payload.openMode || "").trim(),
+    messageId: String(payload.messageId || "").trim(),
+    threadKey: String(payload.threadKey || "").trim(),
+    sourceLabel: String(payload.sourceLabel || "Msg").trim().slice(0, 7) || "Msg",
+    text: String(payload.text || "New message").trim() || "New message",
+    accentColor: String(payload.accentColor || "#111111").trim() || "#111111",
+  };
+
+  const popupWindow = createMessagePopupWindow();
+  popupWindow.setBounds(getMessagePopupBounds({
+    height: kind === "receptionPing"
+      ? RECEPTION_PING_POPUP_HEIGHT
+      : estimateMessagePopupHeight(latestMessagePopupPayload.text),
+  }), false);
+  popupWindow.showInactive();
+  sendMessagePopupPayload(latestMessagePopupPayload);
+}
+
+function closeReceptionPingPopup() {
+  if (latestMessagePopupPayload?.kind !== "receptionPing") {
+    return;
+  }
+
+  latestMessagePopupPayload = null;
+  closeMessagePopup();
+}
+
+function showMainWindowFromMessagePopup(options = {}) {
+  const popupPayload = latestMessagePopupPayload;
+  closeMessagePopup();
+  showMainWindow();
+
+  if (mainWindow && !mainWindow.isDestroyed()) {
+    mainWindow.setAlwaysOnTop(true);
+    mainWindow.moveTop();
+    mainWindow.focus();
+    mainWindow.setAlwaysOnTop(Boolean(clientSettings.alwaysOnTop));
+    mainWindow.webContents.send("panel:messagePopupOpen", {
+      ...popupPayload,
+      ...options,
+    });
+  }
 }
 
 function hideWindowToTray() {
@@ -1166,6 +1360,7 @@ function setWindowSettingsExpanded(details) {
     : details
       ? "both"
       : "messages";
+  currentPanelDisplayMode = mode;
   const messageComposerHeightOffset = typeof details === "object" && details !== null
     ? Math.min(120, Math.max(0, Math.round(Number(details.messageComposerHeightOffset) || 0)))
     : 0;
@@ -1278,11 +1473,11 @@ function refreshTrayMenu() {
       },
     },
     {
-      label: "Show at startup",
+      label: "Minimise at startup",
       type: "checkbox",
-      checked: clientSettings.showPanelAtStartup,
+      checked: !clientSettings.showPanelAtStartup,
       click: (menuItem) => {
-        clientSettings.showPanelAtStartup = menuItem.checked;
+        clientSettings.showPanelAtStartup = !menuItem.checked;
         saveClientSettings();
         setOpenAtLogin(clientSettings.launchAtStartup);
       },
@@ -1373,6 +1568,36 @@ app.whenReady().then(async () => {
   });
   ipcMain.handle("panel:playAlertSound", async (_event, options = {}) => {
     await playAlertSound(options);
+    return { ok: true };
+  });
+  ipcMain.handle("panel:showMessagePopup", (_event, payload = {}) => {
+    showMessagePopup(payload);
+    return { ok: true };
+  });
+  ipcMain.handle("panel:closeReceptionPingPopup", () => {
+    closeReceptionPingPopup();
+    return { ok: true };
+  });
+  ipcMain.handle("message-popup:close", () => {
+    closeMessagePopup();
+    return { ok: true };
+  });
+  ipcMain.handle("message-popup:openMain", (_event, options = {}) => {
+    showMainWindowFromMessagePopup(options);
+    return { ok: true };
+  });
+  ipcMain.handle("message-popup:dismissReceptionPing", () => {
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      mainWindow.webContents.send("panel:messagePopupDismissReceptionPing");
+    }
+    return { ok: true };
+  });
+  ipcMain.handle("message-popup:panelAction", (_event, buttonId = "") => {
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      mainWindow.webContents.send("panel:messagePopupPanelAction", {
+        buttonId: String(buttonId || "").trim(),
+      });
+    }
     return { ok: true };
   });
   ipcMain.handle("panel:hideWindow", () => {
@@ -1506,7 +1731,8 @@ app.whenReady().then(async () => {
     const roomActionSettings = patch.roomActionSettings && typeof patch.roomActionSettings === "object"
       ? normalizeRoomActionSettings(patch.roomActionSettings)
       : clientSettings.roomActionSettings;
-    const roomMessageGroups = patch.roomMessageGroups && typeof patch.roomMessageGroups === "object"
+    const roomMessageGroups = CONFIGURED_MESSAGE_GROUPS_ENABLED &&
+      patch.roomMessageGroups && typeof patch.roomMessageGroups === "object"
       ? normalizeRoomMessageGroups(patch.roomMessageGroups)
       : clientSettings.roomMessageGroups;
     clientSettings = {
@@ -1564,6 +1790,7 @@ app.whenReady().then(async () => {
           ? normalizePanelDisplayMode(patch.panelDisplayMode)
           : clientSettings.panelDisplayMode,
     };
+    currentPanelDisplayMode = clientSettings.panelDisplayMode;
     saveClientSettings();
     broadcastPanelSettings();
 

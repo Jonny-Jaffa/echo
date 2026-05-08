@@ -12,6 +12,8 @@ contextBridge.exposeInMainWorld("pipPanel", {
   closeRoleWindow: () => ipcRenderer.invoke("panel:closeRoleWindow"),
   playAcknowledgementSound: () => ipcRenderer.invoke("panel:playAcknowledgementSound"),
   playAlertSound: (options) => ipcRenderer.invoke("panel:playAlertSound", options),
+  showMessagePopup: (payload) => ipcRenderer.invoke("panel:showMessagePopup", payload),
+  closeReceptionPingPopup: () => ipcRenderer.invoke("panel:closeReceptionPingPopup"),
   getSettings: () => ipcRenderer.invoke("panel:getSettings"),
   getRoleState: () => ipcRenderer.invoke("panel:getRoleState"),
   getHardwareStatus: () => ipcRenderer.invoke("panel:getHardwareStatus"),
@@ -39,6 +41,42 @@ contextBridge.exposeInMainWorld("pipPanel", {
     ipcRenderer.on("panel:settingsUpdated", listener);
     return () => {
       ipcRenderer.removeListener("panel:settingsUpdated", listener);
+    };
+  },
+  onMessagePopupOpen: (callback) => {
+    const listener = (_event, payload) => {
+      if (typeof callback === "function") {
+        callback(payload);
+      }
+    };
+
+    ipcRenderer.on("panel:messagePopupOpen", listener);
+    return () => {
+      ipcRenderer.removeListener("panel:messagePopupOpen", listener);
+    };
+  },
+  onMessagePopupPanelAction: (callback) => {
+    const listener = (_event, payload) => {
+      if (typeof callback === "function") {
+        callback(payload);
+      }
+    };
+
+    ipcRenderer.on("panel:messagePopupPanelAction", listener);
+    return () => {
+      ipcRenderer.removeListener("panel:messagePopupPanelAction", listener);
+    };
+  },
+  onMessagePopupDismissReceptionPing: (callback) => {
+    const listener = () => {
+      if (typeof callback === "function") {
+        callback();
+      }
+    };
+
+    ipcRenderer.on("panel:messagePopupDismissReceptionPing", listener);
+    return () => {
+      ipcRenderer.removeListener("panel:messagePopupDismissReceptionPing", listener);
     };
   },
   updateSettings: (patch) => ipcRenderer.invoke("panel:updateSettings", patch),

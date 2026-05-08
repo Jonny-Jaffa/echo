@@ -231,6 +231,7 @@ export function normalizeConfig(config) {
           ? config.display.launchAtStartup
           : true,
       messageRetentionMinutes: Math.max(1, Number(config.display?.messageRetentionMinutes) || 60),
+      receptionPingMessage: normalizeReceptionPingMessage(config.display?.receptionPingMessage),
       windowPosition: normalizeWindowPosition(config.display?.windowPosition),
     },
     hardware: {
@@ -260,6 +261,11 @@ export function normalizeConfig(config) {
       actionId: notification.id,
     })),
   };
+}
+
+function normalizeReceptionPingMessage(value) {
+  const normalized = String(value || "").trim().replace(/\s+/g, " ").slice(0, 40);
+  return normalized || "Reception";
 }
 
 export function normalizeRoomShortName(value, roomName = "", roomId = "", index = 0) {

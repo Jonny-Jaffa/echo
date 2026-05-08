@@ -100,6 +100,7 @@
             <button class="settings-sidebar-link is-active" type="button" data-settings-section-link="reception-settings-general">General</button>
             <button class="settings-sidebar-link" type="button" data-settings-section-link="reception-settings-rooms">Rooms</button>
             <button class="settings-sidebar-link" type="button" data-settings-section-link="reception-settings-sounds">Sounds</button>
+            <button class="settings-sidebar-link" type="button" data-settings-section-link="reception-settings-alert-message">Alert Message</button>
             <button class="settings-sidebar-link" type="button" data-settings-section-link="reception-settings-messaging">Messaging</button>
             <button class="settings-sidebar-link" type="button" data-settings-section-link="reception-settings-connection">Connection</button>
           </aside>
@@ -144,6 +145,21 @@
                     <span class="retention-hint">Old notifications are automatically removed from the queue.</span>
                   </div>
                 </div>
+              </div>
+            </section>
+
+            <section class="editor-card settings-tab-section" id="reception-settings-alert-message" data-settings-section="reception-settings-alert-message" hidden>
+              <div class="editor-head">
+                <div>
+                  <h3>Alert Message</h3>
+                </div>
+              </div>
+              <div class="settings-grid">
+                <label class="field full-width-field">
+                  <span>Room alert message</span>
+                  <input id="reception-ping-message-input" name="display.receptionPingMessage" type="text" maxlength="40" autocomplete="off" spellcheck="false" />
+                </label>
+                <p class="settings-hint full-width-field">Shown in surgery banners, popups, and Neo displays when Reception requests attention.</p>
               </div>
             </section>
 

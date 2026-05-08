@@ -24,6 +24,8 @@ let measuredGadgetHeight = null;
 let saveWindowPositionTimer = null;
 let preExpandWindowPosition = null;
 let aboutWindow = null;
+let messagePopupWindow = null;
+let latestMessagePopupPayload = null;
 let localAppState = {
   runtimeRole: RUNTIME_ROLE_RECEPTION,
   runtimeRoleConfirmed: true,
@@ -44,6 +46,12 @@ const GADGET_HEADER_HEIGHT = 0;
 const GADGET_ROW_HEIGHT = 40;
 const GADGET_FRAME_PADDING = 7;
 const GADGET_WINDOW_HEIGHT_TRIM = 4;
+const MESSAGE_POPUP_WIDTH = 340;
+const ALERT_POPUP_WIDTH = 460;
+const MESSAGE_POPUP_MIN_HEIGHT = 62;
+const MESSAGE_POPUP_MAX_HEIGHT = 126;
+const ALERT_POPUP_HEIGHT = 62;
+const MESSAGE_POPUP_MARGIN = 18;
 const STARTUP_LOG_PATH = path.join(os.tmpdir(), "pip-reception.log");
 const DEFAULT_RECEPTION_SOUND = "notification_sound_01";
 const RECEPTION_SOUND_FILE_MAP = Object.fromEntries(
@@ -214,6 +222,9 @@ function createWindow(config) {
   mainWindow.on("closed", () => {
     mainWindow = null;
   });
+  mainWindow.on("focus", () => {
+    closeMessagePopup();
+  });
 }
 
 function createSettingsWindow() {
@@ -317,6 +328,304 @@ function destroyMainWindow() {
   const targetWindow = mainWindow;
   mainWindow = null;
   targetWindow.close();
+}
+
+function getMainProcessRoomShortLabel(room) {
+  return String(room?.shortName || room?.name || "Room").trim().slice(0, 7) || "Room";
+}
+
+function formatRelativeAlertTime(timestamp) {
+  const sentAt = new Date(timestamp).getTime();
+  const diffMs = Math.max(0, Date.now() - sentAt);
+  const diffMinutes = Math.floor(diffMs / 60000);
+
+  if (diffMinutes < 1) {
+    return "Just now";
+  }
+
+  if (diffMinutes === 1) {
+    return "1 min ago";
+  }
+
+  if (diffMinutes < 60) {
+    return `${diffMinutes} mins ago`;
+  }
+
+  const diffHours = Math.floor(diffMinutes / 60);
+
+  if (diffHours === 1) {
+    return "1 hr ago";
+  }
+
+  if (diffHours < 24) {
+    return `${diffHours} hrs ago`;
+  }
+
+  const diffDays = Math.floor(diffHours / 24);
+
+  if (diffDays === 1) {
+    return "1 day ago";
+  }
+
+  return `${diffDays} days ago`;
+}
+
+function getMessagePopupBounds(options = {}) {
+  const popupWidth = Math.max(260, Math.round(Number(options.width) || MESSAGE_POPUP_WIDTH));
+  const popupHeight = Math.max(48, Math.round(Number(options.height) || MESSAGE_POPUP_MIN_HEIGHT));
+  const referenceBounds =
+    mainWindow && !mainWindow.isDestroyed()
+      ? mainWindow.getBounds()
+      : null;
+  const targetDisplay = referenceBounds
+    ? screen.getDisplayMatching(referenceBounds)
+    : screen.getPrimaryDisplay();
+  const workArea = targetDisplay.workArea;
+
+  return {
+    x: workArea.x + workArea.width - popupWidth - MESSAGE_POPUP_MARGIN,
+    y: workArea.y + workArea.height - popupHeight - MESSAGE_POPUP_MARGIN,
+    width: popupWidth,
+    height: popupHeight,
+  };
+}
+
+function estimateMessagePopupHeight(text = "") {
+  const normalizedText = String(text || "").trim();
+  const explicitLineCount = normalizedText
+    ? normalizedText.split(/\r?\n/).length
+    : 1;
+  const wrappedLineCount = Math.ceil(normalizedText.length / 32) || 1;
+  const lineCount = Math.max(explicitLineCount, wrappedLineCount);
+
+  return Math.min(
+    MESSAGE_POPUP_MAX_HEIGHT,
+    MESSAGE_POPUP_MIN_HEIGHT + Math.max(0, lineCount - 1) * 22,
+  );
+}
+
+function createMessagePopupWindow() {
+  if (messagePopupWindow && !messagePopupWindow.isDestroyed()) {
+    return messagePopupWindow;
+  }
+
+  messagePopupWindow = new BrowserWindow({
+    ...getMessagePopupBounds(),
+    show: false,
+    frame: false,
+    transparent: true,
+    backgroundColor: "#00000000",
+    hasShadow: false,
+    resizable: false,
+    minimizable: false,
+    maximizable: false,
+    fullscreenable: false,
+    alwaysOnTop: true,
+    skipTaskbar: true,
+    webPreferences: {
+      preload: path.join(__dirname, "message-popup-preload.js"),
+    },
+  });
+
+  messagePopupWindow.loadFile(path.join(__dirname, "renderer", "message-popup.html"));
+  messagePopupWindow.on("closed", () => {
+    messagePopupWindow = null;
+  });
+
+  return messagePopupWindow;
+}
+
+function sendMessagePopupPayload(payload) {
+  if (!messagePopupWindow || messagePopupWindow.isDestroyed()) {
+    return;
+  }
+
+  const sendPayload = () => {
+    if (messagePopupWindow && !messagePopupWindow.isDestroyed()) {
+      messagePopupWindow.webContents.send("message-popup:show", payload);
+    }
+  };
+
+  if (messagePopupWindow.webContents.isLoading()) {
+    messagePopupWindow.webContents.once("did-finish-load", sendPayload);
+    return;
+  }
+
+  sendPayload();
+}
+
+function closeMessagePopup() {
+  if (!messagePopupWindow || messagePopupWindow.isDestroyed()) {
+    messagePopupWindow = null;
+    return;
+  }
+
+  messagePopupWindow.close();
+}
+
+function shouldShowPopup(options = {}) {
+  if (!mainWindow || mainWindow.isDestroyed()) {
+    return true;
+  }
+
+  const includeMessagesVisibility = Boolean(options.includeMessagesVisibility);
+
+  return (
+    !mainWindow.isVisible() ||
+    mainWindow.isMinimized() ||
+    !mainWindow.isFocused() ||
+    Boolean(configState?.display?.minimized) ||
+    (includeMessagesVisibility && !Boolean(configState?.display?.messagesVisible))
+  );
+}
+
+function showMessagePopup(payload = {}) {
+  if (!shouldShowPopup({ includeMessagesVisibility: true })) {
+    return;
+  }
+
+  latestMessagePopupPayload = {
+    kind: "message",
+    ...payload,
+  };
+  const popupWindow = createMessagePopupWindow();
+  popupWindow.setBounds(getMessagePopupBounds({
+    height: estimateMessagePopupHeight(latestMessagePopupPayload.text),
+  }), false);
+  popupWindow.showInactive();
+  sendMessagePopupPayload(latestMessagePopupPayload);
+}
+
+function getRoomAlertNotifications(roomId) {
+  const normalizedRoomId = String(roomId || "").trim();
+
+  if (!normalizedRoomId) {
+    return [];
+  }
+
+  return [
+    ...(activeNotification ? [activeNotification] : []),
+    ...notificationQueue,
+  ].filter((notification) => notification.roomId === normalizedRoomId);
+}
+
+function getReceptionMessagePopupPayload(message = {}) {
+  if (
+    String(message?.senderType || "").trim() !== "room" ||
+    !message?.sendToReception
+  ) {
+    return null;
+  }
+
+  const senderRoomId = String(message.senderRoomId || "").trim();
+  const room = (configState?.rooms || []).find((item) => item.id === senderRoomId) || null;
+
+  return {
+    messageId: String(message.messageId || "").trim(),
+    kind: "message",
+    roomId: senderRoomId,
+    sourceLabel: String(message.senderShortLabel || getMainProcessRoomShortLabel(room)).trim(),
+    text: String(message.text || "New message").trim(),
+    accentColor: String(room?.color || "#0f766e").trim(),
+  };
+}
+
+function showAlertPopup(notification = {}) {
+  if (!shouldShowPopup()) {
+    return false;
+  }
+
+  const roomId = String(notification.roomId || "").trim();
+  const room = (configState?.rooms || []).find((item) => item.id === roomId) || null;
+  const alertCount =
+    (activeNotification?.roomId === roomId ? 1 : 0) +
+    notificationQueue.filter((queuedNotification) => queuedNotification.roomId === roomId).length +
+    1;
+  const payload = buildAlertPopupPayload(notification, alertCount, room);
+
+  latestMessagePopupPayload = payload;
+  const popupWindow = createMessagePopupWindow();
+  popupWindow.setBounds(getMessagePopupBounds({
+    width: ALERT_POPUP_WIDTH,
+    height: ALERT_POPUP_HEIGHT,
+  }), false);
+  popupWindow.showInactive();
+  sendMessagePopupPayload(payload);
+  return true;
+}
+
+function buildAlertPopupPayload(notification = {}, alertCount = 1, room = null) {
+  return {
+    kind: "alert",
+    notificationId: String(notification.notificationId || "").trim(),
+    roomId: String(notification.roomId || "").trim(),
+    sourceLabel: String(notification.roomShortName || getMainProcessRoomShortLabel(room)).trim(),
+    text: String(notification.message || "New alert").trim() || "New alert",
+    formattedTime: formatRelativeAlertTime(notification.timestamp),
+    alertCount: Math.max(1, Math.round(Number(alertCount) || 1)),
+    accentColor: String(notification.roomColor || room?.color || "#0f766e").trim(),
+  };
+}
+
+function syncAlertPopupForRoom(roomId) {
+  if (
+    latestMessagePopupPayload?.kind !== "alert" ||
+    latestMessagePopupPayload.roomId !== roomId ||
+    !messagePopupWindow ||
+    messagePopupWindow.isDestroyed()
+  ) {
+    return;
+  }
+
+  const alerts = getRoomAlertNotifications(roomId);
+
+  if (alerts.length === 0) {
+    closeMessagePopup();
+    return;
+  }
+
+  const room = (configState?.rooms || []).find((item) => item.id === roomId) || null;
+  latestMessagePopupPayload = buildAlertPopupPayload(alerts[0], alerts.length, room);
+  sendMessagePopupPayload(latestMessagePopupPayload);
+}
+
+async function showMainWindowFromMessagePopup(options = {}) {
+  const popupPayload = latestMessagePopupPayload;
+  const shouldOpenMessage = Boolean(options.openMessage);
+  closeMessagePopup();
+
+  if (configState?.display) {
+    const displayPatch =
+      popupPayload?.kind === "alert" && !shouldOpenMessage
+        ? { minimized: false }
+        : { minimized: false, messagesVisible: true };
+
+    await updateDisplaySettings({
+      ...displayPatch,
+    }).catch((error) => {
+      logStartup("Failed to expand reception window from message popup", {
+        message: error.message,
+      });
+    });
+  }
+
+  if (!mainWindow || mainWindow.isDestroyed()) {
+    createRoleWindow();
+    return;
+  }
+
+  if (mainWindow.isMinimized()) {
+    mainWindow.restore();
+  }
+
+  mainWindow.show();
+  mainWindow.setAlwaysOnTop(true);
+  mainWindow.moveTop();
+  mainWindow.focus();
+  mainWindow.setAlwaysOnTop(Boolean(configState?.display?.alwaysOnTop));
+  if (popupPayload?.kind === "message" || shouldOpenMessage) {
+    mainWindow.webContents.send("message-popup:open", popupPayload);
+  }
 }
 
 function loadIconFromPaths(iconPaths) {
@@ -742,6 +1051,7 @@ function escapePowerShellPath(value) {
 
 function pushNotification(notification) {
   playReceptionNotificationSound(notification);
+  showAlertPopup(notification);
   notificationQueue.push(notification);
 
   if (!activeNotification) {
@@ -761,6 +1071,7 @@ function dismissActiveNotification() {
   }
 
   emitState();
+  syncAlertPopupForRoom(dismissedNotification?.roomId || "");
   return dismissedNotification;
 }
 
@@ -783,6 +1094,7 @@ function dismissNotificationById(notificationId) {
 
   const [dismissedNotification] = notificationQueue.splice(queuedIndex, 1);
   emitState();
+  syncAlertPopupForRoom(dismissedNotification?.roomId || "");
   return dismissedNotification || null;
 }
 
@@ -797,6 +1109,17 @@ function clearNotificationsByIds(notificationIds = []) {
     return;
   }
 
+  const affectedRoomIds = new Set(
+    [
+      ...(activeNotification?.notificationId && idsToClear.has(activeNotification.notificationId)
+        ? [activeNotification.roomId]
+        : []),
+      ...notificationQueue
+        .filter((notification) => idsToClear.has(notification.notificationId))
+        .map((notification) => notification.roomId),
+    ].filter(Boolean),
+  );
+
   if (activeNotification?.notificationId && idsToClear.has(activeNotification.notificationId)) {
     activeNotification = notificationQueue.shift() || null;
   }
@@ -810,6 +1133,7 @@ function clearNotificationsByIds(notificationIds = []) {
   }
 
   emitState();
+  affectedRoomIds.forEach((roomId) => syncAlertPopupForRoom(roomId));
 }
 
 function pingRoomById(roomId) {
@@ -821,6 +1145,8 @@ function emitNotification(notification) {
     return;
   }
 
+  const shouldKeepMainWindowHidden = shouldShowPopup();
+
   mainWindow.webContents.send("notification:update", {
     ...notification,
     formattedTime: formatTimeFn(notification.timestamp),
@@ -828,7 +1154,9 @@ function emitNotification(notification) {
     pendingCount: notificationQueue.length,
   });
 
-  mainWindow.showInactive();
+  if (!shouldKeepMainWindowHidden) {
+    mainWindow.showInactive();
+  }
 }
 
 function buildAppState() {
@@ -1143,6 +1471,10 @@ app.whenReady().then(async () => {
       onChatMessage: (message) => {
         chatMessages = server.getChatMessages();
         playReceptionChatSound(message);
+        const popupPayload = getReceptionMessagePopupPayload(message);
+        if (popupPayload) {
+          showMessagePopup(popupPayload);
+        }
         emitChatMessages();
         emitState();
       },
@@ -1258,6 +1590,21 @@ app.whenReady().then(async () => {
       targetWindow.close();
     }
 
+    return { ok: true };
+  });
+
+  ipcMain.handle("message-popup:close", () => {
+    closeMessagePopup();
+    return { ok: true };
+  });
+
+  ipcMain.handle("message-popup:openMain", async () => {
+    await showMainWindowFromMessagePopup();
+    return { ok: true };
+  });
+
+  ipcMain.handle("message-popup:openMessage", async () => {
+    await showMainWindowFromMessagePopup({ openMessage: true });
     return { ok: true };
   });
 
