@@ -1842,7 +1842,7 @@ function syncMessageContext() {
     `linear-gradient(90deg, ${hexToRgba(specialThreadAccent, 0.16)}, rgba(255, 255, 255, 0.86))`;
   const accent = getMessageThreadAccent(activeThread);
   const labelColor = isAllRoomsThread ? "#3f4444" : activeRoom?.color || "var(--accent)";
-  const iconColor = isAllRoomsThread ? "white" : "white";
+  const iconColor = labelColor;
   const listBackground = isAllRoomsThread
     ? specialListBackground
     : activeRoom?.color
@@ -3198,8 +3198,10 @@ function getReceptionPingPopupPayload() {
   };
 }
 
-function refreshReceptionPingPopup() {
-  if (!receptionPingBanner || receptionPingBanner.classList.contains("hidden")) {
+function refreshReceptionPingPopup(options = {}) {
+  const force = Boolean(options.force);
+
+  if (!force && (!receptionPingBanner || receptionPingBanner.classList.contains("hidden"))) {
     return;
   }
 
@@ -3577,6 +3579,10 @@ function clearReceptionPing() {
       deviceId: panelDeviceId,
     }),
   );
+}
+
+function dismissReceptionPingBanner() {
+  hideReceptionPingBanner();
 }
 
 function getSelectedRoom() {
@@ -4031,15 +4037,19 @@ window.pipPanel.onMessagePopupPanelAction?.((payload = {}) => {
     return;
   }
 
-  clearReceptionPing();
-  sendPanelAction(buttonId).catch((error) => {
-    console.error(error);
-    refreshReceptionPingPopup();
-  });
+  dismissReceptionPingBanner();
+  sendPanelAction(buttonId)
+    .then(() => {
+      refreshReceptionPingPopup({ force: true });
+    })
+    .catch((error) => {
+      console.error(error);
+      refreshReceptionPingPopup({ force: true });
+    });
 });
 
 window.pipPanel.onMessagePopupDismissReceptionPing?.(() => {
-  clearReceptionPing();
+  dismissReceptionPingBanner();
 });
 
 roomSelect.addEventListener("change", async () => {

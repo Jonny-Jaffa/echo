@@ -83,7 +83,7 @@ label {
   pointer-events: none;
   width: 100%;
   flex-shrink: 0;
-  border-radius: 0;
+  border-radius: 5px;
   margin: 0;
 }
 
@@ -998,9 +998,25 @@ body[data-window-view="main"][data-panel-mode="both"] .room-message-shell {
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  background: var(--active-room-accent);
+  border: 1px solid rgba(255, 255, 255, 0.72);
+  border-left: 0;
+  background:
+    radial-gradient(circle at 18% 12%, rgba(255, 255, 255, 0.92) 0 14%, transparent 42%),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.88), color-mix(in srgb, var(--active-room-accent) 14%, white) 58%),
+    linear-gradient(
+      135deg,
+      rgba(255, 255, 255, 0.95),
+      color-mix(in srgb, var(--active-room-accent) 10%, white) 52%,
+      color-mix(in srgb, var(--active-room-accent) 20%, white)
+    );
   border-radius: 20px 20px 20px 0;
-  box-shadow: 8px 0 18px color-mix(in srgb, var(--active-room-accent) 22%, transparent);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.9),
+    inset -1px 0 0 rgba(255, 255, 255, 0.58),
+    4px 0 12px color-mix(in srgb, var(--active-room-accent) 22%, transparent),
+    12px 0 28px color-mix(in srgb, var(--active-room-accent) 12%, transparent);
+  backdrop-filter: blur(18px) saturate(1.35) contrast(1.04);
+  -webkit-backdrop-filter: blur(18px) saturate(1.35) contrast(1.04);
 }
 
 .room-message-shell .message-context-label::after {
@@ -1018,6 +1034,7 @@ body[data-window-view="main"][data-panel-mode="both"] .room-message-shell {
   mask-position: center;
   -webkit-mask-size: contain;
   mask-size: contain;
+  z-index: 1;
 }
 
 .message-thread-bar,
@@ -1074,7 +1091,7 @@ body[data-thread-rail-available="false"] .thread-rail-toggle {
   border: 0;
   border-radius: 0;
   background: transparent;
-  color: white;
+  color: var(--message-context-short-label-color, var(--active-room-accent));
   cursor: pointer;
   text-indent: -9999px;
   overflow: hidden;
@@ -1512,38 +1529,50 @@ body[data-thread-rail-collapsed="true"] .thread-rail .message-thread-scroll-wrap
 }
 
 .room-message-shell .message-thread-chip {
-  border: 0;
-  background: var(--thread-accent, var(--accent));
-  color: white;
+  border: 1px solid rgba(255, 255, 255, 0.72);
+  background:
+    radial-gradient(circle at 22% 16%, rgba(255, 255, 255, 0.92) 0 14%, transparent 42%),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.9), color-mix(in srgb, var(--thread-accent, var(--accent)) 14%, white) 62%),
+    linear-gradient(135deg, rgba(255, 255, 255, 0.95), color-mix(in srgb, var(--thread-accent, var(--accent)) 18%, white));
+  color: var(--thread-accent, var(--accent));
   font-weight: 600;
   min-height: 32px;
   padding: 5px 12px;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.9),
+    0 0 10px color-mix(in srgb, var(--thread-accent, var(--accent)) 18%, transparent);
+  backdrop-filter: blur(16px) saturate(1.3) contrast(1.04);
+  -webkit-backdrop-filter: blur(16px) saturate(1.3) contrast(1.04);
 }
 
 .room-message-shell .message-thread-chip.is-active {
-  border: 0;
-  background: var(--thread-accent, var(--accent));
-  color: white;
-  box-shadow: 0 0 0 2px color-mix(in srgb, var(--thread-accent, var(--accent)) 28%, transparent);
+  border-color: color-mix(in srgb, var(--thread-accent, var(--accent)) 34%, white);
+  background:
+    radial-gradient(circle at 22% 16%, rgba(255, 255, 255, 0.92) 0 14%, transparent 42%),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.9), color-mix(in srgb, var(--thread-accent, var(--accent)) 14%, white) 62%),
+    linear-gradient(135deg, rgba(255, 255, 255, 0.95), color-mix(in srgb, var(--thread-accent, var(--accent)) 18%, white));
+  color: var(--thread-accent, var(--accent));
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.9),
+    0 0 0 2px color-mix(in srgb, var(--thread-accent, var(--accent)) 14%, transparent),
+    0 0 16px color-mix(in srgb, var(--thread-accent, var(--accent)) 22%, transparent);
 }
 
 .room-message-shell .message-thread-chip.is-reception {
-  background: #000000;
-  color: white;
+  color: #000000;
 }
 
 .room-message-shell .message-thread-chip.is-all-rooms {
-  background: #879293;
-  color: white;
+  color: #879293;
 }
 
 .room-message-shell .message-thread-chip.is-reception.is-active {
-  color: white;
+  color: #000000;
   box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.18);
 }
 
 .room-message-shell .message-thread-chip.is-all-rooms.is-active {
-  color: white;
+  color: #879293;
   box-shadow: 0 0 0 2px rgba(16, 35, 31, 0.12);
 }
 
@@ -1557,31 +1586,42 @@ body[data-thread-rail-collapsed="true"] .thread-rail .message-thread-scroll-wrap
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  border: 2px solid rgba(255, 255, 255, 0.62);
+  border: 2px solid rgba(255, 255, 255, 0.72);
   border-radius: 999px;
-  background: var(--thread-accent, var(--accent));
-  color: white;
+  background:
+    radial-gradient(circle at 25% 18%, rgba(255, 255, 255, 0.92) 0 14%, transparent 42%),
+    linear-gradient(135deg, rgba(255, 255, 255, 0.95), color-mix(in srgb, var(--thread-accent, var(--accent)) 18%, white));
+  color: var(--thread-accent, var(--accent));
   font-family: "Roboto Condensed", "Arial Narrow", "Avenir Next Condensed", "Segoe UI", sans-serif;
   font-size: 14px;
   font-weight: 700;
   line-height: 1;
-  box-shadow: none;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.9),
+    0 0 10px color-mix(in srgb, var(--thread-accent, var(--accent)) 18%, transparent);
+  backdrop-filter: blur(16px) saturate(1.3) contrast(1.04);
+  -webkit-backdrop-filter: blur(16px) saturate(1.3) contrast(1.04);
 }
 
 .thread-rail .message-thread-chip.is-active {
   border-width: 4px;
-  border-color: rgba(255, 255, 255, 0.9);
-  background: var(--thread-accent, var(--accent));
-  color: white;
-  box-shadow: none;
+  border-color: color-mix(in srgb, var(--thread-accent, var(--accent)) 34%, white);
+  background:
+    radial-gradient(circle at 25% 18%, rgba(255, 255, 255, 0.92) 0 14%, transparent 42%),
+    linear-gradient(135deg, rgba(255, 255, 255, 0.95), color-mix(in srgb, var(--thread-accent, var(--accent)) 18%, white));
+  color: var(--thread-accent, var(--accent));
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.9),
+    0 0 0 2px color-mix(in srgb, var(--thread-accent, var(--accent)) 14%, transparent),
+    0 0 16px color-mix(in srgb, var(--thread-accent, var(--accent)) 22%, transparent);
 }
 
 .thread-rail .message-thread-chip.is-reception {
-  background: #000000;
+  color: #000000;
 }
 
 .thread-rail .message-thread-chip.is-all-rooms {
-  background: #879293;
+  color: #879293;
 }
 
 .thread-rail .message-thread-dot {
@@ -1600,39 +1640,38 @@ body[data-thread-rail-collapsed="true"] .thread-rail .message-thread-scroll-wrap
 }
 
 .message-thread-chip.is-unread {
-  animation: ping-pulse 1.15s ease-in-out infinite;
-  will-change: background-color;
+  animation: thread-glass-pulse 1.8s ease-in-out infinite;
+  will-change: box-shadow, border-color, filter;
 }
 
 .thread-rail .message-thread-chip.is-reception.is-unread {
-  animation-name: reception-thread-pulse;
+  animation-name: thread-glass-pulse;
 }
 
-@keyframes ping-pulse {
+@keyframes thread-glass-pulse {
   0% {
-    background-color: var(--thread-accent, var(--accent));
+    border-color: rgba(255, 255, 255, 0.72);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.9),
+      0 0 10px color-mix(in srgb, var(--thread-accent, var(--accent)) 18%, transparent);
+    filter: saturate(1);
   }
 
   50% {
-    background-color: color-mix(in srgb, var(--thread-accent, var(--accent)) 55%, transparent);
+    border-color: color-mix(in srgb, var(--thread-accent, var(--accent)) 38%, white);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.92),
+      0 0 0 2px color-mix(in srgb, var(--thread-accent, var(--accent)) 14%, transparent),
+      0 0 18px color-mix(in srgb, var(--thread-accent, var(--accent)) 30%, transparent);
+    filter: saturate(1.22);
   }
 
   100% {
-    background-color: var(--thread-accent, var(--accent));
-  }
-}
-
-@keyframes reception-thread-pulse {
-  0% {
-    background-color: #000000;
-  }
-
-  50% {
-    background-color: #3f4444;
-  }
-
-  100% {
-    background-color: #000000;
+    border-color: rgba(255, 255, 255, 0.72);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.9),
+      0 0 10px color-mix(in srgb, var(--thread-accent, var(--accent)) 18%, transparent);
+    filter: saturate(1);
   }
 }
 

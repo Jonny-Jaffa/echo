@@ -110,7 +110,7 @@ function showPayload(payload = {}) {
   }
 
   if (messageText) {
-    messageText.textContent = text;
+    messageText.textContent = kind === "receptionPing" ? text.toUpperCase() : text;
   }
 
   renderReceptionPingButtons(payload);
@@ -152,7 +152,6 @@ buttonGrid?.addEventListener("click", (event) => {
   }
 
   event.stopPropagation();
-  window.pipMessagePopup?.dismissReceptionPing?.();
   const buttonId = String(button.getAttribute("data-button-id") || "").trim();
 
   if (!buttonId) {

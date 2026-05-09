@@ -19,9 +19,10 @@ const SURGERY_BANNER_HEIGHT = 50;
 const SURGERY_SETTINGS_WINDOW_HEIGHT = 800;
 const DEFAULT_SURGERY_SOUND = "notification_sound_01";
 const MESSAGE_POPUP_WIDTH = 340;
+const RECEPTION_PING_POPUP_WIDTH = 352;
 const MESSAGE_POPUP_MIN_HEIGHT = 62;
 const MESSAGE_POPUP_MAX_HEIGHT = 126;
-const RECEPTION_PING_POPUP_HEIGHT = 218;
+const RECEPTION_PING_POPUP_HEIGHT = 238;
 const MESSAGE_POPUP_MARGIN = 18;
 const SURGERY_SOUND_FILE_MAP = Object.fromEntries(
   Array.from({ length: 17 }, (_value, index) => {
@@ -1082,6 +1083,7 @@ function showMessagePopup(payload = {}) {
 
   const popupWindow = createMessagePopupWindow();
   popupWindow.setBounds(getMessagePopupBounds({
+    width: kind === "receptionPing" ? RECEPTION_PING_POPUP_WIDTH : MESSAGE_POPUP_WIDTH,
     height: kind === "receptionPing"
       ? RECEPTION_PING_POPUP_HEIGHT
       : estimateMessagePopupHeight(latestMessagePopupPayload.text),

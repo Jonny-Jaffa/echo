@@ -450,7 +450,7 @@ select {
   grid-template-rows: auto 220px auto;
   --active-room-accent: var(--accent);
   --message-context-label-color: white;
-  --message-context-short-label-color: white;
+  --message-context-short-label-color: var(--active-room-accent);
   --message-context-strip-background: linear-gradient(90deg, #f7f7f7, #ffffff);
   --message-bubble-outgoing: linear-gradient(180deg, #ffffff, #f7fbfb);
   --message-scrollbar-thumb-height: 0px;
@@ -522,9 +522,25 @@ select {
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  background: var(--active-room-accent, #0f766e);
+  border: 1px solid rgba(255, 255, 255, 0.72);
+  border-left: 0;
+  background:
+    radial-gradient(circle at 18% 12%, rgba(255, 255, 255, 0.92) 0 14%, transparent 42%),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.88), color-mix(in srgb, var(--active-room-accent, #0f766e) 14%, white) 58%),
+    linear-gradient(
+      135deg,
+      rgba(255, 255, 255, 0.95),
+      color-mix(in srgb, var(--active-room-accent, #0f766e) 10%, white) 52%,
+      color-mix(in srgb, var(--active-room-accent, #0f766e) 20%, white)
+    );
   border-radius: 20px 20px 20px 0;
-  box-shadow: 8px 0 18px color-mix(in srgb, var(--active-room-accent, #0f766e) 22%, transparent);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.9),
+    inset -1px 0 0 rgba(255, 255, 255, 0.58),
+    4px 0 12px color-mix(in srgb, var(--active-room-accent, #0f766e) 22%, transparent),
+    12px 0 28px color-mix(in srgb, var(--active-room-accent, #0f766e) 12%, transparent);
+  backdrop-filter: blur(18px) saturate(1.35) contrast(1.04);
+  -webkit-backdrop-filter: blur(18px) saturate(1.35) contrast(1.04);
 }
 
 .message-context-label::after {
@@ -542,10 +558,11 @@ select {
   mask-position: center;
   -webkit-mask-size: contain;
   mask-size: contain;
+  z-index: 1;
 }
 
 .message-context-label[data-short-label="All"]::after {
-  background-color: white;
+  background-color: var(--message-context-short-label-color);
 }
 
 .message-all-button {
@@ -866,7 +883,6 @@ select {
 
 .alert-row.is-idle {
   box-shadow: 0 8px 18px rgba(16, 35, 31, 0.08);
-  opacity: 0.88;
 }
 
 .alert-copy {
@@ -892,16 +908,106 @@ select {
   justify-content: center;
   margin: 0;
   border-radius: 0 2px 2px 0;
-  background: var(--row-accent, #0f766e);
-  color: white;
-  box-shadow: 8px 0 18px color-mix(in srgb, var(--row-accent, #0f766e) 22%, transparent);
+  border: 1px solid rgba(255, 255, 255, 0.72);
+  border-left: 0;
+  background:
+    radial-gradient(circle at 18% 12%, rgba(255, 255, 255, 0.92) 0 14%, transparent 42%),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.88), color-mix(in srgb, var(--row-accent, #0f766e) 14%, white) 58%),
+    linear-gradient(
+      135deg,
+      rgba(255, 255, 255, 0.95),
+      color-mix(in srgb, var(--row-accent, #0f766e) 10%, white) 52%,
+      color-mix(in srgb, var(--row-accent, #0f766e) 20%, white)
+    );
+  backdrop-filter: blur(18px) saturate(1.35) contrast(1.04);
+  -webkit-backdrop-filter: blur(18px) saturate(1.35) contrast(1.04);
+  color: var(--row-accent, #0f766e);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.9),
+    inset -1px 0 0 rgba(255, 255, 255, 0.58),
+    inset 0 -1px 0 color-mix(in srgb, var(--row-accent, #0f766e) 18%, rgba(0, 0, 0, 0.12)),
+    4px 0 12px color-mix(in srgb, var(--row-accent, #0f766e) 22%, transparent),
+    12px 0 28px color-mix(in srgb, var(--row-accent, #0f766e) 12%, transparent);
   font-family: "Roboto Condensed", "Arial Narrow", "Avenir Next Condensed", sans-serif;
   font-size: 20px;
-  font-weight: 500;
+  font-weight: 600;
   line-height: 1.1;
+  text-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.78),
+    0 2px 7px color-mix(in srgb, var(--row-accent, #0f766e) 28%, transparent);
   flex-shrink: 0;
   position: relative;
   z-index: 1;
+  overflow: hidden;
+}
+
+.alert-room::after {
+  content: "";
+  position: absolute;
+  inset: 3px;
+  border-radius: inherit;
+  background:
+    linear-gradient(90deg, transparent 22%, color-mix(in srgb, var(--row-accent, #0f766e) 12%, white 45%) 58%, transparent 82%);
+  border: 1px solid color-mix(in srgb, var(--row-accent, #0f766e) 22%, white);
+  border-left: 0;
+  box-shadow:
+    0 0 5px rgba(255, 255, 255, 0.72),
+    0 0 14px color-mix(in srgb, var(--row-accent, #0f766e) 18%, transparent);
+  opacity: 0.65;
+  pointer-events: none;
+}
+
+.alert-row:not(.is-idle) .alert-room {
+  animation: alert-room-glass-pulse 1.8s ease-in-out infinite;
+  will-change: box-shadow, border-color, filter;
+}
+
+@keyframes alert-room-glass-pulse {
+  0%,
+  100% {
+    border-color: rgba(255, 255, 255, 0.72);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.9),
+      inset -1px 0 0 rgba(255, 255, 255, 0.58),
+      inset 0 -1px 0 color-mix(in srgb, var(--row-accent, #0f766e) 18%, rgba(0, 0, 0, 0.12)),
+      4px 0 12px color-mix(in srgb, var(--row-accent, #0f766e) 22%, transparent),
+      12px 0 28px color-mix(in srgb, var(--row-accent, #0f766e) 12%, transparent);
+    filter: saturate(1);
+  }
+
+  50% {
+    border-color: color-mix(in srgb, var(--row-accent, #0f766e) 28%, white);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.9),
+      inset -1px 0 0 rgba(255, 255, 255, 0.58),
+      inset 0 -1px 0 color-mix(in srgb, var(--row-accent, #0f766e) 24%, rgba(0, 0, 0, 0.14)),
+      4px 0 14px color-mix(in srgb, var(--row-accent, #0f766e) 32%, transparent),
+      12px 0 32px color-mix(in srgb, var(--row-accent, #0f766e) 18%, transparent);
+    filter: saturate(1.18);
+  }
+}
+
+.alert-row:not(.is-idle) .alert-room::after {
+  animation: alert-room-glass-rim-pulse 1.8s ease-in-out infinite;
+}
+
+@keyframes alert-room-glass-rim-pulse {
+  0%,
+  100% {
+    border-color: color-mix(in srgb, var(--row-accent, #0f766e) 22%, white);
+    box-shadow:
+      0 0 5px rgba(255, 255, 255, 0.72),
+      0 0 14px color-mix(in srgb, var(--row-accent, #0f766e) 18%, transparent);
+    opacity: 0.65;
+  }
+
+  50% {
+    border-color: color-mix(in srgb, var(--row-accent, #0f766e) 34%, white);
+    box-shadow:
+      0 0 6px rgba(255, 255, 255, 0.76),
+      0 0 18px color-mix(in srgb, var(--row-accent, #0f766e) 26%, transparent);
+    opacity: 0.82;
+  }
 }
 
 .alert-message {

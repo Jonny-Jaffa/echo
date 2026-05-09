@@ -731,7 +731,7 @@ function syncMessageContext(state = appState) {
   chatCard.style.setProperty("--active-room-accent", accent);
   chatCard.style.setProperty("--message-send-active-color", isAllRoomsSelected ? "var(--text)" : accent);
   chatCard.style.setProperty("--message-context-label-color", isAllRoomsSelected ? "#3f4444" : accent);
-  chatCard.style.setProperty("--message-context-short-label-color", isAllRoomsSelected ? "white" : "white");
+  chatCard.style.setProperty("--message-context-short-label-color", isAllRoomsSelected ? "#3f4444" : accent);
   chatCard.style.setProperty(
     "--message-context-strip-background",
     isAllRoomsSelected
@@ -866,6 +866,7 @@ function renderChatRecipients(state) {
             data-chat-room-id="${escapeHtml(room.id)}"
             data-chat-drag-source="pinned"
             draggable="true"
+            style="--thread-accent: ${escapeHtml(room.color || "#0f766e")};"
             type="button"
           >
             <span title="${escapeHtml(room.name)}">${escapeHtml(getRoomShortLabel(room))}</span>
@@ -883,6 +884,7 @@ function renderChatRecipients(state) {
             <button
               class="message-thread-drawer-select"
               data-chat-all="true"
+              style="--thread-accent: #879293;"
               type="button"
             >
               All Rooms
@@ -906,6 +908,7 @@ function renderChatRecipients(state) {
             <button
               class="message-thread-drawer-select"
               data-chat-room-id="${escapeHtml(room.id)}"
+              style="--thread-accent: ${escapeHtml(room.color || "#0f766e")};"
               type="button"
             >
               <span title="${escapeHtml(room.name)}">${escapeHtml(getRoomShortLabel(room))}</span>
