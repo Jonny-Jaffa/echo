@@ -79,8 +79,6 @@ const PINNED_CHAT_ROOMS_STORAGE_KEY = "pip-reception-pinned-chat-rooms";
 const CHAT_ROOM_ORDER_STORAGE_KEY = "pip-reception-chat-room-order";
 const RECEPTION_ALL_ROOMS_MESSAGE_GROUP_KEY = "reception-all-rooms";
 const ROOM_SHORT_NAME_MAX_LENGTH = 7;
-const NEUTRAL_MESSAGE_LIST_BACKGROUND =
-  "linear-gradient(90deg, rgba(135, 146, 147, 0.16), rgba(135, 146, 147, 0.04))";
 const NEUTRAL_MESSAGE_STRIP_BACKGROUND =
   "linear-gradient(90deg, rgba(135, 146, 147, 0.16), rgba(255, 255, 255, 0.86))";
 const ROOM_COLOUR_PALETTE = [
@@ -101,23 +99,6 @@ const ROOM_COLOUR_PALETTE = [
 function normalizeReceptionPingMessage(value) {
   const normalized = String(value || "").trim().replace(/\s+/g, " ").slice(0, 40);
   return normalized || "Reception";
-}
-
-function hexToRgba(hex, alpha) {
-  const normalized = String(hex || "").trim().replace(/^#/, "");
-  const expanded = normalized.length === 3
-    ? normalized.split("").map((character) => `${character}${character}`).join("")
-    : normalized;
-
-  if (!/^[0-9a-f]{6}$/i.test(expanded)) {
-    return `rgba(40, 143, 162, ${alpha})`;
-  }
-
-  const red = Number.parseInt(expanded.slice(0, 2), 16);
-  const green = Number.parseInt(expanded.slice(2, 4), 16);
-  const blue = Number.parseInt(expanded.slice(4, 6), 16);
-
-  return `rgba(${red}, ${green}, ${blue}, ${alpha})`;
 }
 
 let appState = null;
@@ -732,22 +713,13 @@ function syncMessageContext(state = appState) {
   chatCard.style.setProperty("--message-send-active-color", isAllRoomsSelected ? "var(--text)" : accent);
   chatCard.style.setProperty("--message-context-label-color", isAllRoomsSelected ? "#3f4444" : accent);
   chatCard.style.setProperty("--message-context-short-label-color", isAllRoomsSelected ? "#3f4444" : accent);
-  chatCard.style.setProperty(
-    "--message-context-strip-background",
-    isAllRoomsSelected
-      ? NEUTRAL_MESSAGE_STRIP_BACKGROUND
-      : activeRoom
+  const messageStripBackground = isAllRoomsSelected
+    ? NEUTRAL_MESSAGE_STRIP_BACKGROUND
+    : activeRoom
       ? `linear-gradient(90deg, color-mix(in srgb, ${accent} 15%, white), color-mix(in srgb, ${accent} 4%, white) 72%, #ffffff)`
-      : NEUTRAL_MESSAGE_STRIP_BACKGROUND,
-  );
-  chatCard.style.setProperty(
-    "--message-list-background",
-    isAllRoomsSelected
-      ? NEUTRAL_MESSAGE_LIST_BACKGROUND
-      : activeRoom
-      ? `linear-gradient(90deg, ${hexToRgba(activeRoom.color, 0.16)}, ${hexToRgba(activeRoom.color, 0.04)})`
-      : NEUTRAL_MESSAGE_LIST_BACKGROUND,
-  );
+      : NEUTRAL_MESSAGE_STRIP_BACKGROUND;
+  chatCard.style.setProperty("--message-context-strip-background", messageStripBackground);
+  chatCard.style.setProperty("--message-list-background", messageStripBackground);
   chatCard.style.setProperty("--message-bubble-incoming", activeRoom?.color || "#418191");
 }
 

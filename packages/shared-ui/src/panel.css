@@ -451,6 +451,8 @@
   align-content: start;
   background: var(--message-list-background);
   border-radius: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.72);
+  border-top: none;
 }
 
 .message-item {
@@ -615,7 +617,7 @@
 .message-edit-input {
   width: 100%;
   min-height: 36px;
-  border: 1px solid var(--field-focus);
+  border: none;
   border-radius: 8px;
   padding: 8px 10px;
   background: white;
@@ -735,6 +737,7 @@
   line-height: 1.4;
   overflow-y: auto;
   scrollbar-width: none;
+  border: 1px solid rgba(255, 255, 255, 0.72);
 }
 
 .message-compose-input::-webkit-scrollbar {
@@ -771,8 +774,8 @@
   content: "";
   position: absolute;
   inset: 0;
-  width: 16px;
-  height: 16px;
+  width: 18px;
+  height: 18px;
   margin: auto;
   background-color: currentColor;
   -webkit-mask-image: var(--icon-send);

@@ -135,9 +135,14 @@ openMessageButton?.addEventListener("click", (event) => {
   event.stopPropagation();
   if (currentPayload.kind === "receptionPing") {
     window.pipMessagePopup?.dismissReceptionPing?.();
+    window.pipMessagePopup?.openMain?.({
+      openMode: "messages",
+      kind: currentPayload.kind || "message",
+    });
+    return;
   }
+
   window.pipMessagePopup?.openMain?.({
-    openMode: "messages",
     kind: currentPayload.kind || "message",
   });
 });

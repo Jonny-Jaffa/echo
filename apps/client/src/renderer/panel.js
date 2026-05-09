@@ -30,7 +30,6 @@ const messageComposeInput = document.querySelector("#message-compose-input");
 const messageSendButton = document.querySelector("#message-send-button");
 const messageGroupList = document.querySelector("#message-group-list");
 const addMessageGroupButton = document.querySelector("#add-message-group-button");
-const buttonGrid = document.querySelector("#button-grid");
 const statusDot = document.querySelector("#status-dot");
 const statusIndicator = document.querySelector("#status-indicator");
 const hardwareStatusLabel = document.querySelector("#hardware-status");
@@ -1836,23 +1835,17 @@ function syncMessageContext() {
   const activeRoom = configState?.rooms?.find((room) => room.id === activeThread?.key);
   const isAllRoomsThread = activeThread?.key === "all";
   const specialThreadAccent = isAllRoomsThread ? "#879293" : "#000000";
-  const specialListBackground =
-    `linear-gradient(90deg, ${hexToRgba(specialThreadAccent, 0.16)}, ${hexToRgba(specialThreadAccent, 0.04)})`;
   const specialStripBackground =
-    `linear-gradient(90deg, ${hexToRgba(specialThreadAccent, 0.16)}, rgba(255, 255, 255, 0.86))`;
+    `linear-gradient(90deg, color-mix(in srgb, ${specialThreadAccent} 15%, white), color-mix(in srgb, ${specialThreadAccent} 4%, white) 72%, #ffffff)`;
   const accent = getMessageThreadAccent(activeThread);
   const labelColor = isAllRoomsThread ? "#3f4444" : activeRoom?.color || "var(--accent)";
   const iconColor = labelColor;
-  const listBackground = isAllRoomsThread
-    ? specialListBackground
-    : activeRoom?.color
-      ? `linear-gradient(90deg, ${hexToRgba(activeRoom.color, 0.16)}, ${hexToRgba(activeRoom.color, 0.04)})`
-      : specialListBackground;
   const stripBackground = isAllRoomsThread
     ? specialStripBackground
     : activeRoom?.color
-      ? `linear-gradient(90deg, ${hexToRgba(activeRoom.color, 0.16)}, #ffffff)`
+      ? `linear-gradient(90deg, color-mix(in srgb, ${activeRoom.color} 15%, white), color-mix(in srgb, ${activeRoom.color} 4%, white) 72%, #ffffff)`
       : specialStripBackground;
+  const listBackground = stripBackground;
   const fullLabel = getThreadFullLabel(activeThread);
 
   messageContextLabel.textContent = fullLabel;
@@ -2124,10 +2117,6 @@ function selectMessageThread(threadKey, { closeDrawer = false } = {}) {
 function renderButtons() {
   const buttons = getResolvedPanelButtons();
 
-  if (buttonGrid) {
-    buttonGrid.innerHTML = buttons.map((button) => renderButton(button, { interactive: false })).join("");
-  }
-
   if (quickActionGrid) {
     quickActionGrid.innerHTML = buttons.map((button) => renderButton(button, { interactive: true })).join("");
   }
@@ -2241,6 +2230,36 @@ function renderButtonAppearanceSummary(roomId, mode) {
   `;
 }
 
+function renderNeoButtonPreviewGrid(roomId) {
+  const appearance = getRoomButtonAppearance(roomId);
+  const buttons = getResolvedPanelButtons();
+
+  return `
+    <div class="neo-button-preview-grid" aria-label="Neo button preview">
+      ${buttons.map((button) => {
+        const buttonLabel = String(button.buttonLabel || button.label || "").trim();
+        const compactPreviewClass = buttonLabel.length >= NEO_BUTTON_LABEL_MAX_LENGTH ? "has-compact-label" : "";
+
+        return `
+          <button
+            class="panel-button is-preview neo-button-preview-button ${button.isActive ? "is-active" : ""} ${compactPreviewClass}"
+            type="button"
+            ${button.disabled ? "disabled" : ""}
+            style="
+              --button-background: ${escapeHtml(appearance.defaultBackground)};
+              --button-active-background: ${escapeHtml(appearance.activeBackground)};
+              --button-text: ${escapeHtml(appearance.defaultText)};
+              --button-active-text: ${escapeHtml(appearance.activeText)};
+            "
+          >
+            <span class="panel-button-text">${escapeHtml(buttonLabel)}</span>
+          </button>
+        `;
+      }).join("")}
+    </div>
+  `;
+}
+
 function renderButtonAppearancePicker() {
   const state = buttonAppearancePickerState;
   const pickerHost = selectedRoomVolume?.querySelector(".selected-room-button-appearance-grid");
@@ -2261,8 +2280,6 @@ function renderButtonAppearancePicker() {
   const modeKeys = getButtonAppearanceModeKeys(state.mode);
   const background = appearance[modeKeys.background];
   const textColour = appearance[modeKeys.text];
-  const previewText = getRoomButtonPreviewText(room.id);
-  const compactPreviewClass = previewText.length >= NEO_BUTTON_LABEL_MAX_LENGTH ? "has-compact-label" : "";
   const existingPopover = pickerHost.querySelector(".button-style-popover");
   const popoverHtml = `
     <div class="button-style-popover" role="dialog" aria-label="${escapeHtml(modeKeys.title)}">
@@ -2274,18 +2291,6 @@ function renderButtonAppearancePicker() {
         <button class="button-style-close" data-button-style-close="true" type="button" aria-label="Close style picker">Close</button>
       </div>
       <div class="button-style-popover-body">
-        <div class="button-style-preview-wrap">
-          <button
-            class="panel-button is-preview button-style-live-preview ${compactPreviewClass}"
-            type="button"
-            style="
-              --button-background: ${escapeHtml(background)};
-              --button-text: ${escapeHtml(textColour)};
-            "
-          >
-            <span class="panel-button-text">${escapeHtml(previewText)}</span>
-          </button>
-        </div>
         <div class="button-style-controls">
           ${renderButtonBackgroundSwatches(background)}
           <div class="button-style-swatch-section">
@@ -2744,6 +2749,12 @@ function renderSelectedRoomVolumeControl() {
           ${renderRoomActionRows(room.id)}
         </div>
       </div>
+      <div class="selected-room-button-preview-card">
+        <div class="selected-room-volume-header">
+          <div class="selected-room-volume-title">Neo Button Preview</div>
+        </div>
+        ${renderNeoButtonPreviewGrid(room.id)}
+      </div>
       <div class="selected-room-button-style-card">
         <div class="selected-room-volume-header">
           <div class="selected-room-volume-title">Button Style</div>
@@ -3190,6 +3201,7 @@ function getReceptionPingPopupPayload() {
       id: button.id,
       label: button.label,
       buttonLabel: button.buttonLabel,
+      color: button.color,
       isActive: Boolean(button.isActive),
       disabled: Boolean(button.disabled),
     })),
@@ -3210,18 +3222,11 @@ function refreshReceptionPingPopup(options = {}) {
 
 function renderButton(button, options = {}) {
   const interactive = options.interactive !== false;
-  const buttonAppearance = getButtonAppearanceSettings();
   const buttonLabel = String(button.buttonLabel || button.label || "");
   const labelLength = buttonLabel.length;
 
   const attributes = [
     `class="panel-button ${button.isActive ? "is-active" : ""} ${interactive ? "" : "is-preview"} ${labelLength >= NEO_BUTTON_LABEL_MAX_LENGTH ? "has-compact-label" : ""}"`,
-    `style="
-        --button-background: ${escapeHtml(buttonAppearance.defaultBackground)};
-        --button-active-background: ${escapeHtml(buttonAppearance.activeBackground)};
-        --button-text: ${escapeHtml(buttonAppearance.defaultText)};
-        --button-active-text: ${escapeHtml(buttonAppearance.activeText)};
-      "`,
     'type="button"',
   ];
 
@@ -3622,7 +3627,7 @@ async function init() {
 
   applyPersistedSettings(persistedSettings || {});
   panelDeviceId = getPanelDeviceId();
-  setPanelView("waiting");
+  setPanelView("boot");
   setServerPanelVisibility(isSettingsWindow);
   setActiveSettingsSidebarLink("settings-general");
   await setPanelDisplayMode(panelDisplayMode, { persist: false, resize: false });

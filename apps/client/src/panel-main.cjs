@@ -12,13 +12,13 @@ const SURGERY_THREAD_RAIL_WIDTH = 63;
 const SURGERY_WINDOW_WIDTH = SURGERY_PANEL_WIDTH + SURGERY_THREAD_RAIL_WIDTH;
 const SURGERY_WINDOW_EXPANDED_WIDTH = 780 + SURGERY_THREAD_RAIL_WIDTH;
 const SURGERY_SETTINGS_WINDOW_WIDTH = 780;
-const SURGERY_WINDOW_HEIGHT = 374;
-const SURGERY_WINDOW_BUTTONS_HEIGHT = 245;
-const SURGERY_WINDOW_BOTH_HEIGHT = 580;
+const SURGERY_WINDOW_HEIGHT = 365;
+const SURGERY_WINDOW_BUTTONS_HEIGHT = 224;
+const SURGERY_WINDOW_BOTH_HEIGHT = 540;
 const SURGERY_BANNER_HEIGHT = 50;
 const SURGERY_SETTINGS_WINDOW_HEIGHT = 800;
 const DEFAULT_SURGERY_SOUND = "notification_sound_01";
-const MESSAGE_POPUP_WIDTH = 340;
+const MESSAGE_POPUP_WIDTH = 380;
 const RECEPTION_PING_POPUP_WIDTH = 352;
 const MESSAGE_POPUP_MIN_HEIGHT = 62;
 const MESSAGE_POPUP_MAX_HEIGHT = 126;
@@ -1261,10 +1261,11 @@ function showAboutDialog() {
             radial-gradient(circle at top left, rgba(15, 118, 110, 0.16), transparent 38%),
             linear-gradient(145deg, #edf7f3, #fbfcfc);
           color: var(--text);
-          font-family: "Avenir Next", "Segoe UI", sans-serif;
+          font-family: "Roboto", "Avenir Next", "Segoe UI", sans-serif;
         }
 
         .about-card {
+          position: relative;
           width: calc(100vw - 32px);
           max-width: 360px;
           padding: 28px 26px 22px;
@@ -1277,7 +1278,7 @@ function showAboutDialog() {
 
         .about-logo {
           display: block;
-          width: min(220px, 100%);
+          width: min(300px, 100%);
           height: auto;
           margin: 0 auto 22px;
         }
@@ -1301,16 +1302,43 @@ function showAboutDialog() {
         }
 
         .about-close {
-          margin-top: 22px;
-          min-width: 116px;
+          position: absolute;
+          top: 12px;
+          right: 12px;
+          width: 32px;
+          height: 32px;
           border: 0;
           border-radius: 999px;
-          padding: 11px 18px;
-          background: var(--accent);
-          color: white;
-          font: inherit;
-          font-weight: 700;
+          padding: 0;
+          background: transparent;
+          color: var(--text);
           cursor: pointer;
+          overflow: hidden;
+          text-indent: -9999px;
+        }
+
+        .about-close::before,
+        .about-close::after {
+          content: "";
+          position: absolute;
+          top: 50%;
+          left: 50%;
+          width: 15px;
+          height: 2px;
+          border-radius: 999px;
+          background: currentColor;
+        }
+
+        .about-close::before {
+          transform: translate(-50%, -50%) rotate(45deg);
+        }
+
+        .about-close::after {
+          transform: translate(-50%, -50%) rotate(-45deg);
+        }
+
+        .about-close:hover {
+          background: rgba(16, 35, 31, 0.08);
         }
       </style>
     </head>
@@ -1321,7 +1349,7 @@ function showAboutDialog() {
         <p class="about-version">Version ${escapeHtml(appVersion)}</p>
         <p class="about-line">Developed by Blackworks</p>
         <p class="about-line">2026 &copy; Copyright | All Rights Reserved</p>
-        <button class="about-close" type="button" onclick="window.close()">Close</button>
+        <button class="about-close" type="button" onclick="window.close()" aria-label="Close">Close</button>
       </main>
     </body>
   </html>`;
