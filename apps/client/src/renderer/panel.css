@@ -2985,3 +2985,16 @@ body[data-window-view="settings"] .role-launch-card {
   min-height: 0;
   padding: 16px;
 }
+
+/* ── Emoji styles ── */
+
+.pip-emoji {
+  display: inline-block;
+  width: 1.2em;
+  height: 1.2em;
+  vertical-align: -0.2em;
+  object-fit: contain;
+  pointer-events: none;
+  -webkit-user-drag: none;
+  user-select: none;
+}
