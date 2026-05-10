@@ -1,3 +1,5 @@
+import { renderEmojis } from "../../../packages/shared/src/emojis.js";
+
 const card = document.querySelector("#notification-card");
 const alertList = document.querySelector("#alert-list");
 const rolePanel = document.querySelector("#role-panel");
@@ -950,7 +952,7 @@ function renderChatMessages(state) {
         <article class="message-item ${isOutgoing ? "is-outgoing" : "is-incoming"}" style="--message-bubble-incoming: ${escapeHtml(senderRoom?.color || "#418191")}" data-message-id="${escapeHtml(messageId)}">
           <div class="message-bubble">
             <div class="message-bubble-body ${isSingleLine ? "is-single-line" : "is-multi-line"}">
-              <p class="message-item-text">${escapeHtml(text)}${editedLabel}</p>
+              <p class="message-item-text">${renderEmojis(text)}${editedLabel}</p>
               <span class="message-item-time">${escapeHtml(timestamp)}</span>
             </div>
           </div>
