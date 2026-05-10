@@ -1,4 +1,4 @@
-import { renderEmojis } from "../../../packages/shared/src/emojis.js";
+import { renderEmojis } from "../../../../packages/shared/src/emojis.js";
 
 const roomSelect = document.querySelector("#room-select");
 const serverInput = document.querySelector("#server-input");

@@ -1,4 +1,4 @@
-import { renderEmojis } from "../../../packages/shared/src/emojis.js";
+import { renderEmojis } from "../../../../packages/shared/src/emojis.js";
 
 const card = document.querySelector("#notification-card");
 const alertList = document.querySelector("#alert-list");
