@@ -2171,7 +2171,7 @@ function startInlineEdit(messageId) {
     // For immediate feedback, we can update the text locally
     if (!saved) {
       bubbleBody.innerHTML = `
-        <p class="message-item-text">${escapeHtml(currentText)}</p>
+        <p class="message-item-text">${renderEmojis(currentText)}</p>
         <span class="message-item-time">${messageItem.querySelector(".message-item-time")?.textContent || ""}</span>
       `;
     }
