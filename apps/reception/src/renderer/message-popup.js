@@ -106,10 +106,4 @@ messageButton?.addEventListener("click", (event) => {
   window.pipMessagePopup?.openMessage?.();
 });
 
-popup?.addEventListener("click", (event) => {
-  if (event.target instanceof Element && event.target.closest("button")) {
-    return;
-  }
-
-  window.pipMessagePopup?.openMain?.();
-});
+// Popup background click removed - only explicit button clicks trigger actions.

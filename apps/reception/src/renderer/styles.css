@@ -744,7 +744,7 @@ select {
 .compact-layout {
   display: grid;
   gap: 8px;
-  padding: 6px 4px 4px;
+  padding: 0;
 }
 
 .compact-room-grid-container {

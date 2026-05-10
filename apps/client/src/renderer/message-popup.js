@@ -169,11 +169,4 @@ buttonGrid?.addEventListener("click", (event) => {
   });
 });
 
-popup?.addEventListener("click", () => {
-  if (currentPayload.kind === "receptionPing") {
-    window.pipMessagePopup?.dismissReceptionPing?.();
-    return;
-  }
-
-  window.pipMessagePopup?.openMain?.();
-});
+// Popup background click removed - only explicit button clicks trigger actions.

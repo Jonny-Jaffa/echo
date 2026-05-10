@@ -42,6 +42,7 @@ const detectedServerAddressOutput = document.querySelector("#detected-server-add
 const selectedDeviceRoleLabel = document.querySelector("#selected-device-role-label");
 const launchAtStartupInput = document.querySelector("#launch-at-startup-input");
 const alwaysOnTopInput = document.querySelector("#always-on-top-input");
+const popupPositionInput = document.querySelector("#popup-position-input");
 const messageRetentionInput = document.querySelector("#message-retention-input");
 const receptionPingMessageInput = document.querySelector("#reception-ping-message-input");
 const audioNotificationSoundInput = document.querySelector("#audio-notification-sound-input");
@@ -927,7 +928,7 @@ function renderChatMessages(state) {
       const isOutgoing = message.senderType === "reception";
       const senderRoom = getRoomById(String(message.senderRoomId || "").trim(), state);
       const text = String(message.text || "");
-      const timestamp = formatRelativeTime(message.timestamp);
+      const timestamp = formatMessageTime(message.timestamp);
       const isSingleLine = text.length <= 34 && !text.includes("\n");
       const isDeleted = Boolean(message.deleted);
       const messageId = String(message.messageId || "").trim();
@@ -1226,6 +1227,9 @@ function populateEditor(config) {
   authAccessKeyInput.value = draftConfig.auth?.accessKey || "";
   launchAtStartupInput.checked = draftConfig.display?.launchAtStartup !== false;
   alwaysOnTopInput.checked = Boolean(draftConfig.display.alwaysOnTop);
+  if (popupPositionInput) {
+    popupPositionInput.value = draftConfig.display?.popupPosition || "bottomRight";
+  }
   if (messageRetentionInput) {
     messageRetentionInput.value = String(draftConfig.display?.messageRetentionMinutes ?? 60);
   }
@@ -1401,6 +1405,16 @@ function renderRoomColourSwatches(room, index) {
   }).join("");
 }
 
+function formatMessageTime(timestamp) {
+  const sentAt = new Date(timestamp);
+
+  if (Number.isNaN(sentAt.getTime())) {
+    return "";
+  }
+
+  return `${sentAt.getHours()}:${String(sentAt.getMinutes()).padStart(2, "0")}`;
+}
+
 function formatRelativeTime(timestamp) {
   const sentAt = new Date(timestamp).getTime();
   const diffMs = Math.max(0, Date.now() - sentAt);
@@ -1484,6 +1498,7 @@ function buildConfigFromForm() {
       ...draftConfig.display,
       launchAtStartup: launchAtStartupInput.checked,
       alwaysOnTop: alwaysOnTopInput.checked,
+      popupPosition: popupPositionInput?.value || "bottomRight",
       messageRetentionMinutes: Number(messageRetentionInput?.value) || 60,
       receptionPingMessage: normalizeReceptionPingMessage(receptionPingMessageInput?.value),
       adminMode: false,

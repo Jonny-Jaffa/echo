@@ -21,7 +21,7 @@ const DEFAULT_SURGERY_SOUND = "notification_sound_01";
 const MESSAGE_POPUP_WIDTH = 380;
 const RECEPTION_PING_POPUP_WIDTH = 352;
 const MESSAGE_POPUP_MIN_HEIGHT = 62;
-const MESSAGE_POPUP_MAX_HEIGHT = 126;
+const MESSAGE_POPUP_MAX_HEIGHT = 172;
 const RECEPTION_PING_POPUP_HEIGHT = 238;
 const MESSAGE_POPUP_MARGIN = 18;
 const SURGERY_SOUND_FILE_MAP = Object.fromEntries(
@@ -69,6 +69,11 @@ function normalizePanelDisplayMode(mode) {
   return ["messages", "buttons", "both"].includes(normalizedMode)
     ? normalizedMode
     : "messages";
+}
+
+function normalizePopupPosition(position) {
+  const normalized = String(position || "bottomRight").trim().toLowerCase();
+  return normalized === "topright" ? "topRight" : "bottomRight";
 }
 
 function getPanelDisplayModeHeight(mode) {
@@ -152,6 +157,7 @@ let clientSettings = {
   roomMessageGroups: {},
   roomPinnedMessageThreads: {},
   panelDisplayMode: "messages",
+  popupPosition: "bottomRight",
 };
 
 function normalizeRoomActionNotification(notification, index, roomId = "") {
@@ -734,6 +740,7 @@ function loadClientSettings() {
       roomMessageGroups: normalizeRoomMessageGroups(parsed.roomMessageGroups),
       roomPinnedMessageThreads: normalizeRoomPinnedMessageThreads(parsed.roomPinnedMessageThreads),
       panelDisplayMode: normalizePanelDisplayMode(parsed.panelDisplayMode),
+      popupPosition: normalizePopupPosition(parsed.popupPosition),
     };
     currentPanelDisplayMode = clientSettings.panelDisplayMode;
     if (shouldPurgeConfiguredMessageGroups) {
@@ -959,12 +966,12 @@ function estimateMessagePopupHeight(text = "") {
   const explicitLineCount = normalizedText
     ? normalizedText.split(/\r?\n/).length
     : 1;
-  const wrappedLineCount = Math.ceil(normalizedText.length / 32) || 1;
+  const wrappedLineCount = Math.ceil(normalizedText.length / 18) || 1;
   const lineCount = Math.max(explicitLineCount, wrappedLineCount);
 
   return Math.min(
     MESSAGE_POPUP_MAX_HEIGHT,
-    MESSAGE_POPUP_MIN_HEIGHT + Math.max(0, lineCount - 1) * 22,
+    MESSAGE_POPUP_MIN_HEIGHT + Math.max(0, lineCount - 1) * 20,
   );
 }
 
@@ -982,6 +989,16 @@ function getMessagePopupBounds(options = {}) {
     ? screen.getDisplayMatching(referenceBounds)
     : screen.getPrimaryDisplay();
   const workArea = targetDisplay.workArea;
+  const position = normalizePopupPosition(clientSettings.popupPosition);
+
+  if (position === "topRight") {
+    return {
+      x: workArea.x + workArea.width - popupWidth - MESSAGE_POPUP_MARGIN,
+      y: workArea.y + MESSAGE_POPUP_MARGIN,
+      width: popupWidth,
+      height: popupHeight,
+    };
+  }
 
   return {
     x: workArea.x + workArea.width - popupWidth - MESSAGE_POPUP_MARGIN,
@@ -1819,6 +1836,10 @@ app.whenReady().then(async () => {
         typeof patch.panelDisplayMode === "string"
           ? normalizePanelDisplayMode(patch.panelDisplayMode)
           : clientSettings.panelDisplayMode,
+      popupPosition:
+        typeof patch.popupPosition === "string"
+          ? normalizePopupPosition(patch.popupPosition)
+          : clientSettings.popupPosition,
     };
     currentPanelDisplayMode = clientSettings.panelDisplayMode;
     saveClientSettings();
@@ -1841,6 +1862,10 @@ app.whenReady().then(async () => {
 
     if (mainWindow && !mainWindow.isDestroyed()) {
       mainWindow.setAlwaysOnTop(Boolean(clientSettings.alwaysOnTop));
+    }
+
+    if (messagePopupWindow && !messagePopupWindow.isDestroyed()) {
+      messagePopupWindow.setBounds(getMessagePopupBounds());
     }
 
     if (

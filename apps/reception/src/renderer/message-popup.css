@@ -141,7 +141,7 @@ body.is-visible .message-popup {
   align-self: center;
   min-width: 0;
   margin: 0;
-  padding: 8px 8px 8px 16px;
+  padding: 4px 8px 4px 16px;
   color: var(--popup-text);
   font-family: Arial, Helvetica, sans-serif;
   font-size: 15px;
@@ -151,19 +151,23 @@ body.is-visible .message-popup {
   display: -webkit-box;
   -webkit-line-clamp: 4;
   -webkit-box-orient: vertical;
+  white-space: pre-wrap;
+  word-break: break-word;
 }
 
 .message-popup[data-popup-kind="alert"] .message-popup-text {
   flex: 1;
-  display: block;
+  display: -webkit-box;
   min-width: 0;
-  padding: 0;
+  padding: 8px 0;
   font-size: 15px;
   font-weight: 500;
-  line-height: normal;
-  white-space: nowrap;
+  line-height: 1.25;
   overflow: hidden;
-  text-overflow: ellipsis;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  white-space: pre-wrap;
+  word-break: break-word;
 }
 
 .message-popup-actions {

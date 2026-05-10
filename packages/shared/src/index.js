@@ -231,6 +231,7 @@ export function normalizeConfig(config) {
           ? config.display.launchAtStartup
           : true,
       messageRetentionMinutes: Math.max(1, Number(config.display?.messageRetentionMinutes) || 60),
+      popupPosition: normalizePopupPosition(config.display?.popupPosition),
       receptionPingMessage: normalizeReceptionPingMessage(config.display?.receptionPingMessage),
       windowPosition: normalizeWindowPosition(config.display?.windowPosition),
     },
@@ -345,6 +346,11 @@ function normalizeCssBackground(value, fallback) {
   }
 
   return normalizeHexColor(normalized, fallback);
+}
+
+function normalizePopupPosition(popupPosition) {
+  const normalized = String(popupPosition || "").trim().toLowerCase();
+  return normalized === "topright" ? "topRight" : "bottomRight";
 }
 
 function normalizeWindowPosition(windowPosition) {

@@ -45,6 +45,7 @@ const receptionOfflineBanner = document.querySelector("#reception-offline-banner
 const launchAtStartupInput = document.querySelector("#launch-at-startup-input");
 const showPanelAtStartupInput = document.querySelector("#show-panel-at-startup-input");
 const alwaysOnTopInput = document.querySelector("#always-on-top-input");
+const popupPositionInput = document.querySelector("#popup-position-input");
 const messageSoundInput = document.querySelector("#message-sound-input");
 const messageSoundTestButton = document.querySelector("#message-sound-test-button");
 const messageVolumeInput = document.querySelector("#message-volume-input");
@@ -1920,6 +1921,8 @@ function renderChatMessages() {
       const isOutgoing = String(message?.senderRoomId || "").trim() === currentRoomId;
       const isDeleted = Boolean(message.deleted);
       const messageId = String(message.messageId || "").trim();
+      const text = String(message.text || "");
+      const isSingleLine = text.length <= 34 && !text.includes("\n");
       const incomingStyle = isOutgoing
         ? ""
         : ` style="--message-bubble-incoming: ${escapeHtml(getIncomingMessageBubbleColor(message))}; --message-bubble-text: white; --message-bubble-time: #ededed;"`;
@@ -1940,8 +1943,8 @@ function renderChatMessages() {
       return `
         <article class="message-item ${isOutgoing ? "is-outgoing" : "is-incoming"}"${incomingStyle} data-message-id="${escapeHtml(messageId)}">
           <div class="message-bubble">
-            <div class="message-bubble-body">
-              <p class="message-item-text">${escapeHtml(message.text || "")}${editedLabel}</p>
+            <div class="message-bubble-body ${isSingleLine ? "is-single-line" : "is-multi-line"}">
+              <p class="message-item-text">${escapeHtml(text)}${editedLabel}</p>
               <span class="message-item-time">${escapeHtml(formatMessageTime(message.timestamp))}</span>
             </div>
           </div>
@@ -1950,7 +1953,6 @@ function renderChatMessages() {
     })
     .join("");
 
-  updateMessageBubbleLayouts();
   if (wasPinnedToBottom) {
     requestAnimationFrame(() => {
       messageList.scrollTop = messageList.scrollHeight;
@@ -1959,32 +1961,6 @@ function renderChatMessages() {
   } else {
     requestAnimationFrame(updateMessageScrollbar);
   }
-}
-
-function updateMessageBubbleLayouts() {
-  if (!messageList) {
-    return;
-  }
-
-  messageList.querySelectorAll(".message-bubble-body").forEach((bubbleBody) => {
-    if (!(bubbleBody instanceof HTMLElement)) {
-      return;
-    }
-
-    const textElement = bubbleBody.querySelector(".message-item-text");
-
-    if (!(textElement instanceof HTMLElement)) {
-      return;
-    }
-
-    const computedStyle = window.getComputedStyle(textElement);
-    const fontSize = Number.parseFloat(computedStyle.fontSize) || 13;
-    const lineHeight = Number.parseFloat(computedStyle.lineHeight) || fontSize * 1.4;
-    const isSingleLine = textElement.scrollHeight <= lineHeight * 1.5;
-
-    bubbleBody.classList.toggle("is-single-line", isSingleLine);
-    bubbleBody.classList.toggle("is-multi-line", !isSingleLine);
-  });
 }
 
 function renderMessagingUi() {
@@ -3608,6 +3584,9 @@ function applyPersistedSettings(nextSettings = {}) {
   roomMessageGroups = normalizeRoomMessageGroups(panelSettings.roomMessageGroups);
   roomPinnedMessageThreads = normalizeRoomPinnedMessageThreads(panelSettings.roomPinnedMessageThreads);
   panelDisplayMode = normalizePanelDisplayMode(panelSettings.panelDisplayMode);
+  if (popupPositionInput) {
+    popupPositionInput.value = panelSettings.popupPosition || "bottomRight";
+  }
   renderMessageSoundSettings();
 }
 
@@ -4175,6 +4154,12 @@ showPanelAtStartupInput?.addEventListener("change", async () => {
 alwaysOnTopInput?.addEventListener("change", async () => {
   await window.pipPanel.updateSettings({
     alwaysOnTop: alwaysOnTopInput.checked,
+  }).catch(() => {});
+});
+
+popupPositionInput?.addEventListener("change", async () => {
+  await window.pipPanel.updateSettings({
+    popupPosition: popupPositionInput.value,
   }).catch(() => {});
 });
 

@@ -49,7 +49,7 @@ const GADGET_WINDOW_HEIGHT_TRIM = 5;
 const MESSAGE_POPUP_WIDTH = 380;
 const ALERT_POPUP_WIDTH = 460;
 const MESSAGE_POPUP_MIN_HEIGHT = 62;
-const MESSAGE_POPUP_MAX_HEIGHT = 126;
+const MESSAGE_POPUP_MAX_HEIGHT = 172;
 const ALERT_POPUP_HEIGHT = 62;
 const MESSAGE_POPUP_MARGIN = 18;
 const STARTUP_LOG_PATH = path.join(os.tmpdir(), "pip-reception.log");
@@ -381,10 +381,14 @@ function getMessagePopupBounds(options = {}) {
     ? screen.getDisplayMatching(referenceBounds)
     : screen.getPrimaryDisplay();
   const workArea = targetDisplay.workArea;
+  const popupPosition = String(configState?.display?.popupPosition || "bottomRight").trim().toLowerCase();
+  const isTopRight = popupPosition === "topright";
 
   return {
     x: workArea.x + workArea.width - popupWidth - MESSAGE_POPUP_MARGIN,
-    y: workArea.y + workArea.height - popupHeight - MESSAGE_POPUP_MARGIN,
+    y: isTopRight
+      ? workArea.y + MESSAGE_POPUP_MARGIN
+      : workArea.y + workArea.height - popupHeight - MESSAGE_POPUP_MARGIN,
     width: popupWidth,
     height: popupHeight,
   };
@@ -395,12 +399,12 @@ function estimateMessagePopupHeight(text = "") {
   const explicitLineCount = normalizedText
     ? normalizedText.split(/\r?\n/).length
     : 1;
-  const wrappedLineCount = Math.ceil(normalizedText.length / 32) || 1;
+  const wrappedLineCount = Math.ceil(normalizedText.length / 18) || 1;
   const lineCount = Math.max(explicitLineCount, wrappedLineCount);
 
   return Math.min(
     MESSAGE_POPUP_MAX_HEIGHT,
-    MESSAGE_POPUP_MIN_HEIGHT + Math.max(0, lineCount - 1) * 22,
+    MESSAGE_POPUP_MIN_HEIGHT + Math.max(0, lineCount - 1) * 20,
   );
 }
 
