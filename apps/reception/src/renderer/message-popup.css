@@ -32,13 +32,13 @@ body {
 .message-popup {
   position: relative;
   display: grid;
-  grid-template-columns: 64px minmax(0, 1fr) auto;
+  grid-template-columns: 54px minmax(0, 1fr) auto;
   align-items: stretch;
   min-height: 42px;
   margin: 8px;
   overflow: hidden;
   border: 1px solid rgba(16, 35, 31, 0.16);
-  border-radius: 20px;
+  border-radius: 999px;
   background:
     linear-gradient(
       90deg,
@@ -62,7 +62,7 @@ body {
   gap: 12px;
   min-height: 42px;
   padding: 0 8px 0 0;
-  border-radius: 20px;
+  border-radius: 999px;
   background:
     linear-gradient(
       90deg,
@@ -130,7 +130,7 @@ body.is-visible .message-popup {
   justify-content: center;
   border-radius: 0 2px 2px 0;
   font-size: 20px;
-  font-weight: 600;
+  font-weight: 500;
   line-height: 1.1;
   flex-shrink: 0;
 }

@@ -1595,6 +1595,7 @@ alertList?.addEventListener("click", async (event) => {
     renderChatMessages(appState);
     syncChatComposerState();
     reportGadgetHeight();
+    requestAnimationFrame(focusChatComposer);
   }
 
 });
@@ -1899,6 +1900,7 @@ chatAllHeaderButton?.addEventListener("click", () => {
   renderChatMessages(appState);
   syncChatComposerState();
   reportGadgetHeight();
+  requestAnimationFrame(focusChatComposer);
 });
 
 chatCollapseButton?.addEventListener("click", () => {
@@ -1916,6 +1918,7 @@ chatAllRoomsButton?.addEventListener("click", () => {
     renderChatMessages(appState);
     syncChatComposerState();
     reportGadgetHeight();
+    requestAnimationFrame(focusChatComposer);
     return;
   }
 
@@ -1926,6 +1929,7 @@ chatAllRoomsButton?.addEventListener("click", () => {
   renderChatMessages(appState);
   syncChatComposerState();
   reportGadgetHeight();
+  requestAnimationFrame(focusChatComposer);
 });
 
 chatSendButton?.addEventListener("click", async () => {

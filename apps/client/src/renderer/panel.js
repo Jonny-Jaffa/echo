@@ -4696,6 +4696,7 @@ messageThreadList?.addEventListener("click", (event) => {
   }
 
   selectMessageThread(threadKey);
+  requestAnimationFrame(focusMessageComposer);
 });
 
 selectedRoomVolume?.addEventListener("click", async (event) => {

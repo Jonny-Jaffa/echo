@@ -2033,8 +2033,6 @@ body[data-thread-rail-collapsed="true"] .thread-rail .message-thread-scroll-wrap
 
 .message-compose-input:focus {
   outline: none;
-  border-color: var(--field-focus);
-  box-shadow: 0 0 0 2px color-mix(in srgb, var(--field-focus) 24%, transparent);
 }
 
 .message-compose-input::placeholder {
@@ -2196,10 +2194,9 @@ body[data-thread-rail-collapsed="true"] .thread-rail .message-thread-scroll-wrap
 .room-action-input:focus,
 .selected-room-mode-select:focus,
 .selected-room-sound-select:focus,
-.selected-room-volume-slider:focus,
-.message-compose-input:focus {
+.selected-room-volume-slider:focus {
   outline: none;
-  border-color: var(--field-focus);
+  border-color: none;
   box-shadow: 0 0 0 2px color-mix(in srgb, var(--field-focus) 24%, transparent);
 }
 

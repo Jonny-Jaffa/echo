@@ -37,14 +37,13 @@ body {
 .message-popup {
   position: relative;
   display: grid;
-  grid-template-columns: 1fr 36px 36px;
-  grid-template-rows: 1fr;
+  grid-template-columns: 54px minmax(0, 1fr) auto;
   align-items: stretch;
   min-height: 42px;
   margin: 8px;
   overflow: hidden;
   border: 1px solid rgba(16, 35, 31, 0.16);
-  border-radius: 20px;
+  border-radius: 999px;
   background:
     linear-gradient(
       90deg,

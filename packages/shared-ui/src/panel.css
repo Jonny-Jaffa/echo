@@ -747,8 +747,8 @@
 
 .message-compose-input:focus {
   outline: none;
-  border-color: var(--field-focus);
-  box-shadow: 0 0 0 2px color-mix(in srgb, var(--field-focus) 24%, transparent);
+  /* border-color: var(--field-focus);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--field-focus) 24%, transparent); */
 }
 
 .message-compose-input::placeholder {

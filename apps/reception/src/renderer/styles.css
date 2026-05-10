@@ -887,7 +887,7 @@ select {
   gap: 12px;
   min-height: 42px;
   padding: 0 8px 0 0;
-  border-radius: 20px;
+  border-radius: 999px;
   background:
     linear-gradient(
       90deg,
