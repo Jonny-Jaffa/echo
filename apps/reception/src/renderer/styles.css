@@ -1970,3 +1970,16 @@ body[data-admin-mode="true"] .shell {
     flex-direction: column;
   }
 }
+
+/* ── Emoji styles ── */
+
+.pip-emoji {
+  display: inline-block;
+  width: 1.2em;
+  height: 1.2em;
+  vertical-align: -0.2em;
+  object-fit: contain;
+  pointer-events: none;
+  -webkit-user-drag: none;
+  user-select: none;
+}
