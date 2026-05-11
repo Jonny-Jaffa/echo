@@ -1,4 +1,5 @@
 import { renderEmojis } from "../../../../packages/shared/src/emojis.js";
+import { createEmojiPicker } from "../../../../packages/shared/src/emoji-picker.js";
 
 const card = document.querySelector("#notification-card");
 const alertList = document.querySelector("#alert-list");
@@ -22,6 +23,8 @@ const chatCollapseButton = document.querySelector("#chat-collapse-button");
 const chatMessageList = document.querySelector("#chat-message-list");
 const chatComposeInput = document.querySelector("#chat-compose-input");
 const chatSendButton = document.querySelector("#chat-send-button");
+const chatEmojiButton = document.querySelector("#chat-emoji-button");
+const chatEmojiPicker = document.querySelector("#chat-emoji-picker");
 const settingsSidebarLinks = [...document.querySelectorAll("[data-settings-section-link]")];
 const settingsTabSections = [...document.querySelectorAll("[data-settings-section]")];
 const adminFeedback = document.querySelector("#admin-feedback");
@@ -2300,3 +2303,12 @@ window.addEventListener("resize", () => {
 });
 
 init();
+
+// Initialize emoji picker
+if (chatEmojiButton && chatComposeInput && chatEmojiPicker) {
+  createEmojiPicker({
+    triggerButton: chatEmojiButton,
+    textarea: chatComposeInput,
+    pickerElement: chatEmojiPicker,
+  });
+}

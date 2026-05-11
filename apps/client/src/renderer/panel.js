@@ -1,4 +1,5 @@
 import { renderEmojis } from "../../../../packages/shared/src/emojis.js";
+import { createEmojiPicker } from "../../../../packages/shared/src/emoji-picker.js";
 
 const roomSelect = document.querySelector("#room-select");
 const serverInput = document.querySelector("#server-input");
@@ -30,6 +31,8 @@ const threadRailToggleButton = document.querySelector("#thread-rail-toggle-butto
 const messageList = document.querySelector("#message-list");
 const messageComposeInput = document.querySelector("#message-compose-input");
 const messageSendButton = document.querySelector("#message-send-button");
+const messageEmojiButton = document.querySelector("#message-emoji-button");
+const messageEmojiPicker = document.querySelector("#emoji-picker");
 const messageGroupList = document.querySelector("#message-group-list");
 const addMessageGroupButton = document.querySelector("#add-message-group-button");
 const statusDot = document.querySelector("#status-dot");
@@ -4831,3 +4834,12 @@ window.addEventListener("focus", async () => {
 });
 
 init();
+
+// Initialize emoji picker
+if (messageEmojiButton && messageComposeInput && messageEmojiPicker) {
+  createEmojiPicker({
+    triggerButton: messageEmojiButton,
+    textarea: messageComposeInput,
+    pickerElement: messageEmojiPicker,
+  });
+}
