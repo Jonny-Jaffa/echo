@@ -1,5 +1,5 @@
-import { renderEmojis } from "../../../../packages/shared/src/emojis.js";
-import { createEmojiPicker } from "../../../../packages/shared/src/emoji-picker.js";
+import { renderEmojis } from "./emojis.js";
+import { createEmojiPicker } from "./emoji-picker.js";
 
 const card = document.querySelector("#notification-card");
 const alertList = document.querySelector("#alert-list");

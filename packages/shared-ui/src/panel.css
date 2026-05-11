@@ -20,7 +20,6 @@
   border-radius: var(--shared-panel-radius);
   background: var(--panel);
   box-shadow: var(--shadow);
-  backdrop-filter: blur(10px);
 }
 
 .status-row {

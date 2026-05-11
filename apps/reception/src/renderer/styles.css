@@ -1,7 +1,7 @@
 :root {
   color-scheme: light;
   --bg: #edf4f1;
-  --panel: rgba(255, 255, 255, 0.92);
+  --panel: #ffffff;
   --text: #10231f;
   --muted: #494949;
   --accent: #121212;

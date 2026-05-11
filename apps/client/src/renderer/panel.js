@@ -1,5 +1,5 @@
-import { renderEmojis } from "../../../../packages/shared/src/emojis.js";
-import { createEmojiPicker } from "../../../../packages/shared/src/emoji-picker.js";
+import { renderEmojis } from "./emojis.js";
+import { createEmojiPicker } from "./emoji-picker.js";
 
 const roomSelect = document.querySelector("#room-select");
 const serverInput = document.querySelector("#server-input");

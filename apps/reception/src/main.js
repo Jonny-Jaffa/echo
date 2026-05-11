@@ -742,7 +742,7 @@ function showAboutDialog() {
 
   aboutWindow = new BrowserWindow({
     width: 420,
-    height: 360,
+    height: 440,
     resizable: false,
     minimizable: false,
     maximizable: false,
@@ -750,8 +750,6 @@ function showAboutDialog() {
     show: false,
     autoHideMenuBar: true,
     title: `About ${appName}`,
-    parent: parentWindow || undefined,
-    modal: Boolean(parentWindow),
     backgroundColor: "#F4F7F5",
     icon: windowIcon,
     webPreferences: {
@@ -807,7 +805,7 @@ function showAboutDialog() {
 
         .about-logo {
           display: block;
-          width: min(300px, 100%);
+          width: min(180px, 100%);
           height: auto;
           margin: 0 auto 22px;
         }
@@ -913,10 +911,12 @@ function refreshTrayMenu() {
         },
       },
       {
-        label: configState?.display?.minimized ? "Expand Pip Reception" : "Minimize Pip Reception",
-        click: () => updateDisplaySettings({
-          minimized: !configState.display.minimized,
-        }),
+        label: "Minimize Pip Reception",
+        click: () => {
+          if (mainWindow && !mainWindow.isDestroyed()) {
+            mainWindow.minimize();
+          }
+        },
       },
       {
         type: "separator",
