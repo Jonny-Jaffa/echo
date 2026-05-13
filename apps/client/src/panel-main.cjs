@@ -9,6 +9,9 @@ const { app, BrowserWindow, ipcMain, Menu, Tray, nativeImage, screen, dialog } =
 const DISCOVERY_PORT = 3210;
 const SURGERY_PANEL_WIDTH = 373;
 const SURGERY_THREAD_RAIL_WIDTH = 63;
+const SURGERY_THREAD_RAIL_CHIP_SIZE = 42;
+const SURGERY_THREAD_RAIL_CHIP_GAP = 10;
+const SURGERY_THREAD_RAIL_TOP_BUFFER = 34;
 const SURGERY_WINDOW_WIDTH = SURGERY_PANEL_WIDTH + SURGERY_THREAD_RAIL_WIDTH;
 const SURGERY_WINDOW_EXPANDED_WIDTH = 780 + SURGERY_THREAD_RAIL_WIDTH;
 const SURGERY_SETTINGS_WINDOW_WIDTH = 780;
@@ -63,6 +66,10 @@ const DEFAULT_PINNED_MESSAGE_THREAD_KEYS = [];
 const RUNTIME_ROLE_ROOM = "room";
 const RUNTIME_ROLE_RECEPTION = "reception";
 const CURRENT_APP_RUNTIME_ROLE = RUNTIME_ROLE_ROOM;
+const USE_EXTERNAL_THREAD_RAIL = process.platform === "win32";
+const SURGERY_MAIN_WINDOW_IS_TRANSPARENT = process.platform !== "win32";
+const SURGERY_MAIN_WINDOW_BACKGROUND = process.platform === "win32" ? "#FFFFFF" : "#00000000";
+const SURGERY_PANEL_WINDOW_TITLE = process.platform === "win32" ? "\u200B" : "Pip Surgery";
 let allowNativeMinimize = false;
 
 function normalizePanelDisplayMode(mode) {
@@ -88,9 +95,23 @@ function getPanelDisplayModeHeight(mode) {
 }
 
 function getPanelDisplayModeWidth(mode) {
-  return normalizePanelDisplayMode(mode) === "buttons"
-    ? SURGERY_PANEL_WIDTH
-    : SURGERY_WINDOW_WIDTH;
+  const normalizedMode = normalizePanelDisplayMode(mode);
+
+  if (normalizedMode === "buttons") {
+    return SURGERY_PANEL_WIDTH;
+  }
+
+  if (USE_EXTERNAL_THREAD_RAIL) {
+    return SURGERY_PANEL_WIDTH;
+  }
+
+  return SURGERY_WINDOW_WIDTH;
+}
+
+function getPanelExpandedWidth() {
+  return USE_EXTERNAL_THREAD_RAIL
+    ? SURGERY_WINDOW_EXPANDED_WIDTH - SURGERY_THREAD_RAIL_WIDTH
+    : SURGERY_WINDOW_EXPANDED_WIDTH;
 }
 
 function clampWindowXToVisibleWidth(x, visibleWidth, workArea) {
@@ -119,6 +140,8 @@ function shouldOpenRoleWindowOnLaunch() {
 }
 
 let mainWindow = null;
+let threadRailWindow = null;
+let latestThreadRailPayload = null;
 let settingsWindow = null;
 let roleWindow = null;
 let clientServiceModulePromise = null;
@@ -458,11 +481,11 @@ function createWindow({ showInitially = true } = {}) {
     show: false,
     skipTaskbar: false,
     frame: false,
-    transparent: true,
-    backgroundColor: "#00000000",
+    transparent: SURGERY_MAIN_WINDOW_IS_TRANSPARENT,
+    backgroundColor: SURGERY_MAIN_WINDOW_BACKGROUND,
     hasShadow: false,
     alwaysOnTop: clientSettings.alwaysOnTop,
-    title: "Pip Surgery",
+    title: SURGERY_PANEL_WINDOW_TITLE,
     icon: windowIcon,
     webPreferences: {
       autoplayPolicy: "no-user-gesture-required",
@@ -471,6 +494,22 @@ function createWindow({ showInitially = true } = {}) {
   });
 
   mainWindow.loadFile(path.join(__dirname, "renderer", "panel.html"));
+
+  mainWindow.webContents.once("did-finish-load", () => {
+    if (!mainWindow || mainWindow.isDestroyed()) {
+      return;
+    }
+
+    if (process.platform === "win32") {
+      mainWindow.setTitle("\u200B");
+    }
+
+    mainWindow.webContents.executeJavaScript(
+      `document.body.dataset.platform = ${JSON.stringify(process.platform)};
+       document.title = ${JSON.stringify(process.platform === "win32" ? "\u200B" : "Pip Surgery")};`,
+      true,
+    ).catch(() => {});
+  });
 
   mainWindow.once("ready-to-show", () => {
     mainWindow.webContents.send("panel:hardwareStatus", clientHardwareStatus);
@@ -510,11 +549,187 @@ function createWindow({ showInitially = true } = {}) {
   });
 
   mainWindow.on("closed", () => {
+    destroyThreadRailWindow();
     mainWindow = null;
   });
   mainWindow.on("focus", () => {
     closeMessagePopup();
   });
+  mainWindow.on("move", positionThreadRailWindow);
+  mainWindow.on("resize", positionThreadRailWindow);
+  mainWindow.on("show", () => {
+    positionThreadRailWindow();
+    syncExternalThreadRailWindow();
+  });
+  mainWindow.on("hide", () => {
+    hideThreadRailWindow();
+  });
+}
+
+function getThreadRailWindowBounds() {
+  if (!mainWindow || mainWindow.isDestroyed()) {
+    return null;
+  }
+
+  const bounds = mainWindow.getBounds();
+  const topOffset = Math.max(8, Math.round(Number(latestThreadRailPayload?.top) || 8));
+  const threadCount = Array.isArray(latestThreadRailPayload?.threads)
+    ? latestThreadRailPayload.threads.length
+    : 0;
+  const contentHeight = threadCount > 0
+    ? threadCount * SURGERY_THREAD_RAIL_CHIP_SIZE
+      + Math.max(0, threadCount - 1) * SURGERY_THREAD_RAIL_CHIP_GAP
+      + SURGERY_THREAD_RAIL_TOP_BUFFER
+    : bounds.height - topOffset;
+  const height = Math.min(
+    Math.max(84, contentHeight),
+    Math.max(84, bounds.height - topOffset + SURGERY_THREAD_RAIL_TOP_BUFFER),
+  );
+
+  return {
+    x: bounds.x - SURGERY_THREAD_RAIL_WIDTH,
+    y: bounds.y + topOffset + 10 - SURGERY_THREAD_RAIL_TOP_BUFFER,
+    width: SURGERY_THREAD_RAIL_WIDTH,
+    height,
+  };
+}
+
+function createThreadRailWindow() {
+  if (!USE_EXTERNAL_THREAD_RAIL || !mainWindow || mainWindow.isDestroyed()) {
+    return null;
+  }
+
+  if (threadRailWindow && !threadRailWindow.isDestroyed()) {
+    return threadRailWindow;
+  }
+
+  threadRailWindow = new BrowserWindow({
+    ...(getThreadRailWindowBounds() || {
+      width: SURGERY_THREAD_RAIL_WIDTH,
+      height: getPanelDisplayModeHeight(currentPanelDisplayMode),
+    }),
+    show: false,
+    frame: false,
+    transparent: true,
+    backgroundColor: "#00000000",
+    hasShadow: false,
+    thickFrame: false,
+    focusable: false,
+    resizable: false,
+    minimizable: false,
+    maximizable: false,
+    fullscreenable: false,
+    alwaysOnTop: Boolean(clientSettings.alwaysOnTop),
+    skipTaskbar: true,
+    title: "\u200B",
+    titleBarStyle: "hidden",
+    webPreferences: {
+      preload: path.join(__dirname, "thread-rail-preload.cjs"),
+    },
+  });
+
+  threadRailWindow.loadFile(path.join(__dirname, "renderer", "thread-rail.html"));
+  threadRailWindow.once("ready-to-show", () => {
+    positionThreadRailWindow();
+    syncExternalThreadRailWindow();
+  });
+  threadRailWindow.on("closed", () => {
+    threadRailWindow = null;
+  });
+
+  return threadRailWindow;
+}
+
+function destroyThreadRailWindow() {
+  if (!threadRailWindow || threadRailWindow.isDestroyed()) {
+    threadRailWindow = null;
+    return;
+  }
+
+  threadRailWindow.close();
+  threadRailWindow = null;
+}
+
+function hideThreadRailWindow() {
+  if (threadRailWindow && !threadRailWindow.isDestroyed()) {
+    threadRailWindow.hide();
+  }
+}
+
+function positionThreadRailWindow() {
+  if (!USE_EXTERNAL_THREAD_RAIL || !threadRailWindow || threadRailWindow.isDestroyed()) {
+    return;
+  }
+
+  const bounds = getThreadRailWindowBounds();
+
+  if (!bounds) {
+    return;
+  }
+
+  threadRailWindow.setBounds(bounds, false);
+  setThreadRailWindowShape(bounds);
+  threadRailWindow.setAlwaysOnTop(Boolean(clientSettings.alwaysOnTop));
+}
+
+function setThreadRailWindowShape(bounds) {
+  if (!threadRailWindow || threadRailWindow.isDestroyed() || typeof threadRailWindow.setShape !== "function") {
+    return;
+  }
+
+  const width = Math.max(1, Math.round(bounds?.width || SURGERY_THREAD_RAIL_WIDTH));
+  const height = Math.max(1, Math.round(bounds?.height || 1));
+  const threadCount = Array.isArray(latestThreadRailPayload?.threads)
+    ? latestThreadRailPayload.threads.length
+    : 0;
+
+  if (!threadCount) {
+    threadRailWindow.setShape([]);
+    return;
+  }
+
+  threadRailWindow.setShape([{
+    x: 0,
+    y: SURGERY_THREAD_RAIL_TOP_BUFFER,
+    width,
+    height: Math.max(1, height - SURGERY_THREAD_RAIL_TOP_BUFFER),
+  }]);
+}
+
+function syncExternalThreadRailWindow() {
+  if (!USE_EXTERNAL_THREAD_RAIL) {
+    return;
+  }
+
+  if (!latestThreadRailPayload?.visible || !mainWindow || mainWindow.isDestroyed() || !mainWindow.isVisible()) {
+    hideThreadRailWindow();
+    return;
+  }
+
+  const targetWindow = createThreadRailWindow();
+
+  if (!targetWindow || targetWindow.isDestroyed()) {
+    return;
+  }
+
+  positionThreadRailWindow();
+  const sendPayload = () => {
+    if (!threadRailWindow || threadRailWindow.isDestroyed()) {
+      return;
+    }
+
+    threadRailWindow.webContents.send("threadRail:update", latestThreadRailPayload);
+    if (!threadRailWindow.isVisible()) {
+      threadRailWindow.showInactive();
+    }
+  };
+
+  if (targetWindow.webContents.isLoading()) {
+    targetWindow.webContents.once("did-finish-load", sendPayload);
+    return;
+  }
+
+  sendPayload();
 }
 
 function createSettingsWindow() {
@@ -623,6 +838,7 @@ function destroyMainWindow() {
 
   const targetWindow = mainWindow;
   mainWindow = null;
+  destroyThreadRailWindow();
   targetWindow.removeAllListeners("minimize");
   targetWindow.removeAllListeners("close");
   targetWindow.close();
@@ -967,6 +1183,8 @@ function showMainWindow() {
   mainWindow.show();
   mainWindow.setAlwaysOnTop(Boolean(clientSettings.alwaysOnTop));
   mainWindow.focus();
+  positionThreadRailWindow();
+  syncExternalThreadRailWindow();
   refreshTrayMenu();
 }
 
@@ -1033,6 +1251,7 @@ function createMessagePopupWindow() {
     minimizable: false,
     maximizable: false,
     fullscreenable: false,
+    type: process.platform === "darwin" ? "panel" : undefined,
     alwaysOnTop: true,
     skipTaskbar: true,
     webPreferences: {
@@ -1149,6 +1368,7 @@ function hideWindowToTray() {
     return;
   }
 
+  hideThreadRailWindow();
   mainWindow.hide();
   refreshTrayMenu();
 }
@@ -1459,6 +1679,8 @@ function setWindowSettingsExpanded(details) {
     width: targetWidth,
     height: targetHeight,
   }, shouldAnimateResize);
+  positionThreadRailWindow();
+  syncExternalThreadRailWindow();
 }
 
 let currentBannerVisible = false;
@@ -1486,6 +1708,8 @@ function setWindowBannerVisible(bannerVisible) {
     width: currentWidth,
     height: targetHeight,
   }, true);
+  positionThreadRailWindow();
+  syncExternalThreadRailWindow();
 }
 
 function setWindowOfflineCompact(isCompact) {
@@ -1506,6 +1730,8 @@ function setWindowOfflineCompact(isCompact) {
       width: currentWidth,
       height: targetHeight,
     }, true);
+    positionThreadRailWindow();
+    syncExternalThreadRailWindow();
   } else {
     // Restore to normal height based on current display mode
     const mode = currentPanelDisplayMode;
@@ -1519,6 +1745,8 @@ function setWindowOfflineCompact(isCompact) {
       width: currentWidth,
       height: targetHeight,
     }, true);
+    positionThreadRailWindow();
+    syncExternalThreadRailWindow();
   }
 }
 
@@ -1529,6 +1757,7 @@ function minimizeWindow(targetWindow) {
 
   if (targetWindow === mainWindow) {
     allowNativeMinimize = true;
+    hideThreadRailWindow();
   }
 
   targetWindow.minimize();
@@ -1686,6 +1915,30 @@ app.whenReady().then(async () => {
     closeReceptionPingPopup();
     return { ok: true };
   });
+  ipcMain.handle("panel:syncThreadRail", (_event, payload = {}) => {
+    if (!USE_EXTERNAL_THREAD_RAIL) {
+      return { ok: true, external: false };
+    }
+
+    latestThreadRailPayload = {
+      visible: Boolean(payload.visible),
+      collapsed: Boolean(payload.collapsed),
+      top: Math.max(8, Math.round(Number(payload.top) || 8)),
+      threads: Array.isArray(payload.threads) ? payload.threads : [],
+    };
+    syncExternalThreadRailWindow();
+    return { ok: true, external: true };
+  });
+  ipcMain.handle("threadRail:selectThread", (_event, threadKey) => {
+    const normalizedThreadKey = String(threadKey || "").trim();
+
+    if (normalizedThreadKey && mainWindow && !mainWindow.isDestroyed()) {
+      mainWindow.webContents.send("panel:threadRailSelect", normalizedThreadKey);
+      showMainWindow();
+    }
+
+    return { ok: Boolean(normalizedThreadKey) };
+  });
   ipcMain.handle("message-popup:close", () => {
     closeMessagePopup();
     return { ok: true };
@@ -1748,13 +2001,16 @@ app.whenReady().then(async () => {
     const [currentX, currentY] = targetWindow.getPosition();
     const [currentWidth, currentHeight] = targetWindow.getSize();
 
-    if (currentWidth >= SURGERY_WINDOW_EXPANDED_WIDTH) {
+    const collapsedWidth = getPanelDisplayModeWidth("messages");
+    const expandedWidth = getPanelExpandedWidth();
+
+    if (currentWidth >= expandedWidth) {
       // Collapse back to original width
       if (preExpandWindowPosition) {
         targetWindow.setBounds({
           x: preExpandWindowPosition.x,
           y: preExpandWindowPosition.y,
-          width: SURGERY_WINDOW_WIDTH,
+          width: collapsedWidth,
           height: preExpandWindowPosition.height,
         }, true);
         preExpandWindowPosition = null;
@@ -1762,9 +2018,11 @@ app.whenReady().then(async () => {
         targetWindow.setBounds({
           x: currentX,
           y: currentY,
-          width: SURGERY_WINDOW_WIDTH,
+          width: collapsedWidth,
         }, true);
       }
+
+      positionThreadRailWindow();
 
       return { ok: true, isExpanded: false };
     } else {
@@ -1772,7 +2030,7 @@ app.whenReady().then(async () => {
       preExpandWindowPosition = {
         x: currentX,
         y: currentY,
-        width: SURGERY_WINDOW_WIDTH,
+        width: collapsedWidth,
         height: currentHeight,
       };
 
@@ -1783,7 +2041,7 @@ app.whenReady().then(async () => {
       });
       const workArea = display.workArea;
       const expandedX = Math.round(
-        workArea.x + (workArea.width - SURGERY_WINDOW_EXPANDED_WIDTH) / 2,
+        workArea.x + (workArea.width - expandedWidth) / 2,
       );
       const expandedY = Math.round(
         workArea.y + (workArea.height - currentHeight) / 2,
@@ -1792,8 +2050,9 @@ app.whenReady().then(async () => {
       targetWindow.setBounds({
         x: expandedX,
         y: expandedY,
-        width: SURGERY_WINDOW_EXPANDED_WIDTH,
+        width: expandedWidth,
       }, true);
+      positionThreadRailWindow();
 
       return { ok: true, isExpanded: true };
     }
@@ -1948,6 +2207,10 @@ app.whenReady().then(async () => {
 
     if (mainWindow && !mainWindow.isDestroyed()) {
       mainWindow.setAlwaysOnTop(Boolean(clientSettings.alwaysOnTop));
+    }
+
+    if (threadRailWindow && !threadRailWindow.isDestroyed()) {
+      threadRailWindow.setAlwaysOnTop(Boolean(clientSettings.alwaysOnTop));
     }
 
     if (messagePopupWindow && !messagePopupWindow.isDestroyed()) {

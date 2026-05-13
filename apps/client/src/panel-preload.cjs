@@ -15,6 +15,7 @@ contextBridge.exposeInMainWorld("pipPanel", {
   playAlertSound: (options) => ipcRenderer.invoke("panel:playAlertSound", options),
   showMessagePopup: (payload) => ipcRenderer.invoke("panel:showMessagePopup", payload),
   closeReceptionPingPopup: () => ipcRenderer.invoke("panel:closeReceptionPingPopup"),
+  syncThreadRail: (payload) => ipcRenderer.invoke("panel:syncThreadRail", payload),
   getSettings: () => ipcRenderer.invoke("panel:getSettings"),
   getRoleState: () => ipcRenderer.invoke("panel:getRoleState"),
   getHardwareStatus: () => ipcRenderer.invoke("panel:getHardwareStatus"),
@@ -79,6 +80,18 @@ contextBridge.exposeInMainWorld("pipPanel", {
     ipcRenderer.on("panel:messagePopupDismissReceptionPing", listener);
     return () => {
       ipcRenderer.removeListener("panel:messagePopupDismissReceptionPing", listener);
+    };
+  },
+  onThreadRailSelect: (callback) => {
+    const listener = (_event, threadKey) => {
+      if (typeof callback === "function") {
+        callback(threadKey);
+      }
+    };
+
+    ipcRenderer.on("panel:threadRailSelect", listener);
+    return () => {
+      ipcRenderer.removeListener("panel:threadRailSelect", listener);
     };
   },
   updateSettings: (patch) => ipcRenderer.invoke("panel:updateSettings", patch),

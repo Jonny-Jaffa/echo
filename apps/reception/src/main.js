@@ -45,7 +45,9 @@ const WINDOW_ADMIN_HEIGHT = 800;
 const GADGET_HEADER_HEIGHT = 0;
 const GADGET_ROW_HEIGHT = 40;
 const GADGET_FRAME_PADDING = 7;
-const GADGET_WINDOW_HEIGHT_TRIM = 5;
+const GADGET_WINDOW_HEIGHT_TRIM = process.platform === "win32" ? 0 : 5;
+const RECEPTION_MAIN_WINDOW_IS_TRANSPARENT = process.platform !== "win32";
+const RECEPTION_MAIN_WINDOW_BACKGROUND = process.platform === "win32" ? "#FFFFFF" : "#00000000";
 const MESSAGE_POPUP_WIDTH = 380;
 const ALERT_POPUP_WIDTH = 460;
 const MESSAGE_POPUP_MIN_HEIGHT = 62;
@@ -200,8 +202,8 @@ function createWindow(config) {
     minWidth: WINDOW_WIDTH,
     minHeight: WINDOW_MINIMIZED_HEIGHT,
     frame: false,
-    transparent: true,
-    backgroundColor: "#00000000",
+    transparent: RECEPTION_MAIN_WINDOW_IS_TRANSPARENT,
+    backgroundColor: RECEPTION_MAIN_WINDOW_BACKGROUND,
     hasShadow: false,
     alwaysOnTop: config.display.alwaysOnTop,
     skipTaskbar: false,
@@ -213,6 +215,16 @@ function createWindow(config) {
 
   mainWindow.setPosition(bounds.x, bounds.y);
   mainWindow.loadFile(path.join(__dirname, "renderer", "index.html"));
+  mainWindow.webContents.once("did-finish-load", () => {
+    if (!mainWindow || mainWindow.isDestroyed()) {
+      return;
+    }
+
+    mainWindow.webContents.executeJavaScript(
+      `document.body.dataset.platform = ${JSON.stringify(process.platform)};`,
+      true,
+    ).catch(() => {});
+  });
   mainWindow.once("ready-to-show", () => {
     emitState();
   });
@@ -424,6 +436,7 @@ function createMessagePopupWindow() {
     minimizable: false,
     maximizable: false,
     fullscreenable: false,
+    type: process.platform === "darwin" ? "panel" : undefined,
     alwaysOnTop: true,
     skipTaskbar: true,
     webPreferences: {

@@ -1179,7 +1179,8 @@ function reportGadgetHeight() {
     gadgetPanel.scrollHeight,
     Math.ceil(gadgetPanel.getBoundingClientRect().height),
   );
-  const nextHeight = Math.ceil(measuredPanelHeight + shellVerticalPadding);
+  const windowsHeightAllowance = document.body.dataset.platform === "win32" ? 8 : 0;
+  const nextHeight = Math.ceil(measuredPanelHeight + shellVerticalPadding + windowsHeightAllowance);
 
   if (!Number.isFinite(nextHeight) || nextHeight <= 0 || nextHeight === lastReportedGadgetHeight) {
     return;

@@ -41,6 +41,10 @@ body[data-window-view="role"] {
   overflow: hidden;
 }
 
+body[data-platform="win32"] {
+  background: var(--panel);
+}
+
 .shell {
   padding: 0;
   display: grid;
@@ -190,7 +194,7 @@ body[data-window-view="role"] .admin-panel {
   background: var(--panel);
   backdrop-filter: blur(10px);
   border-radius: 12px;
-  box-shadow: var(--shadow);
+  box-shadow: none;
 }
 
 .gadget-panel {
@@ -199,6 +203,11 @@ body[data-window-view="role"] .admin-panel {
   padding: 8px 14px 14px;
   align-self: start;
   align-content: start;
+  grid-template-rows: auto auto auto;
+}
+
+body[data-platform="win32"] .gadget-panel {
+  border-radius: 0;
 }
 
 body[data-admin-mode="true"] .gadget-panel {

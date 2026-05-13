@@ -675,6 +675,7 @@ function setMessageThreadRailCollapsed(collapsed) {
   }
 
   requestAnimationFrame(updateMessageThreadScrollButtons);
+  syncExternalThreadRail();
 }
 
 function updateMessageThreadRailAlignment() {
@@ -685,6 +686,7 @@ function updateMessageThreadRailAlignment() {
   const contextRect = messageContextBar.getBoundingClientRect();
   const nextTop = Math.max(8, Math.round(contextRect.top || 8));
   messageThreadRail.style.setProperty("--thread-rail-top", `${nextTop}px`);
+  syncExternalThreadRail({ top: nextTop });
   requestAnimationFrame(updateMessageThreadScrollButtons);
 }
 
@@ -1487,6 +1489,43 @@ function syncMessageThreadOrder(threads) {
   saveRoomMessageThreadOrder();
 }
 
+function getExternalThreadRailTop() {
+  if (!messageContextBar) {
+    return 8;
+  }
+
+  const contextRect = messageContextBar.getBoundingClientRect();
+  return Math.max(8, Math.round(contextRect.top || 8));
+}
+
+function syncExternalThreadRail(options = {}) {
+  if (!window.pipPanel?.syncThreadRail || isSettingsWindow || isRoleWindow) {
+    return;
+  }
+
+  const threads = orderMessageThreads(ensureActiveMessageThread());
+  const visible =
+    canUseMessageThreadRail() &&
+    !isMessageThreadRailCollapsed &&
+    threads.length > 0 &&
+    (panelDisplayMode === "messages" || panelDisplayMode === "both");
+
+  window.pipPanel.syncThreadRail({
+    visible,
+    collapsed: isMessageThreadRailCollapsed,
+    top: Math.max(8, Math.round(Number(options.top) || getExternalThreadRailTop())),
+    threads: threads.map((thread) => ({
+      key: thread.key,
+      label: thread.label,
+      displayLabel: getThreadDisplayLabel(thread),
+      fullLabel: getThreadFullLabel(thread),
+      accent: getMessageThreadAccent(thread),
+      active: thread.key === activeMessageThreadKey,
+      unread: Boolean(thread.unread),
+    })),
+  }).catch(() => {});
+}
+
 function renderMessageThreads() {
   if (!messageThreadList) {
     return;
@@ -1518,6 +1557,7 @@ function renderMessageThreads() {
     `)
     .join("");
   updateMessageThreadRailAlignment();
+  syncExternalThreadRail();
   requestAnimationFrame(updateMessageThreadScrollButtons);
 }
 
@@ -1549,6 +1589,7 @@ function updateMessageThreadUnreadState() {
       hasDot.remove();
     }
   });
+  syncExternalThreadRail();
 }
 
 function updateMessageThreadScrollButtons() {
@@ -3897,6 +3938,17 @@ window.pipPanel.onMessagePopupPanelAction?.((payload = {}) => {
 
 window.pipPanel.onMessagePopupDismissReceptionPing?.(() => {
   dismissReceptionPingBanner();
+});
+
+window.pipPanel.onThreadRailSelect?.((threadKey) => {
+  const normalizedThreadKey = String(threadKey || "").trim();
+
+  if (!normalizedThreadKey) {
+    return;
+  }
+
+  selectMessageThread(normalizedThreadKey);
+  requestAnimationFrame(focusMessageComposer);
 });
 
 roomSelect.addEventListener("change", async () => {
