@@ -741,16 +741,19 @@ function showAboutDialog() {
     : undefined;
 
   aboutWindow = new BrowserWindow({
-    width: 420,
-    height: 440,
+    width: 360,
+    height: 360,
     resizable: false,
     minimizable: false,
     maximizable: false,
     fullscreenable: false,
     show: false,
     autoHideMenuBar: true,
+    frame: false,
+    transparent: true,
+    backgroundColor: "#00000000",
+    hasShadow: false,
     title: `About ${appName}`,
-    backgroundColor: "#F4F7F5",
     icon: windowIcon,
     webPreferences: {
       sandbox: false,
@@ -781,31 +784,34 @@ function showAboutDialog() {
 
         body {
           margin: 0;
-          min-height: 100vh;
-          display: grid;
-          place-items: center;
-          background:
-            radial-gradient(circle at top left, rgba(15, 118, 110, 0.16), transparent 38%),
-            linear-gradient(145deg, #edf7f3, #fbfcfc);
+          width: 100vw;
+          height: 100vh;
+          overflow: hidden;
+          border-radius: 24px;
+          background: transparent;
           color: var(--text);
           font-family: "Roboto", "Avenir Next", "Segoe UI", sans-serif;
         }
 
         .about-card {
           position: relative;
-          width: calc(100vw - 32px);
-          max-width: 360px;
+          width: 100vw;
+          height: 100vh;
           padding: 28px 26px 22px;
           border: 1px solid var(--line);
           border-radius: 24px;
           background: var(--panel);
           text-align: center;
           box-shadow: 0 24px 50px rgba(16, 35, 31, 0.14);
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
         }
 
         .about-logo {
           display: block;
-          width: min(180px, 100%);
+          width: min(108px, 100%);
           height: auto;
           margin: 0 auto 22px;
         }
@@ -1870,7 +1876,7 @@ app.whenReady().then(async () => {
       cancelId: 0,
       title: "Quit Pip",
       message: "Do you want to quit Pip?",
-      detail: "The reception gadget and local network service will stop running.",
+      detail: "Stopping Pip will end the messaging service between rooms.",
       noLink: true,
     });
 

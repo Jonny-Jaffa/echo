@@ -19,7 +19,6 @@
 .gadget-panel {
   border-radius: var(--shared-panel-radius);
   background: var(--panel);
-  box-shadow: var(--shadow);
 }
 
 .status-row {

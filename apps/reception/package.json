@@ -1,6 +1,6 @@
 {
   "name": "@pip/reception",
-  "version": "0.6.0",
+  "version": "0.8.1",
   "private": true,
   "author": "Blackworks",
   "main": "src/main.js",
@@ -23,31 +23,24 @@
     "directories": {
       "output": "../../dist/reception"
     },
+    "npmRebuild": false,
     "extraResources": [
       {
         "from": "../../config/config.json",
         "to": "config/config.json"
       }
     ],
-    "asarUnpack": [
-      "src/assets/sounds/**/*.wav"
-    ],
     "files": [
       "src/**/*",
       "package.json"
     ],
-    "mac": {
-      "category": "public.app-category.medical",
-      "gatekeeperAssess": false,
-      "hardenedRuntime": false,
-      "target": [
-        "dmg",
-        "zip"
-      ]
-    },
+    "asarUnpack": [
+      "src/assets/sounds/**/*.wav"
+    ],
     "win": {
       "target": [
-        "nsis"
+        "nsis",
+        "zip"
       ]
     },
     "nsis": {

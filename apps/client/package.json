@@ -1,6 +1,6 @@
 {
   "name": "@pip/client",
-  "version": "0.6.0",
+  "version": "0.8.2",
   "private": true,
   "author": "Blackworks",
   "type": "module",
@@ -31,6 +31,12 @@
       "output": "../../dist/surgery"
     },
     "npmRebuild": false,
+    "extraResources": [
+      {
+        "from": "../../config/config.json",
+        "to": "config/config.json"
+      }
+    ],
     "files": [
       "src/**/*",
       "package.json"
@@ -40,16 +46,10 @@
       "**/*.wasm",
       "src/assets/sounds/**/*.wav"
     ],
-    "mac": {
-      "category": "public.app-category.medical",
-      "target": [
-        "dmg",
-        "zip"
-      ]
-    },
     "win": {
       "target": [
-        "nsis"
+        "nsis",
+        "zip"
       ]
     },
     "nsis": {

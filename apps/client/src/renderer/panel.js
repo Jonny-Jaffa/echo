@@ -4,12 +4,6 @@ import { createEmojiPicker } from "./emoji-picker.js";
 const roomSelect = document.querySelector("#room-select");
 const serverInput = document.querySelector("#server-input");
 const serverAccessKeyInput = document.querySelector("#server-access-key-input");
-const setupServerInput = document.querySelector("#setup-server-input");
-const setupServerAccessKeyInput = document.querySelector("#setup-server-access-key-input");
-const setupRoomSelect = document.querySelector("#setup-room-select");
-const setupConnectButton = document.querySelector("#setup-connect-button");
-const setupSettingsButton = document.querySelector("#setup-settings-button");
-const setupFeedback = document.querySelector("#setup-feedback");
 const serverPanel = document.querySelector("#server-panel");
 const serverToggleButton = document.querySelector("#server-toggle-button");
 const panelMinimizeButton = document.querySelector("#panel-minimize-button");
@@ -38,7 +32,6 @@ const addMessageGroupButton = document.querySelector("#add-message-group-button"
 const statusDot = document.querySelector("#status-dot");
 const statusIndicator = document.querySelector("#status-indicator");
 const hardwareStatusLabel = document.querySelector("#hardware-status");
-const waitingState = document.querySelector("#waiting-state");
 const rolePanel = document.querySelector("#role-panel");
 const roleOptionList = document.querySelector("#role-option-list");
 const roleCurrentLabel = document.querySelector("#role-current-label");
@@ -198,6 +191,7 @@ let preferredRoomId = "";
 let roomSettingsInteractionLockUntil = 0;
 let chatMessages = [];
 let activeMessageThreadKey = "";
+let isAppQuitting = false;
 const unreadMessageThreadKeys = new Set();
 let areQuickActionsVisible = false;
 let isMessageThreadDrawerVisible = false;
@@ -739,44 +733,6 @@ function setStatus(label, tone) {
   }
 }
 
-function syncSetupFieldsFromSettings() {
-  if (setupServerInput && setupServerInput.value !== serverInput.value) {
-    setupServerInput.value = serverInput.value;
-  }
-
-  if (setupServerAccessKeyInput && serverAccessKeyInput) {
-    setupServerAccessKeyInput.value = serverAccessKeyInput.value;
-  }
-
-  if (setupRoomSelect && roomSelect.value) {
-    setupRoomSelect.value = roomSelect.value;
-  }
-}
-
-function syncSettingsFromSetupFields() {
-  if (setupServerInput) {
-    serverInput.value = setupServerInput.value.trim();
-  }
-
-  if (setupServerAccessKeyInput && serverAccessKeyInput) {
-    serverAccessKeyInput.value = setupServerAccessKeyInput.value.trim();
-  }
-
-  if (setupRoomSelect?.value) {
-    roomSelect.value = setupRoomSelect.value;
-    preferredRoomId = setupRoomSelect.value;
-  }
-}
-
-function setSetupFeedback(message, tone = "muted") {
-  if (!setupFeedback) {
-    return;
-  }
-
-  setupFeedback.textContent = message;
-  setupFeedback.dataset.tone = tone;
-}
-
 function updateHardwareStatus(status = {}) {
   if (!hardwareStatusLabel) {
     return;
@@ -964,120 +920,12 @@ async function fetchChatMessages() {
   renderMessagingUi();
 }
 
-async function fetchRegisteredDevices() {
-  const serverUrl = serverInput.value.trim();
-
-  if (!serverUrl) {
-    return [];
-  }
-
-  const response = await fetch(`${serverUrl}/devices`, {
-    headers: buildAuthenticatedHeaders(),
-  });
-
-  if (!response.ok) {
-    return [];
-  }
-
-  const devices = await response.json();
-  return Array.isArray(devices) ? devices : [];
-}
-
-async function findSelectedRoomConflict() {
-  const selectedRoomId = roomSelect.value;
-
-  if (!selectedRoomId) {
-    return null;
-  }
-
-  const devices = await fetchRegisteredDevices().catch(() => []);
-  return devices.find((device) => {
-    const deviceRoomId = String(device?.roomId || "").trim();
-    const deviceId = String(device?.deviceId || "").trim();
-
-    return deviceRoomId === selectedRoomId && deviceId && deviceId !== panelDeviceId;
-  }) || null;
-}
-
-async function refreshSetupRooms() {
-  syncSettingsFromSetupFields();
-  setStatus("Connecting", "pending");
-  setSetupFeedback("Checking Reception details...");
-
-  await fetchConfig({ revealPanel: false });
-  syncSetupFieldsFromSettings();
-  setSetupFeedback("Reception found. Choose this computer's room, then connect.", "success");
-}
-
-async function completeRoomSetup() {
-  syncSettingsFromSetupFields();
-
-  if (!serverInput.value.trim()) {
-    setSetupFeedback("Enter the Reception address.", "error");
-    return;
-  }
-
-  if (!getServerAccessKeyValue()) {
-    setSetupFeedback("Enter the pairing code from Reception settings.", "error");
-    return;
-  }
-
-  try {
-    if (!configState || setupRoomSelect?.disabled) {
-      await refreshSetupRooms();
-    }
-
-    syncSettingsFromSetupFields();
-
-    if (!roomSelect.value) {
-      setSetupFeedback("Choose this computer's room.", "error");
-      return;
-    }
-
-    const roomConflict = await findSelectedRoomConflict();
-
-    if (roomConflict) {
-      const selectedRoomName = getSelectedRoom()?.name || roomSelect.value;
-      const shouldContinue = window.confirm(
-        `${selectedRoomName} already appears to be used by another computer. Continue only if you are replacing that machine.`,
-      );
-
-      if (!shouldContinue) {
-        setSetupFeedback("Choose a different room to avoid duplicate alerts.", "error");
-        return;
-      }
-    }
-
-    await window.pipPanel.updateSettings({
-      serverUrl: serverInput.value.trim(),
-      serverAccessKey: getServerAccessKeyValue(),
-      roomId: roomSelect.value,
-    }).catch(() => {});
-    saveState();
-    await fetchConfig();
-    connectSocket();
-    startConfigRefresh();
-    await fetchChatMessages().catch(() => {});
-    setSetupFeedback("Connected.", "success");
-  } catch (error) {
-    setStatus("Offline", "offline");
-    setPanelView("waiting");
-    syncSetupFieldsFromSettings();
-    setSetupFeedback(
-      "Could not connect. Check the Reception address and pairing code.",
-      "error",
-    );
-  }
-}
-
 function connectSocket() {
   const serverUrl = serverInput.value.trim();
 
   if (!serverUrl) {
     setStatus("Offline", "offline");
-    if (!configState && !manualPanelReveal) {
-      setPanelView("waiting");
-    }
+    showReceptionOfflineBanner();
     return;
   }
 
@@ -1187,10 +1035,13 @@ function connectSocket() {
   });
 
   socket.addEventListener("close", () => {
+    if (isAppQuitting) {
+      return;
+    }
     setStatus("Offline", "offline");
     showReceptionOfflineBanner();
     if (!configState && !manualPanelReveal) {
-      setPanelView("waiting");
+      setPanelView("panel");
     }
     reconnectTimer = window.setTimeout(() => {
       connectSocket();
@@ -1198,10 +1049,13 @@ function connectSocket() {
   });
 
   socket.addEventListener("error", () => {
+    if (isAppQuitting) {
+      return;
+    }
     setStatus("Offline", "offline");
     showReceptionOfflineBanner();
     if (!configState && !manualPanelReveal) {
-      setPanelView("waiting");
+      setPanelView("panel");
     }
   });
 }
@@ -1312,17 +1166,11 @@ function renderRooms(preferredRoomId = "") {
 
   roomSelect.innerHTML = roomOptions;
 
-  if (setupRoomSelect) {
-    setupRoomSelect.innerHTML = roomOptions || '<option value="">No rooms found</option>';
-    setupRoomSelect.disabled = !roomOptions;
-  }
-
   if (![...roomSelect.options].some((option) => option.value === currentValue)) {
     roomSelect.value = visibleRooms[0]?.id || "";
   }
 
   preferredRoomId = roomSelect.value || currentValue || window.pipPanel.defaultRoomId;
-  syncSetupFieldsFromSettings();
 
   sendIdentify();
 }
@@ -3528,7 +3376,8 @@ function showReceptionOfflineBanner() {
   }
   receptionOfflineBanner.classList.remove("hidden");
   document.body.dataset.bannerVisible = "true";
-  window.pipPanel?.setBannerVisible?.(true);
+  document.body.dataset.offlineCompact = "true";
+  window.pipPanel?.setOfflineCompact?.(true);
 }
 
 function hideReceptionOfflineBanner() {
@@ -3536,7 +3385,9 @@ function hideReceptionOfflineBanner() {
     return;
   }
   receptionOfflineBanner.classList.add("hidden");
+  document.body.dataset.offlineCompact = "false";
   updateBannerVisibility();
+  window.pipPanel?.setOfflineCompact?.(false);
 }
 
 function updateBannerVisibility() {
@@ -3569,6 +3420,18 @@ function clearReceptionPing() {
 
 function dismissReceptionPingBanner() {
   hideReceptionPingBanner();
+
+  if (!socket || socket.readyState !== WebSocket.OPEN) {
+    return;
+  }
+
+  socket.send(
+    JSON.stringify({
+      type: "room:pingCleared",
+      roomId: roomSelect.value,
+      deviceId: panelDeviceId,
+    }),
+  );
 }
 
 function getSelectedRoom() {
@@ -3611,7 +3474,7 @@ async function init() {
 
   applyPersistedSettings(persistedSettings || {});
   panelDeviceId = getPanelDeviceId();
-  setPanelView("boot");
+  setPanelView("panel");
   setServerPanelVisibility(isSettingsWindow);
   setActiveSettingsSidebarLink("settings-general");
   await setPanelDisplayMode(panelDisplayMode, { persist: false, resize: false });
@@ -3632,7 +3495,6 @@ async function init() {
       window.pipPanel.defaultServerAccessKey ||
       "";
   }
-  syncSetupFieldsFromSettings();
   setStatus("Connecting", "pending");
   updateHardwareStatus(hardwareStatus);
   if (launchAtStartupInput) {
@@ -3658,7 +3520,9 @@ async function init() {
     renderMessageThreads();
     renderMessagingUi();
   });
-  startConfigRefresh();
+  window.pipPanel.onAppQuitting?.(() => {
+    isAppQuitting = true;
+  });
 
   try {
     await fetchConfig();
@@ -3680,20 +3544,14 @@ async function init() {
     if (isSettingsWindow) {
       // In the settings window, show the settings panel with an inline connection error
       // rather than switching to the waiting/offline view.
-      setPanelView("panel");
       setServerPanelVisibility(true);
       setActiveSettingsSidebarLink("settings-connection");
     } else {
       showReceptionOfflineBanner();
-      setPanelView("waiting");
-      syncSetupFieldsFromSettings();
-      setSetupFeedback(
-        getServerAccessKeyValue()
-          ? "Reception is offline or the pairing details are incorrect."
-          : "Enter the pairing code from Reception settings, then connect.",
-        "error",
-      );
     }
+
+    // Start the config refresh timer so we auto-connect when reception comes online.
+    startConfigRefresh();
   }
 }
 
@@ -4043,9 +3901,6 @@ window.pipPanel.onMessagePopupDismissReceptionPing?.(() => {
 
 roomSelect.addEventListener("change", async () => {
   preferredRoomId = roomSelect.value;
-  if (setupRoomSelect) {
-    setupRoomSelect.value = roomSelect.value;
-  }
   activeMessageThreadKey = "";
   unreadMessageThreadKeys.clear();
   setMessageThreadDrawerVisibility(false);
@@ -4063,16 +3918,6 @@ roomSelect.addEventListener("change", async () => {
   }).catch(() => {});
   saveState();
   sendIdentify();
-});
-
-setupRoomSelect?.addEventListener("change", () => {
-  if (!setupRoomSelect.value) {
-    return;
-  }
-
-  roomSelect.value = setupRoomSelect.value;
-  preferredRoomId = setupRoomSelect.value;
-  setSetupFeedback("Room selected. Click Connect to save it.", "success");
 });
 
 serverToggleButton?.addEventListener("click", () => {
@@ -4105,7 +3950,7 @@ panelCloseButton?.addEventListener("click", () => {
     return;
   }
 
-  window.pipPanel.hideWindow?.().catch(() => {});
+  window.pipPanel.quitApp?.().catch(() => {});
 });
 
 roleOptionList?.addEventListener("click", async (event) => {
@@ -4745,9 +4590,6 @@ selectedRoomVolume?.addEventListener("click", async (event) => {
 });
 
 serverInput.addEventListener("change", async () => {
-  if (setupServerInput) {
-    setupServerInput.value = serverInput.value.trim();
-  }
   await window.pipPanel.updateSettings({
     serverUrl: serverInput.value.trim(),
     serverAccessKey: getServerAccessKeyValue(),
@@ -4762,16 +4604,11 @@ serverInput.addEventListener("change", async () => {
     saveState();
   } catch (error) {
     setStatus("Offline", "offline");
-    if (!configState && !manualPanelReveal) {
-      setPanelView("waiting");
-    }
+    showReceptionOfflineBanner();
   }
 });
 
 serverAccessKeyInput?.addEventListener("change", async () => {
-  if (setupServerAccessKeyInput) {
-    setupServerAccessKeyInput.value = serverAccessKeyInput.value.trim();
-  }
   await window.pipPanel.updateSettings({
     serverUrl: serverInput.value.trim(),
     serverAccessKey: getServerAccessKeyValue(),
@@ -4784,42 +4621,7 @@ serverAccessKeyInput?.addEventListener("change", async () => {
     startConfigRefresh();
   } catch (error) {
     setStatus("Offline", "offline");
-    if (!configState && !manualPanelReveal) {
-      setPanelView("waiting");
-    }
-  }
-});
-
-setupConnectButton?.addEventListener("click", () => {
-  completeRoomSetup();
-});
-
-setupSettingsButton?.addEventListener("click", () => {
-  manualPanelReveal = true;
-  setPanelView("panel");
-  setServerPanelVisibility(true);
-  setActiveSettingsSidebarLink("settings-connection");
-});
-
-setupServerInput?.addEventListener("change", () => {
-  syncSettingsFromSetupFields();
-  setSetupFeedback("Click Connect to check Reception.", "muted");
-});
-
-setupServerAccessKeyInput?.addEventListener("change", () => {
-  syncSettingsFromSetupFields();
-  setSetupFeedback("Click Connect to check Reception.", "muted");
-});
-
-setupServerInput?.addEventListener("keydown", (event) => {
-  if (event.key === "Enter") {
-    completeRoomSetup();
-  }
-});
-
-setupServerAccessKeyInput?.addEventListener("keydown", (event) => {
-  if (event.key === "Enter") {
-    completeRoomSetup();
+    showReceptionOfflineBanner();
   }
 });
 

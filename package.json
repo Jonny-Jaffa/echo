@@ -1,6 +1,6 @@
 {
   "name": "pip",
-  "version": "0.6.0",
+  "version": "0.8.1",
   "private": true,
   "author": "Blackworks",
   "description": "Patient Pip cross-platform dental/doctor surgery room notification system",
@@ -29,6 +29,7 @@
     "build:surgery:win": "electron-builder --projectDir apps/client --win nsis zip --x64",
     "build:reception:win:x64": "electron-builder --projectDir apps/reception --win nsis zip --x64",
     "build:surgery:win:x64": "electron-builder --projectDir apps/client --win nsis zip --x64",
+    "build:all:win": "npm run build:reception:win && npm run build:surgery:win && npm run build:pip:win",
     "lint": "npm run lint --workspaces --if-present",
     "test": "npm run test --workspaces --if-present"
   },

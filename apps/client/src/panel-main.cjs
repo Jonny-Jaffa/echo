@@ -4,7 +4,7 @@ const dgram = require("node:dgram");
 const { randomUUID } = require("node:crypto");
 const { exec } = require("node:child_process");
 const { pathToFileURL } = require("node:url");
-const { app, BrowserWindow, ipcMain, Menu, Tray, nativeImage, screen } = require("electron");
+const { app, BrowserWindow, ipcMain, Menu, Tray, nativeImage, screen, dialog } = require("electron");
 
 const DISCOVERY_PORT = 3210;
 const SURGERY_PANEL_WIDTH = 373;
@@ -16,6 +16,7 @@ const SURGERY_WINDOW_HEIGHT = 365;
 const SURGERY_WINDOW_BUTTONS_HEIGHT = 224;
 const SURGERY_WINDOW_BOTH_HEIGHT = 540;
 const SURGERY_BANNER_HEIGHT = 50;
+const SURGERY_OFFLINE_COMPACT_HEIGHT = 120;
 const SURGERY_SETTINGS_WINDOW_HEIGHT = 800;
 const DEFAULT_SURGERY_SOUND = "notification_sound_01";
 const MESSAGE_POPUP_WIDTH = 380;
@@ -454,7 +455,6 @@ function createWindow({ showInitially = true } = {}) {
     minWidth: getPanelDisplayModeWidth(clientSettings.panelDisplayMode),
     minHeight: getPanelDisplayModeHeight(clientSettings.panelDisplayMode),
     autoHideMenuBar: true,
-    title: "Pip Surgery",
     show: false,
     skipTaskbar: false,
     frame: false,
@@ -462,6 +462,7 @@ function createWindow({ showInitially = true } = {}) {
     backgroundColor: "#00000000",
     hasShadow: false,
     alwaysOnTop: clientSettings.alwaysOnTop,
+    title: "Pip Surgery",
     icon: windowIcon,
     webPreferences: {
       autoplayPolicy: "no-user-gesture-required",
@@ -493,6 +494,14 @@ function createWindow({ showInitially = true } = {}) {
 
   mainWindow.on("close", (event) => {
     if (isQuitting) {
+      return;
+    }
+
+    // On Windows, when right-clicking the taskbar icon and selecting "Close",
+    // or when pressing Alt+F4, we should quit the app instead of hiding to tray.
+    if (process.platform === "win32" && mainWindow?.isVisible()) {
+      isQuitting = true;
+      app.quit();
       return;
     }
 
@@ -1229,16 +1238,19 @@ function showAboutDialog() {
     : undefined;
 
   aboutWindow = new BrowserWindow({
-    width: 420,
-    height: 440,
+    width: 360,
+    height: 360,
     resizable: false,
     minimizable: false,
     maximizable: false,
     fullscreenable: false,
     show: false,
     autoHideMenuBar: true,
+    frame: false,
+    transparent: true,
+    backgroundColor: "#00000000",
+    hasShadow: false,
     title: `About ${appName}`,
-    backgroundColor: "#F4F7F5",
     icon: windowIcon,
     webPreferences: {
       sandbox: false,
@@ -1269,31 +1281,34 @@ function showAboutDialog() {
 
         body {
           margin: 0;
-          min-height: 100vh;
-          display: grid;
-          place-items: center;
-          background:
-            radial-gradient(circle at top left, rgba(15, 118, 110, 0.16), transparent 38%),
-            linear-gradient(145deg, #edf7f3, #fbfcfc);
+          width: 100vw;
+          height: 100vh;
+          overflow: hidden;
+          border-radius: 24px;
+          background: transparent;
           color: var(--text);
           font-family: "Roboto", "Avenir Next", "Segoe UI", sans-serif;
         }
 
         .about-card {
           position: relative;
-          width: calc(100vw - 32px);
-          max-width: 360px;
+          width: 100vw;
+          height: 100vh;
           padding: 28px 26px 22px;
           border: 1px solid var(--line);
           border-radius: 24px;
           background: var(--panel);
           text-align: center;
           box-shadow: 0 24px 50px rgba(16, 35, 31, 0.14);
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
         }
 
         .about-logo {
           display: block;
-          width: min(180px, 100%);
+          width: min(108px, 100%);
           height: auto;
           margin: 0 auto 22px;
         }
@@ -1473,6 +1488,40 @@ function setWindowBannerVisible(bannerVisible) {
   }, true);
 }
 
+function setWindowOfflineCompact(isCompact) {
+  if (!mainWindow || mainWindow.isDestroyed()) {
+    return;
+  }
+
+  const [currentX, currentY] = mainWindow.getPosition();
+  const [currentWidth, currentHeight] = mainWindow.getSize();
+
+  if (isCompact) {
+    const targetHeight = SURGERY_OFFLINE_COMPACT_HEIGHT;
+    const nextY = currentY + currentHeight - targetHeight;
+    mainWindow.setMinimumSize(currentWidth, targetHeight);
+    mainWindow.setBounds({
+      x: currentX,
+      y: nextY,
+      width: currentWidth,
+      height: targetHeight,
+    }, true);
+  } else {
+    // Restore to normal height based on current display mode
+    const mode = currentPanelDisplayMode;
+    const bannerOffset = currentBannerVisible ? SURGERY_BANNER_HEIGHT : 0;
+    const targetHeight = getPanelDisplayModeHeight(mode) + bannerOffset;
+    const nextY = currentY + currentHeight - targetHeight;
+    mainWindow.setMinimumSize(currentWidth, targetHeight);
+    mainWindow.setBounds({
+      x: currentX,
+      y: nextY,
+      width: currentWidth,
+      height: targetHeight,
+    }, true);
+  }
+}
+
 function minimizeWindow(targetWindow) {
   if (!targetWindow || targetWindow.isDestroyed()) {
     return;
@@ -1549,9 +1598,23 @@ function refreshTrayMenu() {
     },
     {
       label: "Quit",
-      click: () => {
-        isQuitting = true;
-        app.quit();
+      click: async () => {
+        const response = await dialog.showMessageBox({
+          type: "question",
+          buttons: ["Cancel", "Quit"],
+          defaultId: 1,
+          cancelId: 0,
+          title: "Quit Pip",
+          message: "Do you want to quit Pip?",
+          detail: "",
+          noLink: true,
+          parent: mainWindow && !mainWindow.isDestroyed() ? mainWindow : undefined,
+        });
+
+        if (response.response === 1) {
+          isQuitting = true;
+          app.quit();
+        }
       },
     },
   ]);
@@ -1648,6 +1711,27 @@ app.whenReady().then(async () => {
   ipcMain.handle("panel:hideWindow", () => {
     hideWindowToTray();
     return { ok: true };
+  });
+  ipcMain.handle("panel:quitApp", async () => {
+    const response = await dialog.showMessageBox({
+      type: "question",
+      buttons: ["Cancel", "Quit"],
+      defaultId: 1,
+      cancelId: 0,
+      title: "Quit Pip",
+      message: "Do you want to quit Pip?",
+      detail: "",
+      noLink: true,
+      parent: mainWindow && !mainWindow.isDestroyed() ? mainWindow : undefined,
+    });
+
+    if (response.response === 1) {
+      isQuitting = true;
+      app.quit();
+      return { ok: true, quit: true };
+    }
+
+    return { ok: true, quit: false };
   });
   ipcMain.handle("panel:minimizeWindow", (event) => {
     const targetWindow = BrowserWindow.fromWebContents(event.sender);
@@ -1748,6 +1832,10 @@ app.whenReady().then(async () => {
   });
   ipcMain.handle("panel:setBannerVisible", (_event, bannerVisible) => {
     setWindowBannerVisible(bannerVisible);
+    return { ok: true };
+  });
+  ipcMain.handle("panel:setOfflineCompact", (_event, isCompact) => {
+    setWindowOfflineCompact(isCompact);
     return { ok: true };
   });
   ipcMain.handle("panel:updateSettings", async (_event, patch = {}) => {
@@ -1946,6 +2034,12 @@ app.on("window-all-closed", () => {
 
 app.on("before-quit", () => {
   isQuitting = true;
+  if (mainWindow && !mainWindow.isDestroyed()) {
+    mainWindow.webContents.send("panel:appQuitting");
+  }
+  if (settingsWindow && !settingsWindow.isDestroyed()) {
+    settingsWindow.webContents.send("panel:appQuitting");
+  }
   stopClientService().catch((error) => {
     appendClientServiceLog(`before-quit stop failed ${error.stack || error.message}`);
   });

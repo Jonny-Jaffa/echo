@@ -16,7 +16,6 @@
   --message-bubble-outgoing: linear-gradient(180deg, #ffffff, #f7fbfb);
   --message-bubble-text: #ffffff;
   --message-bubble-time: #d4d1d1;
-  --shadow: 0 24px 50px rgba(16, 35, 31, 0.14);
   --icon-play: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 448 512'%3E%3Cpath d='M91.2 36.9c-12.4-6.8-27.4-6.5-39.6 .7S32 57.9 32 72l0 368c0 14.1 7.5 27.2 19.6 34.4s27.2 7.5 39.6 .7l336-184c12.8-7 20.8-20.5 20.8-35.1s-8-28.1-20.8-35.1l-336-184z'/%3E%3C/svg%3E");
   --icon-minimize: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 448 512'%3E%3Cpath d='M0 256c0-17.7 14.3-32 32-32l384 0c17.7 0 32 14.3 32 32s-14.3 32-32 32L32 288c-17.7 0-32-14.3-32-32z'/%3E%3C/svg%3E");
   --icon-buttons: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%20576%20512%22%3E%3Cpath%20d%3D%22M288%2080C222.8%2080%20169.2%20109.6%20128.1%20147.7%2089.6%20183.5%2063%20226%2049.4%20256%2063%20286%2089.6%20328.5%20128.1%20364.3%20169.2%20402.4%20222.8%20432%20288%20432s118.8-29.6%20159.9-67.7C486.4%20328.5%20513%20286%20526.6%20256%20513%20226%20486.4%20183.5%20447.9%20147.7%20406.8%20109.6%20353.2%2080%20288%2080zM95.4%20112.6C142.5%2068.8%20207.2%2032%20288%2032s145.5%2036.8%20192.6%2080.6c46.8%2043.5%2078.1%2095.4%2093%20131.1%203.3%207.9%203.3%2016.7%200%2024.6-14.9%2035.7-46.2%2087.7-93%20131.1-47.1%2043.7-111.8%2080.6-192.6%2080.6S142.5%20443.2%2095.4%20399.4c-46.8-43.5-78.1-95.4-93-131.1-3.3-7.9-3.3-16.7%200-24.6%2014.9-35.7%2046.2-87.7%2093-131.1zM288%20336c44.2%200%2080-35.8%2080-80%200-29.6-16.1-55.5-40-69.3-1.4%2059.7-49.6%20107.9-109.3%20109.3%2013.8%2023.9%2039.7%2040%2069.3%2040zm-79.6-88.4c2.5%20.3%205%20.4%207.6%20.4%2035.3%200%2064-28.7%2064-64%200-2.6-.2-5.1-.4-7.6-37.4%203.9-67.2%2033.7-71.1%2071.1zm45.6-115c10.8-3%2022.2-4.5%2033.9-4.5%208.8%200%2017.5%20.9%2025.8%202.6%20.3%20.1%20.5%20.1%20.8%20.2%2057.9%2012.2%20101.4%2063.7%20101.4%20125.2%200%2070.7-57.3%20128-128%20128-61.6%200-113-43.5-125.2-101.4-1.8-8.6-2.8-17.5-2.8-26.6%200-11%201.4-21.8%204-32%20.2-.7%20.3-1.3%20.5-1.9%2011.9-43.4%2046.1-77.6%2089.5-89.5z%22%2F%3E%3C%2Fsvg%3E");
@@ -48,6 +47,7 @@
 body {
   margin: 0;
   min-height: 100vh;
+  overflow: hidden;
   font-family: "Roboto", "Avenir Next", "Segoe UI", sans-serif;
   background: transparent;
   color: var(--text);
@@ -192,6 +192,17 @@ body[data-window-view="main"] .panel-card {
 
 body[data-window-view="main"][data-quick-actions-visible="true"] .panel-card {
   grid-template-rows: auto auto auto auto auto minmax(0, 1fr);
+}
+
+/* Offline compact mode: hide quick-actions, message-shell, thread-rail,
+   display-mode toggle, and expand button so the window only shows the
+   header row (brand logo, settings, minimize, close) and the offline banner. */
+body[data-window-view="main"][data-offline-compact="true"] .quick-actions,
+body[data-window-view="main"][data-offline-compact="true"] .message-shell,
+body[data-window-view="main"][data-offline-compact="true"] .thread-rail,
+body[data-window-view="main"][data-offline-compact="true"] .panel-display-mode,
+body[data-window-view="main"][data-offline-compact="true"] .panel-expand-button {
+  display: none;
 }
 
 body[data-window-view="main"] .status-row,
@@ -416,7 +427,6 @@ body[data-view="waiting"] .waiting-state {
   padding: 22px;
   border-radius: 24px;
   background: var(--panel);
-  box-shadow: var(--shadow);
   backdrop-filter: blur(12px);
 }
 
@@ -510,10 +520,6 @@ body[data-view="waiting"] .waiting-state {
 .panel-card {
   background: var(--panel);
   border-radius: 12px;
-  box-shadow: var(--shadow);
-}
-
-.panel-card {
   padding: 8px 14px 14px;
   display: grid;
   gap: 14px;
@@ -1405,8 +1411,8 @@ body[data-thread-rail-collapsed="true"] .thread-rail .message-thread-scroll-wrap
   border-right: 1px solid var(--line);
   border-radius: 18px;
   background: rgba(255, 255, 255, 0.96);
-  box-shadow: 0 18px 40px rgba(16, 35, 31, 0.14);
-  backdrop-filter: blur(12px);
+  /* box-shadow: 0 18px 40px rgba(16, 35, 31, 0.14);
+  backdrop-filter: blur(12px); */
   overflow: hidden;
   z-index: 5;
 }
@@ -1586,11 +1592,11 @@ body[data-thread-rail-collapsed="true"] .thread-rail .message-thread-scroll-wrap
   font-weight: 600;
   min-height: 32px;
   padding: 5px 12px;
-  box-shadow:
+  /* box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.9),
     0 0 10px color-mix(in srgb, var(--thread-accent, var(--accent)) 18%, transparent);
   backdrop-filter: blur(16px) saturate(1.3) contrast(1.04);
-  -webkit-backdrop-filter: blur(16px) saturate(1.3) contrast(1.04);
+  -webkit-backdrop-filter: blur(16px) saturate(1.3) contrast(1.04); */
 }
 
 .room-message-shell .message-thread-chip.is-active {
@@ -1600,10 +1606,10 @@ body[data-thread-rail-collapsed="true"] .thread-rail .message-thread-scroll-wrap
     linear-gradient(90deg, rgba(255, 255, 255, 0.9), color-mix(in srgb, var(--thread-accent, var(--accent)) 14%, white) 62%),
     linear-gradient(135deg, rgba(255, 255, 255, 0.95), color-mix(in srgb, var(--thread-accent, var(--accent)) 18%, white));
   color: var(--thread-accent, var(--accent));
-  box-shadow:
+  /* box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.9),
     0 0 0 2px color-mix(in srgb, var(--thread-accent, var(--accent)) 14%, transparent),
-    0 0 16px color-mix(in srgb, var(--thread-accent, var(--accent)) 22%, transparent);
+    0 0 16px color-mix(in srgb, var(--thread-accent, var(--accent)) 22%, transparent); */
 }
 
 .room-message-shell .message-thread-chip.is-reception {
@@ -1616,12 +1622,12 @@ body[data-thread-rail-collapsed="true"] .thread-rail .message-thread-scroll-wrap
 
 .room-message-shell .message-thread-chip.is-reception.is-active {
   color: #000000;
-  box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.18);
+  /* box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.18); */
 }
 
 .room-message-shell .message-thread-chip.is-all-rooms.is-active {
   color: #879293;
-  box-shadow: 0 0 0 2px rgba(16, 35, 31, 0.12);
+  /*box-shadow: 0 0 0 2px rgba(16, 35, 31, 0.12); */
 }
 
 .thread-rail .message-thread-chip {
@@ -1644,11 +1650,11 @@ body[data-thread-rail-collapsed="true"] .thread-rail .message-thread-scroll-wrap
   font-size: 14px;
   font-weight: 700;
   line-height: 1;
-  box-shadow:
+  /* box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.9),
     0 0 10px color-mix(in srgb, var(--thread-accent, var(--accent)) 18%, transparent);
   backdrop-filter: blur(16px) saturate(1.3) contrast(1.04);
-  -webkit-backdrop-filter: blur(16px) saturate(1.3) contrast(1.04);
+  -webkit-backdrop-filter: blur(16px) saturate(1.3) contrast(1.04); */
 }
 
 .thread-rail .message-thread-chip.is-active {
@@ -1658,10 +1664,10 @@ body[data-thread-rail-collapsed="true"] .thread-rail .message-thread-scroll-wrap
     radial-gradient(circle at 25% 18%, rgba(255, 255, 255, 0.92) 0 14%, transparent 42%),
     linear-gradient(135deg, rgba(255, 255, 255, 0.95), color-mix(in srgb, var(--thread-accent, var(--accent)) 18%, white));
   color: var(--thread-accent, var(--accent));
-  box-shadow:
+  /* box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.9),
     0 0 0 2px color-mix(in srgb, var(--thread-accent, var(--accent)) 14%, transparent),
-    0 0 16px color-mix(in srgb, var(--thread-accent, var(--accent)) 22%, transparent);
+    0 0 16px color-mix(in srgb, var(--thread-accent, var(--accent)) 22%, transparent); */
 }
 
 .thread-rail .message-thread-chip.is-reception {
@@ -1699,27 +1705,27 @@ body[data-thread-rail-collapsed="true"] .thread-rail .message-thread-scroll-wrap
 @keyframes thread-glass-pulse {
   0% {
     border-color: rgba(255, 255, 255, 0.72);
-    box-shadow:
+    /* box-shadow:
       inset 0 1px 0 rgba(255, 255, 255, 0.9),
       0 0 10px color-mix(in srgb, var(--thread-accent, var(--accent)) 18%, transparent);
-    filter: saturate(1);
+    filter: saturate(1); */
   }
 
   50% {
     border-color: color-mix(in srgb, var(--thread-accent, var(--accent)) 38%, white);
-    box-shadow:
+    /* box-shadow:
       inset 0 1px 0 rgba(255, 255, 255, 0.92),
       0 0 0 2px color-mix(in srgb, var(--thread-accent, var(--accent)) 14%, transparent),
       0 0 18px color-mix(in srgb, var(--thread-accent, var(--accent)) 30%, transparent);
-    filter: saturate(1.22);
+    filter: saturate(1.22); */
   }
 
   100% {
     border-color: rgba(255, 255, 255, 0.72);
-    box-shadow:
+    /* box-shadow:
       inset 0 1px 0 rgba(255, 255, 255, 0.9),
       0 0 10px color-mix(in srgb, var(--thread-accent, var(--accent)) 18%, transparent);
-    filter: saturate(1);
+    filter: saturate(1); */
   }
 }
 

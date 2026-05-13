@@ -5,6 +5,7 @@ contextBridge.exposeInMainWorld("pipPanel", {
   defaultServerAccessKey: process.env.PIP_ACCESS_KEY || "",
   defaultRoomId: process.env.PIP_ROOM_ID || "surgery-1",
   hideWindow: () => ipcRenderer.invoke("panel:hideWindow"),
+  quitApp: () => ipcRenderer.invoke("panel:quitApp"),
   minimizeWindow: () => ipcRenderer.invoke("panel:minimizeWindow"),
   expandWindow: () => ipcRenderer.invoke("panel:expandWindow"),
   openSettingsWindow: () => ipcRenderer.invoke("panel:openSettingsWindow"),
@@ -19,6 +20,7 @@ contextBridge.exposeInMainWorld("pipPanel", {
   getHardwareStatus: () => ipcRenderer.invoke("panel:getHardwareStatus"),
   setSettingsExpanded: (expanded) => ipcRenderer.invoke("panel:setSettingsExpanded", expanded),
   setBannerVisible: (bannerVisible) => ipcRenderer.invoke("panel:setBannerVisible", bannerVisible),
+  setOfflineCompact: (isCompact) => ipcRenderer.invoke("panel:setOfflineCompact", isCompact),
   onHardwareStatus: (callback) => {
     const listener = (_event, status) => {
       if (typeof callback === "function") {
@@ -80,4 +82,16 @@ contextBridge.exposeInMainWorld("pipPanel", {
     };
   },
   updateSettings: (patch) => ipcRenderer.invoke("panel:updateSettings", patch),
+  onAppQuitting: (callback) => {
+    const listener = () => {
+      if (typeof callback === "function") {
+        callback();
+      }
+    };
+
+    ipcRenderer.on("panel:appQuitting", listener);
+    return () => {
+      ipcRenderer.removeListener("panel:appQuitting", listener);
+    };
+  },
 });
