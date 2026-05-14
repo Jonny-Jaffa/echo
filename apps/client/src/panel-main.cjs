@@ -484,6 +484,7 @@ function createWindow({ showInitially = true } = {}) {
     transparent: SURGERY_MAIN_WINDOW_IS_TRANSPARENT,
     backgroundColor: SURGERY_MAIN_WINDOW_BACKGROUND,
     hasShadow: false,
+    thickFrame: false,
     alwaysOnTop: clientSettings.alwaysOnTop,
     title: SURGERY_PANEL_WINDOW_TITLE,
     icon: windowIcon,
@@ -492,6 +493,10 @@ function createWindow({ showInitially = true } = {}) {
       preload: path.join(__dirname, "panel-preload.cjs"),
     },
   });
+
+  if (typeof mainWindow.setHasShadow === "function") {
+    mainWindow.setHasShadow(false);
+  }
 
   mainWindow.loadFile(path.join(__dirname, "renderer", "panel.html"));
 
@@ -512,6 +517,9 @@ function createWindow({ showInitially = true } = {}) {
   });
 
   mainWindow.once("ready-to-show", () => {
+    if (typeof mainWindow?.setHasShadow === "function") {
+      mainWindow.setHasShadow(false);
+    }
     mainWindow.webContents.send("panel:hardwareStatus", clientHardwareStatus);
     if (showInitially) {
       showMainWindow();
@@ -669,7 +677,7 @@ function positionThreadRailWindow() {
 
   threadRailWindow.setBounds(bounds, false);
   setThreadRailWindowShape(bounds);
-  threadRailWindow.setAlwaysOnTop(Boolean(clientSettings.alwaysOnTop));
+  threadRailWindow.setAlwaysOnTop(Boolean(clientSettings.alwaysOnTop) && !settingsWindow?.isVisible());
 }
 
 function setThreadRailWindowShape(bounds) {
@@ -735,6 +743,9 @@ function syncExternalThreadRailWindow() {
 function createSettingsWindow() {
   if (settingsWindow && !settingsWindow.isDestroyed()) {
     settingsWindow.show();
+    settingsWindow.setAlwaysOnTop(true);
+    positionThreadRailWindow();
+    settingsWindow.moveTop();
     settingsWindow.focus();
     return settingsWindow;
   }
@@ -770,13 +781,17 @@ function createSettingsWindow() {
 
   settingsWindow.once("ready-to-show", () => {
     settingsWindow?.webContents.send("panel:hardwareStatus", clientHardwareStatus);
+    settingsWindow?.setAlwaysOnTop(true);
     settingsWindow?.show();
+    positionThreadRailWindow();
+    settingsWindow?.moveTop();
     settingsWindow?.focus();
     settingsWindow?.center();
   });
 
   settingsWindow.on("closed", () => {
     settingsWindow = null;
+    positionThreadRailWindow();
   });
 
   return settingsWindow;
@@ -1219,9 +1234,14 @@ function getMessagePopupBounds(options = {}) {
   const position = normalizePopupPosition(clientSettings.popupPosition);
 
   if (position === "topRight") {
+    const topOffset = Math.min(
+      Math.round(workArea.height * 0.1),
+      Math.max(0, workArea.height - popupHeight - MESSAGE_POPUP_MARGIN * 2),
+    );
+
     return {
       x: workArea.x + workArea.width - popupWidth - MESSAGE_POPUP_MARGIN,
-      y: workArea.y + MESSAGE_POPUP_MARGIN,
+      y: workArea.y + MESSAGE_POPUP_MARGIN + topOffset,
       width: popupWidth,
       height: popupHeight,
     };
@@ -1768,19 +1788,14 @@ function refreshTrayMenu() {
     return;
   }
 
-  const isWindowVisible = Boolean(mainWindow?.isVisible());
   const hasSupportedMainWindow = Boolean(mainWindow);
 
   const menu = Menu.buildFromTemplate([
     {
-      label: hasSupportedMainWindow
-        ? isWindowVisible
-          ? "Hide Pip Surgery"
-          : "Open Pip Surgery"
-        : "Choose device role",
+      label: hasSupportedMainWindow ? "Open Pip" : "Choose device role",
       click: () => {
         if (hasSupportedMainWindow) {
-          toggleMainWindowVisibility();
+          showMainWindow();
           return;
         }
 
@@ -1788,11 +1803,19 @@ function refreshTrayMenu() {
       },
     },
     {
-      label: "Run at startup",
+      label: "Always on top",
       type: "checkbox",
-      checked: clientSettings.launchAtStartup,
+      checked: clientSettings.alwaysOnTop,
       click: (menuItem) => {
-        setOpenAtLogin(menuItem.checked);
+        clientSettings.alwaysOnTop = menuItem.checked;
+        saveClientSettings();
+        if (mainWindow && !mainWindow.isDestroyed()) {
+          mainWindow.setAlwaysOnTop(clientSettings.alwaysOnTop);
+        }
+        if (threadRailWindow && !threadRailWindow.isDestroyed()) {
+          threadRailWindow.setAlwaysOnTop(Boolean(clientSettings.alwaysOnTop) && !settingsWindow?.isVisible());
+        }
+        refreshTrayMenu();
       },
     },
     {
@@ -1806,16 +1829,11 @@ function refreshTrayMenu() {
       },
     },
     {
-      label: "Always on top",
+      label: "Run at startup",
       type: "checkbox",
-      checked: clientSettings.alwaysOnTop,
+      checked: clientSettings.launchAtStartup,
       click: (menuItem) => {
-        clientSettings.alwaysOnTop = menuItem.checked;
-        saveClientSettings();
-        if (mainWindow && !mainWindow.isDestroyed()) {
-          mainWindow.setAlwaysOnTop(clientSettings.alwaysOnTop);
-        }
-        refreshTrayMenu();
+        setOpenAtLogin(menuItem.checked);
       },
     },
     { type: "separator" },
@@ -2210,7 +2228,7 @@ app.whenReady().then(async () => {
     }
 
     if (threadRailWindow && !threadRailWindow.isDestroyed()) {
-      threadRailWindow.setAlwaysOnTop(Boolean(clientSettings.alwaysOnTop));
+      threadRailWindow.setAlwaysOnTop(Boolean(clientSettings.alwaysOnTop) && !settingsWindow?.isVisible());
     }
 
     if (messagePopupWindow && !messagePopupWindow.isDestroyed()) {

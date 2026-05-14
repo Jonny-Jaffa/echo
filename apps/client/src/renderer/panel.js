@@ -333,7 +333,7 @@ function normalizeHexColor(value, fallback) {
 
 function normalizeReceptionPingMessage(value) {
   const normalized = String(value || "").trim().replace(/\s+/g, " ").slice(0, 40);
-  return normalized || "Reception";
+  return normalized || "Next Patient Waiting";
 }
 
 function getReceptionPingMessage() {
@@ -1753,6 +1753,13 @@ function syncMessageContext() {
   messageShell.style.setProperty("--message-bubble-incoming", accent);
   messageShell.style.setProperty("--message-bubble-text", isAllRoomsThread ? "var(--text)" : "white");
   messageShell.style.setProperty("--message-bubble-time", isAllRoomsThread ? "var(--muted)" : "#ededed");
+
+  if (messageEmojiButton) {
+    const emojiButtonColor = isAllRoomsThread ? "var(--text)" : accent;
+    messageEmojiButton.style.color = emojiButtonColor;
+    messageEmojiButton.querySelector("svg")?.style.setProperty("fill", "currentColor");
+    messageEmojiButton.querySelector("path")?.style.setProperty("fill", "currentColor");
+  }
 
   if (messageComposeInput) {
     messageComposeInput.placeholder = `message ${fullLabel.toLowerCase()}`;

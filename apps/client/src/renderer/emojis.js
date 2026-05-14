@@ -109,6 +109,29 @@ const EMOJI_CATEGORIES = [
   },
 ];
 
+function promoteCommonEmojiCategory() {
+  const commonIndex = EMOJI_CATEGORIES.findIndex((category) => category.id === "common");
+  const peopleCategory = EMOJI_CATEGORIES.find((category) => category.id === "people");
+
+  if (commonIndex < 0) {
+    return;
+  }
+
+  const [commonCategory] = EMOJI_CATEGORIES.splice(commonIndex, 1);
+  const commonEmojiChars = new Set(commonCategory.emojis.map((emoji) => emoji.char));
+
+  if (peopleCategory) {
+    commonCategory.emojis = [
+      ...commonCategory.emojis,
+      ...peopleCategory.emojis.filter((emoji) => !commonEmojiChars.has(emoji.char)),
+    ];
+  }
+
+  EMOJI_CATEGORIES.unshift(commonCategory);
+}
+
+promoteCommonEmojiCategory();
+
 /**
  * Get all emojis as a flat array (deduplicated).
  */

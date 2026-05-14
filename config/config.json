@@ -10,7 +10,8 @@
     "autoHideMs": 0,
     "compactMode": true,
     "minimized": false,
-    "adminMode": false
+    "adminMode": false,
+    "receptionPingMessage": "Next Patient Waiting"
   },
   "audio": {
     "masterVolume": 80,

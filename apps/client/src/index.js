@@ -171,7 +171,7 @@ function getStreamDeckSerial() {
 
 function normalizeReceptionPingMessage(value) {
   const normalized = String(value || "").trim().replace(/\s+/g, " ").slice(0, 40);
-  return normalized || "Reception";
+  return normalized || "Next Patient Waiting";
 }
 
 function applyRuntimeSettings(nextSettings = {}) {

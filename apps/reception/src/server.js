@@ -670,7 +670,7 @@ async function createReceptionServer({
           roomId: room.id,
           roomName: room.name,
           roomShortName: room.shortName,
-          message: String(currentConfig?.display?.receptionPingMessage || "Reception").trim() || "Reception",
+          message: String(currentConfig?.display?.receptionPingMessage || "Next Patient Waiting").trim() || "Next Patient Waiting",
           pingedAt: new Date().toISOString(),
         },
       });

@@ -104,7 +104,7 @@ const ROOM_COLOUR_PALETTE = [
 
 function normalizeReceptionPingMessage(value) {
   const normalized = String(value || "").trim().replace(/\s+/g, " ").slice(0, 40);
-  return normalized || "Reception";
+  return normalized || "Next Patient Waiting";
 }
 
 let appState = null;
@@ -727,6 +727,13 @@ function syncMessageContext(state = appState) {
   chatCard.style.setProperty("--message-context-strip-background", messageStripBackground);
   chatCard.style.setProperty("--message-list-background", messageStripBackground);
   chatCard.style.setProperty("--message-bubble-incoming", activeRoom?.color || "#418191");
+
+  if (chatEmojiButton) {
+    const emojiButtonColor = isAllRoomsSelected ? "var(--text)" : accent;
+    chatEmojiButton.style.color = emojiButtonColor;
+    chatEmojiButton.querySelector("svg")?.style.setProperty("fill", "currentColor");
+    chatEmojiButton.querySelector("path")?.style.setProperty("fill", "currentColor");
+  }
 }
 
 function getIncomingChatRoomId(message) {

@@ -17,6 +17,29 @@ import { EMOJI_CATEGORIES } from "./emojis.js";
 export function createEmojiPicker({ triggerButton, textarea, pickerElement }) {
   let isOpen = false;
 
+  function positionPicker() {
+    const messageShell = pickerElement.closest(".message-shell");
+    const messageList = messageShell?.querySelector(".message-list");
+
+    if (!messageShell || !messageList) {
+      pickerElement.style.removeProperty("--emoji-picker-top");
+      pickerElement.style.removeProperty("--emoji-picker-height");
+      return;
+    }
+
+    const shellRect = messageShell.getBoundingClientRect();
+    const listRect = messageList.getBoundingClientRect();
+    const pickerWidth = Math.min(360, Math.max(260, Math.round(listRect.width - 24)));
+    const pickerHeight = 230;
+    const top = Math.max(0, Math.round(listRect.top - shellRect.top + 12));
+    const left = Math.max(0, Math.round(listRect.left - shellRect.left + 12));
+
+    pickerElement.style.setProperty("--emoji-picker-top", `${top}px`);
+    pickerElement.style.setProperty("--emoji-picker-left", `${left}px`);
+    pickerElement.style.setProperty("--emoji-picker-width", `${pickerWidth}px`);
+    pickerElement.style.setProperty("--emoji-picker-height", `${pickerHeight}px`);
+  }
+
   function buildPicker() {
     // Build category tabs
     const tabsContainer = document.createElement("div");
@@ -102,6 +125,7 @@ export function createEmojiPicker({ triggerButton, textarea, pickerElement }) {
     if (isOpen) return;
     isOpen = true;
     triggerButton.classList.add("is-active");
+    positionPicker();
     pickerElement.classList.remove("hidden");
     buildPicker();
   }
@@ -134,12 +158,14 @@ export function createEmojiPicker({ triggerButton, textarea, pickerElement }) {
   triggerButton.addEventListener("click", togglePicker);
   document.addEventListener("click", handleClickOutside);
   document.addEventListener("keydown", handleEscape);
+  window.addEventListener("resize", positionPicker);
 
   return {
     destroy() {
       triggerButton.removeEventListener("click", togglePicker);
       document.removeEventListener("click", handleClickOutside);
       document.removeEventListener("keydown", handleEscape);
+      window.removeEventListener("resize", positionPicker);
     },
     open() {
       openPicker();

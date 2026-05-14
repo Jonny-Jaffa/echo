@@ -54,6 +54,10 @@ const EMOJI_CATEGORIES = [
     emojis: [
       { char: "\u{1F44B}", name: "Wave", hex: "1f44b" },
       { char: "\u{1F60A}", name: "Smile", hex: "1f60a" },
+      { char: "\u{1F914}", name: "Thinking Face", hex: "1f914" },
+      { char: "\u{1F605}", name: "Grinning Face with Sweat", hex: "1f605" },
+      { char: "\u{1F602}", name: "Face with Tears of Joy", hex: "1f602" },
+      { char: "\u{1F60E}", name: "Smiling Face with Sunglasses", hex: "1f60e" },
       { char: "\u{1F44D}", name: "Thumbs Up", hex: "1f44d" },
       { char: "\u{1F44F}", name: "Clapping", hex: "1f44f" },
       { char: "\u{1F64C}", name: "Raising Hands", hex: "1f64c" },
@@ -63,10 +67,6 @@ const EMOJI_CATEGORIES = [
       { char: "\u{1F4AA}", name: "Flexed Biceps", hex: "1f4aa" },
       { char: "\u{1F440}", name: "Eyes", hex: "1f440" },
       { char: "\u{1F64F}", name: "Folded Hands", hex: "1f64f" },
-      { char: "\u{1F914}", name: "Thinking Face", hex: "1f914" },
-      { char: "\u{1F605}", name: "Grinning Face with Sweat", hex: "1f605" },
-      { char: "\u{1F602}", name: "Face with Tears of Joy", hex: "1f602" },
-      { char: "\u{1F60E}", name: "Smiling Face with Sunglasses", hex: "1f60e" },
     ],
   },
   {

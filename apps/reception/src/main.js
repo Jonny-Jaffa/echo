@@ -46,6 +46,7 @@ const GADGET_HEADER_HEIGHT = 0;
 const GADGET_ROW_HEIGHT = 40;
 const GADGET_FRAME_PADDING = 7;
 const GADGET_WINDOW_HEIGHT_TRIM = process.platform === "win32" ? 0 : 5;
+const GADGET_HIDDEN_MESSAGES_HEIGHT_TRIM = 5;
 const RECEPTION_MAIN_WINDOW_IS_TRANSPARENT = process.platform !== "win32";
 const RECEPTION_MAIN_WINDOW_BACKGROUND = process.platform === "win32" ? "#FFFFFF" : "#00000000";
 const MESSAGE_POPUP_WIDTH = 380;
@@ -205,6 +206,7 @@ function createWindow(config) {
     transparent: RECEPTION_MAIN_WINDOW_IS_TRANSPARENT,
     backgroundColor: RECEPTION_MAIN_WINDOW_BACKGROUND,
     hasShadow: false,
+    thickFrame: false,
     alwaysOnTop: config.display.alwaysOnTop,
     skipTaskbar: false,
     icon: windowIcon,
@@ -212,6 +214,10 @@ function createWindow(config) {
       preload: path.join(__dirname, "preload.js"),
     },
   });
+
+  if (typeof mainWindow.setHasShadow === "function") {
+    mainWindow.setHasShadow(false);
+  }
 
   mainWindow.setPosition(bounds.x, bounds.y);
   mainWindow.loadFile(path.join(__dirname, "renderer", "index.html"));
@@ -226,6 +232,9 @@ function createWindow(config) {
     ).catch(() => {});
   });
   mainWindow.once("ready-to-show", () => {
+    if (typeof mainWindow?.setHasShadow === "function") {
+      mainWindow.setHasShadow(false);
+    }
     emitState();
   });
   mainWindow.on("move", () => {
@@ -395,11 +404,17 @@ function getMessagePopupBounds(options = {}) {
   const workArea = targetDisplay.workArea;
   const popupPosition = String(configState?.display?.popupPosition || "bottomRight").trim().toLowerCase();
   const isTopRight = popupPosition === "topright";
+  const topOffset = isTopRight
+    ? Math.min(
+        Math.round(workArea.height * 0.1),
+        Math.max(0, workArea.height - popupHeight - MESSAGE_POPUP_MARGIN * 2),
+      )
+    : 0;
 
   return {
     x: workArea.x + workArea.width - popupWidth - MESSAGE_POPUP_MARGIN,
     y: isTopRight
-      ? workArea.y + MESSAGE_POPUP_MARGIN
+      ? workArea.y + MESSAGE_POPUP_MARGIN + topOffset
       : workArea.y + workArea.height - popupHeight - MESSAGE_POPUP_MARGIN,
     width: popupWidth,
     height: popupHeight,
@@ -919,26 +934,22 @@ function refreshTrayMenu() {
   tray.setContextMenu(
     Menu.buildFromTemplate([
       {
-        label: hasSupportedMainWindow ? "Show Pip Reception" : "Choose device role",
-        click: () => {
-          if (hasSupportedMainWindow) {
-            mainWindow?.show();
-            return;
-          }
-
-          createRoleWindow();
+        label: "Always on top",
+        type: "checkbox",
+        checked: Boolean(configState?.display?.alwaysOnTop),
+        click: (menuItem) => {
+          updateDisplaySettings({
+            alwaysOnTop: menuItem.checked,
+          });
         },
       },
       {
-        label: "Minimize Pip Reception",
+        label: "Minimize Pip at startup",
         click: () => {
           if (mainWindow && !mainWindow.isDestroyed()) {
             mainWindow.minimize();
           }
         },
-      },
-      {
-        type: "separator",
       },
       {
         label: "Run at startup",
@@ -947,16 +958,6 @@ function refreshTrayMenu() {
         click: (menuItem) => {
           updateDisplaySettings({
             launchAtStartup: menuItem.checked,
-          });
-        },
-      },
-      {
-        label: "Always on top",
-        type: "checkbox",
-        checked: Boolean(configState?.display?.alwaysOnTop),
-        click: (menuItem) => {
-          updateDisplaySettings({
-            alwaysOnTop: menuItem.checked,
           });
         },
       },
@@ -1379,12 +1380,25 @@ function persistWindowPosition() {
 }
 
 function getGadgetHeight(config) {
+  const hiddenMessagesTrim =
+    config?.display?.minimized || config?.display?.messagesVisible
+      ? 0
+      : GADGET_HIDDEN_MESSAGES_HEIGHT_TRIM;
+
   if (Number.isFinite(measuredGadgetHeight) && measuredGadgetHeight > 0) {
-    return Math.max(WINDOW_MINIMIZED_HEIGHT, Math.ceil(measuredGadgetHeight) - GADGET_WINDOW_HEIGHT_TRIM);
+    return Math.max(
+      WINDOW_MINIMIZED_HEIGHT,
+      Math.ceil(measuredGadgetHeight) - GADGET_WINDOW_HEIGHT_TRIM - hiddenMessagesTrim,
+    );
   }
 
   const roomCount = Math.max(1, config.rooms?.length || 0);
-  return GADGET_HEADER_HEIGHT + roomCount * GADGET_ROW_HEIGHT + GADGET_FRAME_PADDING + 60 - GADGET_WINDOW_HEIGHT_TRIM;
+  return GADGET_HEADER_HEIGHT
+    + roomCount * GADGET_ROW_HEIGHT
+    + GADGET_FRAME_PADDING
+    + 60
+    - GADGET_WINDOW_HEIGHT_TRIM
+    - hiddenMessagesTrim;
 }
 
 function initializeConfigPath() {

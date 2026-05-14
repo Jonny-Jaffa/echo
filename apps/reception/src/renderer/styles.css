@@ -200,7 +200,7 @@ body[data-window-view="role"] .admin-panel {
 .gadget-panel {
   display: grid;
   gap: 14px;
-  padding: 8px 14px 14px;
+  padding: 8px 14px 12px;
   align-self: start;
   align-content: start;
   grid-template-rows: auto auto auto;
@@ -679,6 +679,15 @@ select {
   margin-top: 6px;
 }
 
+.reception-message-shell .message-emoji-button {
+  color: var(--message-send-active-color, var(--active-room-accent));
+}
+
+.reception-message-shell .message-emoji-button svg,
+.reception-message-shell .message-emoji-button path {
+  fill: currentColor;
+}
+
 .reception-message-shell .message-compose-input:focus {
   border: 1px solid rgba(255, 255, 255, 0.72);
   box-shadow: none;
@@ -687,7 +696,7 @@ select {
 .reception-message-shell .message-compose-input {
   border: 1px solid rgba(255, 255, 255, 0.72);
   background: var(--message-list-background);
-  box-shadow: 0 8px 18px rgba(16, 35, 31, 0.08);
+  box-shadow: none;
 }
 
 .reception-message-shell .message-compose-input::placeholder {
@@ -712,15 +721,13 @@ select {
     radial-gradient(circle at 22% 16%, rgba(255, 255, 255, 0.96) 0 14%, transparent 42%),
     linear-gradient(135deg, rgba(255, 255, 255, 0.98), rgba(255, 255, 255, 0.9));
   color: var(--message-send-active-color, var(--active-room-accent));
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.72),
-    0 8px 18px rgba(16, 35, 31, 0.08);
+  box-shadow: none;
   backdrop-filter: blur(12px) saturate(1.18);
   -webkit-backdrop-filter: blur(12px) saturate(1.18);
 }
 
 .reception-message-shell .message-send-button::before {
-  transform: translate(-2px, 0) rotate(45deg);
+  transform: translate(0, -1px) rotate(45deg);
 }
 
 .reception-message-shell .message-send-button:not(:disabled),
@@ -738,10 +745,7 @@ select {
   background:
     radial-gradient(circle at 22% 16%, rgba(255, 255, 255, 0.98) 0 14%, transparent 42%),
     linear-gradient(135deg, #ffffff, rgba(255, 255, 255, 0.94));
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.82),
-    0 8px 18px rgba(16, 35, 31, 0.1),
-    0 0 12px color-mix(in srgb, var(--message-send-active-color, var(--active-room-accent)) 16%, transparent);
+  box-shadow: none;
 }
 
 .alert-list {
@@ -1592,7 +1596,7 @@ body[data-admin-mode="true"] .admin-panel {
 .danger-button:focus-visible {
   outline: none;
   border-color: var(--field-focus);
-  box-shadow: 0 0 0 2px color-mix(in srgb, var(--field-focus) 24%, transparent);
+  /* box-shadow: 0 0 0 2px color-mix(in srgb, var(--field-focus) 24%, transparent); */
 }
 
 

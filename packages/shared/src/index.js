@@ -266,7 +266,7 @@ export function normalizeConfig(config) {
 
 function normalizeReceptionPingMessage(value) {
   const normalized = String(value || "").trim().replace(/\s+/g, " ").slice(0, 40);
-  return normalized || "Reception";
+  return normalized || "Next Patient Waiting";
 }
 
 export function normalizeRoomShortName(value, roomName = "", roomId = "", index = 0) {

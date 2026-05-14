@@ -43,7 +43,7 @@ body {
   margin: 8px;
   overflow: hidden;
   border: 1px solid rgba(16, 35, 31, 0.16);
-  border-radius: 999px;
+  border-radius: 30px;
   background:
     linear-gradient(
       90deg,
