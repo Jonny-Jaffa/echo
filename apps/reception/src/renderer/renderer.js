@@ -85,7 +85,7 @@ const CHAT_ROOM_ORDER_STORAGE_KEY = "pip-reception-chat-room-order";
 const RECEPTION_ALL_ROOMS_MESSAGE_GROUP_KEY = "reception-all-rooms";
 const ROOM_SHORT_NAME_MAX_LENGTH = 7;
 const NEUTRAL_MESSAGE_STRIP_BACKGROUND =
-  "linear-gradient(90deg, rgba(135, 146, 147, 0.16), rgba(255, 255, 255, 0.86))";
+  "linear-gradient(90deg, color-mix(in srgb, #879293 15%, white), color-mix(in srgb, #879293 8%, white))";
 const ROOM_COLOUR_PALETTE = [
   "#d0069a",
   "#e07c0b",
@@ -721,10 +721,11 @@ function syncMessageContext(state = appState) {
   const messageStripBackground = isAllRoomsSelected
     ? NEUTRAL_MESSAGE_STRIP_BACKGROUND
     : activeRoom
-      ? `linear-gradient(90deg, color-mix(in srgb, ${accent} 15%, white), color-mix(in srgb, ${accent} 4%, white) 72%, #ffffff)`
+      ? `linear-gradient(90deg, color-mix(in srgb, ${accent} 15%, white), color-mix(in srgb, ${accent} 8%, white))`
       : NEUTRAL_MESSAGE_STRIP_BACKGROUND;
   chatCard.style.setProperty("--message-context-strip-background", messageStripBackground);
   chatCard.style.setProperty("--message-list-background", messageStripBackground);
+  chatCard.style.setProperty("--message-input-background", messageStripBackground);
   chatCard.style.setProperty("--message-bubble-incoming", activeRoom?.color || "#418191");
 
   if (chatEmojiButton) {

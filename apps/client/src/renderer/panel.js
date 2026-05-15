@@ -1731,14 +1731,14 @@ function syncMessageContext() {
   const isAllRoomsThread = activeThread?.key === "all";
   const specialThreadAccent = isAllRoomsThread ? "#879293" : "#000000";
   const specialStripBackground =
-    `linear-gradient(90deg, color-mix(in srgb, ${specialThreadAccent} 15%, white), color-mix(in srgb, ${specialThreadAccent} 4%, white) 72%, #ffffff)`;
+    `linear-gradient(90deg, color-mix(in srgb, ${specialThreadAccent} 15%, white), color-mix(in srgb, ${specialThreadAccent} 8%, white))`;
   const accent = getMessageThreadAccent(activeThread);
   const labelColor = isAllRoomsThread ? "#3f4444" : activeRoom?.color || "var(--accent)";
   const iconColor = labelColor;
   const stripBackground = isAllRoomsThread
     ? specialStripBackground
     : activeRoom?.color
-      ? `linear-gradient(90deg, color-mix(in srgb, ${activeRoom.color} 15%, white), color-mix(in srgb, ${activeRoom.color} 4%, white) 72%, #ffffff)`
+      ? `linear-gradient(90deg, color-mix(in srgb, ${activeRoom.color} 15%, white), color-mix(in srgb, ${activeRoom.color} 8%, white))`
       : specialStripBackground;
   const listBackground = stripBackground;
   const fullLabel = getThreadFullLabel(activeThread);
@@ -1750,6 +1750,7 @@ function syncMessageContext() {
   messageShell.style.setProperty("--message-context-short-label-color", iconColor);
   messageShell.style.setProperty("--message-context-strip-background", stripBackground);
   messageShell.style.setProperty("--message-list-background", listBackground);
+  messageShell.style.setProperty("--message-input-background", listBackground);
   messageShell.style.setProperty("--message-bubble-incoming", accent);
   messageShell.style.setProperty("--message-bubble-text", isAllRoomsThread ? "var(--text)" : "white");
   messageShell.style.setProperty("--message-bubble-time", isAllRoomsThread ? "var(--muted)" : "#ededed");
@@ -3382,6 +3383,7 @@ function handleNotificationActivated(payload) {
   }
 
   const actionId = String(payload?.actionType || "").trim();
+  const source = String(payload?.source || "").trim();
 
   if (!actionId) {
     return;
@@ -3392,6 +3394,12 @@ function handleNotificationActivated(payload) {
     actionId,
   });
   renderButtons();
+
+  if (source && source !== "client-panel") {
+    window.pipPanel.closeReceptionPingPopup?.().catch(() => {});
+    return;
+  }
+
   refreshReceptionPingPopup();
 }
 
@@ -3936,15 +3944,9 @@ window.pipPanel.onMessagePopupPanelAction?.((payload = {}) => {
     return;
   }
 
-  dismissReceptionPingBanner();
-  sendPanelAction(buttonId)
-    .then(() => {
-      refreshReceptionPingPopup({ force: true });
-    })
-    .catch((error) => {
-      console.error(error);
-      refreshReceptionPingPopup({ force: true });
-    });
+  sendPanelAction(buttonId).catch((error) => {
+    console.error(error);
+  });
 });
 
 window.pipPanel.onMessagePopupDismissReceptionPing?.(() => {

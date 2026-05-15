@@ -26,14 +26,7 @@ function hexToRgba(hex, alpha) {
 }
 
 function getMessageBackground(accentColor) {
-  const start = hexToRgba(accentColor, 0.16);
-  const end = hexToRgba(accentColor, 0.04);
-
-  if (start && end) {
-    return `linear-gradient(90deg, ${start}, ${end})`;
-  }
-
-  return `linear-gradient(90deg, color-mix(in srgb, ${accentColor} 16%, transparent), color-mix(in srgb, ${accentColor} 4%, transparent))`;
+  return `linear-gradient(90deg, color-mix(in srgb, ${accentColor} 15%, white), color-mix(in srgb, ${accentColor} 8%, white))`;
 }
 
 function showPayload(payload = {}) {

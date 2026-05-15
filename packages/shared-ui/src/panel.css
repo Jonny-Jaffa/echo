@@ -5,6 +5,7 @@
   --shared-icon-button-size: 32px;
   --shared-logo-height: 18px;
   --message-list-background: #dbdddd;
+  --message-input-background: white;
   --message-bubble-incoming: #418191;
   --message-bubble-outgoing: #339539;
   --message-bubble-text: #ffffff;
@@ -920,7 +921,7 @@
   border: 1px solid var(--line);
   border-radius: 18px;
   padding: 8px 14px 5px 14px;
-  background: white;
+  background: var(--message-input-background, white);
   color: var(--text);
   font: inherit;
   font-size: 15px;
@@ -952,8 +953,10 @@
   border: 0;
   border-radius: 999px;
   padding: 0;
-  background: var(--accent);
-  color: white;
+  appearance: none;
+  -webkit-appearance: none;
+  background: transparent;
+  color: var(--accent);
   cursor: pointer;
   position: relative;
   text-indent: -9999px;
