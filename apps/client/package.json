@@ -1,6 +1,6 @@
 {
   "name": "@pip/client",
-  "version": "0.8.9",
+  "version": "0.8.14",
   "private": true,
   "author": "Blackworks",
   "type": "module",
@@ -15,12 +15,12 @@
   },
   "dependencies": {
     "@elgato-stream-deck/node": "^7.6.2",
-    "@pip/shared": "0.3.0",
+    "@pip/shared": "0.6.0",
     "@resvg/resvg-wasm": "^2.6.2",
     "ws": "^8.18.3"
   },
   "devDependencies": {
-    "electron": "37.2.1"
+    "electron": "42.1.0"
   },
   "build": {
     "appId": "com.patientpip.surgery",

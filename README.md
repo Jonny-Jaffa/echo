@@ -1,6 +1,6 @@
-# Patient Pip
+# Pip
 
-Patient Pip, shortened to Pip in the apps, is a lightweight LAN-based notification system for surgeries and reception desks. This repository currently contains:
+Pip is a lightweight LAN-based notification system for surgeries and reception desks. This repository currently contains:
 
 - `apps/echo`: future unified Pip bootstrap app for role selection and one-installer migration
 - `apps/reception`: Electron reception app with gadget window, settings window, messaging UI, and local HTTP/WebSocket service

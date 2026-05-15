@@ -3,7 +3,7 @@
   "version": "0.8.1",
   "private": true,
   "author": "Blackworks",
-  "description": "Patient Pip cross-platform dental/doctor surgery room notification system",
+  "description": "Pip cross-platform dental/doctor surgery room notification system",
   "workspaces": [
     "apps/*",
     "packages/*"

@@ -18,7 +18,7 @@
 .panel-card,
 .gadget-panel {
   border-radius: var(--shared-panel-radius);
-  background: var(--panel);
+  background: var(--panel-surface, var(--panel));
 }
 
 .status-row {
@@ -33,11 +33,63 @@
 .brand-lockup {
   display: flex;
   align-items: center;
+  gap: 7px;
   min-width: 0;
 }
 
-.brand-logo {
+.brand-app-icon {
   display: block;
+  width: 25px;
+  max-width: 100%;
+  object-fit: contain;
+  flex: 0 0 auto;
+  border-radius: 999px;
+  border: 1px solid white;
+}
+
+.brand-title {
+  background: linear-gradient(
+    90deg,
+    #8e8e8e,
+    #111,
+    #8e8e8e
+  );
+  /* background: linear-gradient(
+    90deg,
+    #7DCAF2,
+    #E052D8,
+    #66EC94
+  );
+  */
+  background-size: 300% 100%;
+  color: transparent;
+  font-size: 18px;
+  font-weight: 600;
+  line-height: 1;
+  -webkit-background-clip: text;
+  background-clip: text;
+  animation: brand-title-gradient 5s linear infinite;
+}
+
+@keyframes brand-title-gradient {
+  from {
+    background-position: 0% 50%;
+  }
+
+  to {
+    background-position: 150% 50%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .brand-title {
+    animation: none;
+    background-position: 50% 50%;
+  }
+}
+
+.brand-logo {
+  display: none;
   width: auto;
   max-width: 100%;
   height: var(--shared-logo-height);
@@ -359,11 +411,19 @@
   cursor: pointer;
   white-space: nowrap;
   flex: 0 0 auto;
+  transform-origin: center;
+  transition: transform 140ms ease, border-color 140ms ease, color 140ms ease, background 140ms ease;
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.9),
     0 0 10px color-mix(in srgb, var(--thread-accent, var(--accent)) 18%, transparent);
   backdrop-filter: blur(16px) saturate(1.3) contrast(1.04);
   -webkit-backdrop-filter: blur(16px) saturate(1.3) contrast(1.04);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .message-thread-chip:hover:not(.is-dragging) {
+    transform: scale(1.04);
+  }
 }
 
 .message-recipient-chip,
@@ -723,8 +783,8 @@
 }
 
 .message-emoji-button {
-  width: 38px;
-  min-width: 38px;
+  width: 29px;
+  min-width: 29px;
   height: 38px;
   border: 0;
   border-radius: 999px;
@@ -740,8 +800,7 @@
 }
 
 .message-emoji-button:hover {
-  color: var(--accent, #4f46e5);
-  background: color-mix(in srgb, var(--accent, #4f46e5) 10%, transparent);
+  background: transparent;
 }
 
 .message-emoji-button.is-active {
@@ -905,8 +964,8 @@
   content: "";
   position: absolute;
   inset: 0;
-  width: 18px;
-  height: 18px;
+  width: 22px;
+  height: 22px;
   margin: auto;
   background-color: currentColor;
   -webkit-mask-image: var(--icon-send);

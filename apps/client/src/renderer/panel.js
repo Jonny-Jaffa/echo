@@ -43,7 +43,6 @@ const receptionOfflineBanner = document.querySelector("#reception-offline-banner
 const launchAtStartupInput = document.querySelector("#launch-at-startup-input");
 const showPanelAtStartupInput = document.querySelector("#show-panel-at-startup-input");
 const alwaysOnTopInput = document.querySelector("#always-on-top-input");
-const popupPositionInput = document.querySelector("#popup-position-input");
 const messageSoundInput = document.querySelector("#message-sound-input");
 const messageSoundTestButton = document.querySelector("#message-sound-test-button");
 const messageVolumeInput = document.querySelector("#message-volume-input");
@@ -3508,9 +3507,6 @@ function applyPersistedSettings(nextSettings = {}) {
   roomMessageGroups = normalizeRoomMessageGroups(panelSettings.roomMessageGroups);
   roomPinnedMessageThreads = normalizeRoomPinnedMessageThreads(panelSettings.roomPinnedMessageThreads);
   panelDisplayMode = normalizePanelDisplayMode(panelSettings.panelDisplayMode);
-  if (popupPositionInput) {
-    popupPositionInput.value = panelSettings.popupPosition || "bottomRight";
-  }
   renderMessageSoundSettings();
 }
 
@@ -4071,12 +4067,6 @@ showPanelAtStartupInput?.addEventListener("change", async () => {
 alwaysOnTopInput?.addEventListener("change", async () => {
   await window.pipPanel.updateSettings({
     alwaysOnTop: alwaysOnTopInput.checked,
-  }).catch(() => {});
-});
-
-popupPositionInput?.addEventListener("change", async () => {
-  await window.pipPanel.updateSettings({
-    popupPosition: popupPositionInput.value,
   }).catch(() => {});
 });
 

@@ -4,7 +4,7 @@ Last updated: 2026-05-05
 
 ## Branding Note
 
-- Effective 2026-04-26, the product name is `Patient Pip`, shortened to `Pip` in the apps
+- Effective 2026-04-26, the product name is `Pip`
 - Future user-facing text should use `Pip` consistently
 - This includes:
   - app window titles

@@ -67,8 +67,8 @@ const RUNTIME_ROLE_ROOM = "room";
 const RUNTIME_ROLE_RECEPTION = "reception";
 const CURRENT_APP_RUNTIME_ROLE = RUNTIME_ROLE_ROOM;
 const USE_EXTERNAL_THREAD_RAIL = process.platform === "win32";
-const SURGERY_MAIN_WINDOW_IS_TRANSPARENT = process.platform !== "win32";
-const SURGERY_MAIN_WINDOW_BACKGROUND = process.platform === "win32" ? "#FFFFFF" : "#00000000";
+const SURGERY_MAIN_WINDOW_IS_TRANSPARENT = true;
+const SURGERY_MAIN_WINDOW_BACKGROUND = "#00000000";
 const SURGERY_PANEL_WINDOW_TITLE = process.platform === "win32" ? "\u200B" : "Pip Surgery";
 let allowNativeMinimize = false;
 
@@ -458,7 +458,7 @@ function normalizeRoomRightAuxSettings(roomRightAuxSettings) {
 
 function configureAboutPanel() {
   app.setAboutPanelOptions({
-    applicationName: "Patient Pip",
+    applicationName: "Pip (Client)",
     applicationVersion: app.getVersion(),
     version: app.getVersion(),
     credits: "Developed by Blackworks",
@@ -529,6 +529,12 @@ function createWindow({ showInitially = true } = {}) {
   });
 
   mainWindow.on("minimize", (event) => {
+    if (process.platform === "win32") {
+      hideThreadRailWindow();
+      refreshTrayMenu();
+      return;
+    }
+
     if (allowNativeMinimize) {
       allowNativeMinimize = false;
       refreshTrayMenu();
@@ -562,16 +568,44 @@ function createWindow({ showInitially = true } = {}) {
   });
   mainWindow.on("focus", () => {
     closeMessagePopup();
+    refreshTransparentWindowChrome(mainWindow);
+  });
+  mainWindow.on("blur", () => {
+    refreshTransparentWindowChrome(mainWindow);
   });
   mainWindow.on("move", positionThreadRailWindow);
   mainWindow.on("resize", positionThreadRailWindow);
   mainWindow.on("show", () => {
+    refreshTransparentWindowChrome(mainWindow);
     positionThreadRailWindow();
     syncExternalThreadRailWindow();
   });
   mainWindow.on("hide", () => {
     hideThreadRailWindow();
   });
+}
+
+function refreshTransparentWindowChrome(targetWindow = mainWindow) {
+  if (
+    process.platform !== "win32" ||
+    !SURGERY_MAIN_WINDOW_IS_TRANSPARENT ||
+    !targetWindow ||
+    targetWindow.isDestroyed() ||
+    typeof targetWindow.setIgnoreMouseEvents !== "function"
+  ) {
+    return;
+  }
+
+  if (typeof targetWindow.setHasShadow === "function") {
+    targetWindow.setHasShadow(false);
+  }
+
+  targetWindow.setIgnoreMouseEvents(true);
+  setTimeout(() => {
+    if (targetWindow && !targetWindow.isDestroyed()) {
+      targetWindow.setIgnoreMouseEvents(false);
+    }
+  }, 30);
 }
 
 function getThreadRailWindowBounds() {
@@ -1264,6 +1298,10 @@ function createMessagePopupWindow() {
   });
 
   messagePopupWindow.loadFile(path.join(__dirname, "renderer", "message-popup.html"));
+  refreshTransparentWindowChrome(messagePopupWindow);
+  messagePopupWindow.on("show", () => refreshTransparentWindowChrome(messagePopupWindow));
+  messagePopupWindow.on("focus", () => refreshTransparentWindowChrome(messagePopupWindow));
+  messagePopupWindow.on("blur", () => refreshTransparentWindowChrome(messagePopupWindow));
   messagePopupWindow.on("closed", () => {
     messagePopupWindow = null;
   });
@@ -1338,6 +1376,7 @@ function showMessagePopup(payload = {}) {
       : estimateMessagePopupHeight(latestMessagePopupPayload.text),
   }), false);
   popupWindow.showInactive();
+  refreshTransparentWindowChrome(popupWindow);
   sendMessagePopupPayload(latestMessagePopupPayload);
 }
 
@@ -1452,7 +1491,7 @@ function showAboutDialog() {
     return;
   }
 
-  const appName = "Patient Pip";
+  const appName = "Pip (Client)";
   const appVersion = app.getVersion();
   const brandLogoDataUrl = getBrandLogoDataUrl();
   const appIcon = getAppIcon();
@@ -1548,11 +1587,9 @@ function showAboutDialog() {
         .about-line {
           margin: 10px 0 0;
           font-size: 14px;
-          color: var(--muted);
         }
 
         .about-version {
-          color: var(--accent);
           font-weight: 700;
         }
 
@@ -1599,7 +1636,7 @@ function showAboutDialog() {
     </head>
     <body>
       <main class="about-card">
-        ${brandLogoDataUrl ? `<img class="about-logo" src="${brandLogoDataUrl}" alt="Patient Pip" />` : ""}
+        ${brandLogoDataUrl ? `<img class="about-logo" src="${brandLogoDataUrl}" alt="Pip" />` : ""}
         <h1 class="about-title">${escapeHtml(appName)}</h1>
         <p class="about-version">Version ${escapeHtml(appVersion)}</p>
         <p class="about-line">Developed by Blackworks</p>
@@ -1773,20 +1810,7 @@ function refreshTrayMenu() {
     return;
   }
 
-  const hasSupportedMainWindow = Boolean(mainWindow);
-
   const menu = Menu.buildFromTemplate([
-    {
-      label: hasSupportedMainWindow ? "Open Pip" : "Choose device role",
-      click: () => {
-        if (hasSupportedMainWindow) {
-          showMainWindow();
-          return;
-        }
-
-        createRoleWindow();
-      },
-    },
     {
       label: "Always on top",
       type: "checkbox",

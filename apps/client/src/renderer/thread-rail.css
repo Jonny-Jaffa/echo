@@ -65,11 +65,19 @@ body {
   font-weight: 700;
   line-height: 1;
   cursor: pointer;
+  transform-origin: center;
+  transition: transform 140ms ease, border-color 140ms ease, filter 140ms ease;
 }
 
 .thread-rail-chip.is-active {
   border-width: 4px;
   border-color: color-mix(in srgb, var(--thread-accent, #111111) 34%, white);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .thread-rail-chip:hover {
+    transform: scale(1.06);
+  }
 }
 
 .thread-rail-chip.is-reception {
@@ -103,5 +111,15 @@ body {
 
   50% {
     filter: saturate(1.25);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .thread-rail-chip {
+    transition: none;
+  }
+
+  .thread-rail-chip:hover {
+    transform: none;
   }
 }

@@ -2,6 +2,7 @@
   color-scheme: light;
   --bg: #edf4f1;
   --panel: #ffffff;
+  --panel-surface: rgba(255, 255, 255, 0.85);
   --text: #10231f;
   --muted: #494949;
   --accent: #121212;
@@ -42,7 +43,7 @@ body[data-window-view="role"] {
 }
 
 body[data-platform="win32"] {
-  background: var(--panel);
+  background: transparent;
 }
 
 .shell {
@@ -191,9 +192,9 @@ body[data-window-view="role"] .admin-panel {
 
 .gadget-panel,
 .admin-panel {
-  background: var(--panel);
+  background: rgba(255, 255, 255, 0.85);
   backdrop-filter: blur(10px);
-  border-radius: 20px;
+  border-radius: 12px;
   box-shadow: none;
 }
 
@@ -207,7 +208,7 @@ body[data-window-view="role"] .admin-panel {
 }
 
 body[data-platform="win32"] .gadget-panel {
-  border-radius: 20px;
+  border-radius: 12px;
 }
 
 body[data-admin-mode="true"] .gadget-panel {
@@ -461,6 +462,7 @@ select {
   --message-context-label-color: white;
   --message-context-short-label-color: var(--active-room-accent);
   --message-context-strip-background: linear-gradient(90deg, #f7f7f7, #ffffff);
+  --message-list-background: var(--message-context-strip-background);
   --message-bubble-outgoing: linear-gradient(180deg, #ffffff, #f7fbfb);
   --message-scrollbar-thumb-height: 0px;
   --message-scrollbar-thumb-top: 0px;
@@ -644,6 +646,7 @@ select {
 }
 
 .reception-message-shell .message-list {
+  background: var(--message-list-background);
   border-radius: 0 0 20px 20px;
   display: block;
   min-height: 0;
@@ -688,6 +691,10 @@ select {
   fill: currentColor;
 }
 
+.reception-message-shell .message-emoji-button svg {
+  transform: translateX(3px);
+}
+
 .reception-message-shell .message-compose-input:focus {
   border: 1px solid rgba(255, 255, 255, 0.72);
   box-shadow: none;
@@ -727,7 +734,7 @@ select {
 }
 
 .reception-message-shell .message-send-button::before {
-  transform: translate(0, -1px) rotate(45deg);
+  transform: translate(-3px, 0) rotate(45deg);
 }
 
 .reception-message-shell .message-send-button:not(:disabled),

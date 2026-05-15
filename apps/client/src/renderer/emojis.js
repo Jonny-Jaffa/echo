@@ -1,5 +1,5 @@
 /**
- * Curated emoji set for Patient Pip messaging.
+ * Curated emoji set for Pip messaging.
  * Each emoji has: character, name, category, and hexcode (for SVG filename).
  */
 

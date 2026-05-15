@@ -1,6 +1,6 @@
 {
   "name": "@pip/reception",
-  "version": "0.8.9",
+  "version": "0.8.14",
   "private": true,
   "author": "Blackworks",
   "main": "src/main.js",
@@ -9,11 +9,11 @@
     "start": "env -u ELECTRON_RUN_AS_NODE electron ."
   },
   "dependencies": {
-    "@pip/shared": "0.3.0",
+    "@pip/shared": "0.6.0",
     "ws": "^8.18.3"
   },
   "devDependencies": {
-    "electron": "37.2.1"
+    "electron": "42.1.0"
   },
   "build": {
     "appId": "com.patientpip.reception",

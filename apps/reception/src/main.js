@@ -47,8 +47,9 @@ const GADGET_ROW_HEIGHT = 40;
 const GADGET_FRAME_PADDING = 7;
 const GADGET_WINDOW_HEIGHT_TRIM = process.platform === "win32" ? 0 : 5;
 const GADGET_HIDDEN_MESSAGES_HEIGHT_TRIM = 5;
-const RECEPTION_MAIN_WINDOW_IS_TRANSPARENT = process.platform !== "win32";
-const RECEPTION_MAIN_WINDOW_BACKGROUND = process.platform === "win32" ? "#FFFFFF" : "#00000000";
+const GADGET_COMPACT_HIDDEN_MESSAGES_HEIGHT_TRIM = 12;
+const RECEPTION_MAIN_WINDOW_IS_TRANSPARENT = true;
+const RECEPTION_MAIN_WINDOW_BACKGROUND = "#00000000";
 const MESSAGE_POPUP_WIDTH = 380;
 const ALERT_POPUP_WIDTH = 460;
 const MESSAGE_POPUP_MIN_HEIGHT = 62;
@@ -235,6 +236,7 @@ function createWindow(config) {
     if (typeof mainWindow?.setHasShadow === "function") {
       mainWindow.setHasShadow(false);
     }
+    refreshTransparentWindowChrome(mainWindow);
     emitState();
   });
   mainWindow.on("move", () => {
@@ -245,7 +247,37 @@ function createWindow(config) {
   });
   mainWindow.on("focus", () => {
     closeMessagePopup();
+    refreshTransparentWindowChrome(mainWindow);
   });
+  mainWindow.on("blur", () => {
+    refreshTransparentWindowChrome(mainWindow);
+  });
+  mainWindow.on("show", () => {
+    refreshTransparentWindowChrome(mainWindow);
+  });
+}
+
+function refreshTransparentWindowChrome(targetWindow = mainWindow) {
+  if (
+    process.platform !== "win32" ||
+    !RECEPTION_MAIN_WINDOW_IS_TRANSPARENT ||
+    !targetWindow ||
+    targetWindow.isDestroyed() ||
+    typeof targetWindow.setIgnoreMouseEvents !== "function"
+  ) {
+    return;
+  }
+
+  if (typeof targetWindow.setHasShadow === "function") {
+    targetWindow.setHasShadow(false);
+  }
+
+  targetWindow.setIgnoreMouseEvents(true);
+  setTimeout(() => {
+    if (targetWindow && !targetWindow.isDestroyed()) {
+      targetWindow.setIgnoreMouseEvents(false);
+    }
+  }, 30);
 }
 
 function createSettingsWindow() {
@@ -449,6 +481,10 @@ function createMessagePopupWindow() {
   });
 
   messagePopupWindow.loadFile(path.join(__dirname, "renderer", "message-popup.html"));
+  refreshTransparentWindowChrome(messagePopupWindow);
+  messagePopupWindow.on("show", () => refreshTransparentWindowChrome(messagePopupWindow));
+  messagePopupWindow.on("focus", () => refreshTransparentWindowChrome(messagePopupWindow));
+  messagePopupWindow.on("blur", () => refreshTransparentWindowChrome(messagePopupWindow));
   messagePopupWindow.on("closed", () => {
     messagePopupWindow = null;
   });
@@ -514,6 +550,7 @@ function showMessagePopup(payload = {}) {
     height: estimateMessagePopupHeight(latestMessagePopupPayload.text),
   }), false);
   popupWindow.showInactive();
+  refreshTransparentWindowChrome(popupWindow);
   sendMessagePopupPayload(latestMessagePopupPayload);
 }
 
@@ -571,6 +608,7 @@ function showAlertPopup(notification = {}) {
     height: ALERT_POPUP_HEIGHT,
   }), false);
   popupWindow.showInactive();
+  refreshTransparentWindowChrome(popupWindow);
   sendMessagePopupPayload(payload);
   return true;
 }
@@ -724,7 +762,7 @@ function createTray() {
 
 function configureAboutPanel() {
   app.setAboutPanelOptions({
-    applicationName: "Patient Pip",
+    applicationName: "Pip (Reception)",
     applicationVersion: app.getVersion(),
     version: app.getVersion(),
     credits: "Developed by Blackworks",
@@ -748,7 +786,7 @@ function showAboutDialog() {
     return;
   }
 
-  const appName = "Patient Pip";
+  const appName = "Pip (Reception)";
   const appVersion = app.getVersion();
   const brandLogoDataUrl = getBrandLogoDataUrl();
   const appIcon = getAppIcon();
@@ -844,11 +882,9 @@ function showAboutDialog() {
         .about-line {
           margin: 10px 0 0;
           font-size: 14px;
-          color: var(--muted);
         }
 
         .about-version {
-          color: var(--accent);
           font-weight: 700;
         }
 
@@ -895,7 +931,7 @@ function showAboutDialog() {
     </head>
     <body>
       <main class="about-card">
-        ${brandLogoDataUrl ? `<img class="about-logo" src="${brandLogoDataUrl}" alt="Patient Pip" />` : ""}
+        ${brandLogoDataUrl ? `<img class="about-logo" src="${brandLogoDataUrl}" alt="Pip" />` : ""}
         <h1 class="about-title">${escapeHtml(appName)}</h1>
         <p class="about-version">Version ${escapeHtml(appVersion)}</p>
         <p class="about-line">Developed by Blackworks</p>
@@ -934,7 +970,7 @@ function refreshTrayMenu() {
         },
       },
       {
-        label: "Minimize Pip at startup",
+        label: "Minimise at startup",
         click: () => {
           if (mainWindow && !mainWindow.isDestroyed()) {
             mainWindow.minimize();
@@ -1371,9 +1407,11 @@ function persistWindowPosition() {
 
 function getGadgetHeight(config) {
   const hiddenMessagesTrim =
-    config?.display?.minimized || config?.display?.messagesVisible
+    config?.display?.messagesVisible
       ? 0
-      : GADGET_HIDDEN_MESSAGES_HEIGHT_TRIM;
+      : config?.display?.minimized
+        ? GADGET_COMPACT_HIDDEN_MESSAGES_HEIGHT_TRIM
+        : GADGET_HIDDEN_MESSAGES_HEIGHT_TRIM;
 
   if (Number.isFinite(measuredGadgetHeight) && measuredGadgetHeight > 0) {
     return Math.max(

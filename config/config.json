@@ -11,6 +11,7 @@
     "compactMode": true,
     "minimized": false,
     "adminMode": false,
+    "launchAtStartup": true,
     "receptionPingMessage": "Next Patient Waiting"
   },
   "audio": {

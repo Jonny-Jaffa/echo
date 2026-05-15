@@ -47,7 +47,6 @@ const detectedServerAddressOutput = document.querySelector("#detected-server-add
 const selectedDeviceRoleLabel = document.querySelector("#selected-device-role-label");
 const launchAtStartupInput = document.querySelector("#launch-at-startup-input");
 const alwaysOnTopInput = document.querySelector("#always-on-top-input");
-const popupPositionInput = document.querySelector("#popup-position-input");
 const messageRetentionInput = document.querySelector("#message-retention-input");
 const receptionPingMessageInput = document.querySelector("#reception-ping-message-input");
 const audioNotificationSoundInput = document.querySelector("#audio-notification-sound-input");
@@ -1240,9 +1239,6 @@ function populateEditor(config) {
   authAccessKeyInput.value = draftConfig.auth?.accessKey || "";
   launchAtStartupInput.checked = draftConfig.display?.launchAtStartup !== false;
   alwaysOnTopInput.checked = Boolean(draftConfig.display.alwaysOnTop);
-  if (popupPositionInput) {
-    popupPositionInput.value = draftConfig.display?.popupPosition || "bottomRight";
-  }
   if (messageRetentionInput) {
     messageRetentionInput.value = String(draftConfig.display?.messageRetentionMinutes ?? 60);
   }
@@ -1511,7 +1507,6 @@ function buildConfigFromForm() {
       ...draftConfig.display,
       launchAtStartup: launchAtStartupInput.checked,
       alwaysOnTop: alwaysOnTopInput.checked,
-      popupPosition: popupPositionInput?.value || "bottomRight",
       messageRetentionMinutes: Number(messageRetentionInput?.value) || 60,
       receptionPingMessage: normalizeReceptionPingMessage(receptionPingMessageInput?.value),
       adminMode: false,
