@@ -192,6 +192,7 @@ let roomSettingsInteractionLockUntil = 0;
 let chatMessages = [];
 let activeMessageThreadKey = "";
 let isAppQuitting = false;
+let isReceptionOffline = false;
 const unreadMessageThreadKeys = new Set();
 let areQuickActionsVisible = false;
 let isMessageThreadDrawerVisible = false;
@@ -250,7 +251,7 @@ function canUseAllRoomsMessageThread() {
 }
 
 function canUseMessageThreadRail() {
-  return getVisibleConfigRooms().length > 1;
+  return !isReceptionOffline && getVisibleConfigRooms().length > 1;
 }
 
 function renderSelectedDeviceRole(settings = panelSettings) {
@@ -3422,9 +3423,13 @@ function showReceptionOfflineBanner() {
   if (!receptionOfflineBanner) {
     return;
   }
+  isReceptionOffline = true;
   receptionOfflineBanner.classList.remove("hidden");
   document.body.dataset.bannerVisible = "true";
   document.body.dataset.offlineCompact = "true";
+  document.body.dataset.threadRailAvailable = "false";
+  renderMessageThreads();
+  syncExternalThreadRail();
   window.pipPanel?.setOfflineCompact?.(true);
 }
 
@@ -3432,9 +3437,12 @@ function hideReceptionOfflineBanner() {
   if (!receptionOfflineBanner) {
     return;
   }
+  isReceptionOffline = false;
   receptionOfflineBanner.classList.add("hidden");
   document.body.dataset.offlineCompact = "false";
   updateBannerVisibility();
+  renderMessageThreads();
+  syncExternalThreadRail();
   window.pipPanel?.setOfflineCompact?.(false);
 }
 

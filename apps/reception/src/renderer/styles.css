@@ -193,7 +193,7 @@ body[data-window-view="role"] .admin-panel {
 .admin-panel {
   background: var(--panel);
   backdrop-filter: blur(10px);
-  border-radius: 12px;
+  border-radius: 20px;
   box-shadow: none;
 }
 
@@ -207,7 +207,7 @@ body[data-window-view="role"] .admin-panel {
 }
 
 body[data-platform="win32"] .gadget-panel {
-  border-radius: 0;
+  border-radius: 20px;
 }
 
 body[data-admin-mode="true"] .gadget-panel {

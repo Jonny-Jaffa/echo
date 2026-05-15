@@ -401,21 +401,10 @@ function getMessagePopupBounds(options = {}) {
   const targetDisplay = referenceBounds
     ? screen.getDisplayMatching(referenceBounds)
     : screen.getPrimaryDisplay();
-  const workArea = targetDisplay.workArea;
-  const popupPosition = String(configState?.display?.popupPosition || "bottomRight").trim().toLowerCase();
-  const isTopRight = popupPosition === "topright";
-  const topOffset = isTopRight
-    ? Math.min(
-        Math.round(workArea.height * 0.1),
-        Math.max(0, workArea.height - popupHeight - MESSAGE_POPUP_MARGIN * 2),
-      )
-    : 0;
-
+  const screenBounds = targetDisplay.bounds;
   return {
-    x: workArea.x + workArea.width - popupWidth - MESSAGE_POPUP_MARGIN,
-    y: isTopRight
-      ? workArea.y + MESSAGE_POPUP_MARGIN + topOffset
-      : workArea.y + workArea.height - popupHeight - MESSAGE_POPUP_MARGIN,
+    x: screenBounds.x + Math.max(0, Math.round((screenBounds.width - popupWidth) / 2)),
+    y: screenBounds.y,
     width: popupWidth,
     height: popupHeight,
   };
@@ -778,8 +767,8 @@ function showAboutDialog() {
     show: false,
     autoHideMenuBar: true,
     frame: false,
-    transparent: true,
-    backgroundColor: "#00000000",
+    transparent: false,
+    backgroundColor: "#FFFFFF",
     hasShadow: false,
     title: `About ${appName}`,
     icon: windowIcon,
@@ -799,7 +788,7 @@ function showAboutDialog() {
         :root {
           color-scheme: light;
           --bg: #f4f7f5;
-          --panel: rgba(255, 255, 255, 0.96);
+          --panel: #ffffff;
           --text: #10231f;
           --muted: #5f726c;
           --line: rgba(16, 35, 31, 0.10);
@@ -816,7 +805,7 @@ function showAboutDialog() {
           height: 100vh;
           overflow: hidden;
           border-radius: 24px;
-          background: transparent;
+          background: #ffffff;
           color: var(--text);
           font-family: "Roboto", "Avenir Next", "Segoe UI", sans-serif;
         }
@@ -828,9 +817,9 @@ function showAboutDialog() {
           padding: 28px 26px 22px;
           border: 1px solid var(--line);
           border-radius: 24px;
-          background: var(--panel);
+          background: #ffffff;
           text-align: center;
-          box-shadow: 0 24px 50px rgba(16, 35, 31, 0.14);
+          box-shadow: none;
           display: flex;
           flex-direction: column;
           align-items: center;
@@ -842,6 +831,7 @@ function showAboutDialog() {
           width: min(108px, 100%);
           height: auto;
           margin: 0 auto 22px;
+          filter: grayscale(1);
         }
 
         .about-title {
