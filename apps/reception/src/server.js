@@ -1,10 +1,25 @@
 const http = require("node:http");
+const fs = require("node:fs");
 const os = require("node:os");
 const dgram = require("node:dgram");
 const { randomUUID } = require("node:crypto");
+const { Readable } = require("node:stream");
 const { WebSocket, WebSocketServer } = require("ws");
 
 const DISCOVERY_PORT = 3210;
+const DEFAULT_ATTACHMENT_MAX_FILE_SIZE_BYTES = 8 * 1024 * 1024;
+const DEFAULT_ATTACHMENT_MAX_FILES_PER_MESSAGE = 5;
+const DEFAULT_ATTACHMENT_WHITELIST_MIME_TYPES = [
+  "image/png",
+  "image/jpeg",
+  "image/gif",
+  "image/webp",
+  "application/pdf",
+  "text/plain",
+  "audio/mpeg",
+  "audio/wav",
+  "audio/ogg",
+];
 
 async function createReceptionServer({
   config,
@@ -17,7 +32,16 @@ async function createReceptionServer({
   onChatEdited,
   onAuditEvent,
 }) {
-  const { parseJsonBody, buildNotificationPayload } = await import("@pip/shared");
+  const {
+    parseJsonBody,
+    buildNotificationPayload,
+    initAttachments,
+    getMetadata,
+    getFilePath,
+    getThumbnailPath,
+    saveFile,
+    toPublicMetadata,
+  } = await import("@pip/shared");
   const clients = new Map();
   const notifications = [];
   const chatMessages = [];
@@ -29,6 +53,8 @@ async function createReceptionServer({
   const MAX_CHAT_MESSAGES = 200;
   const MAX_CHAT_TEXT_LENGTH = 500;
   let notificationPruneTimer = null;
+
+  initAttachments(getAttachmentConfig(getConfig()));
 
   const server = http.createServer(async (req, res) => {
     const url = new URL(req.url, `http://${req.headers.host}`);
@@ -68,6 +94,101 @@ async function createReceptionServer({
 
     if (req.method === "GET" && url.pathname === "/chat/messages") {
       writeJson(res, 200, chatMessages.slice(-MAX_CHAT_MESSAGES));
+      return;
+    }
+
+    if (req.method === "POST" && url.pathname === "/attachments/upload") {
+      const attachmentConfig = getAttachmentConfig(getConfig());
+      initAttachments(attachmentConfig);
+
+      if (!attachmentConfig.enabled) {
+        writeJson(res, 400, {
+          ok: false,
+          code: "ATTACHMENTS_DISABLED",
+          error: "Attachments are disabled.",
+        });
+        return;
+      }
+
+      try {
+        const files = await parseMultipartFiles(req, {
+          maxBytes: attachmentConfig.maxFileSizeBytes * attachmentConfig.maxFilesPerMessage + 1024 * 64,
+          maxFiles: attachmentConfig.maxFilesPerMessage,
+        });
+
+        if (files.length === 0) {
+          writeJson(res, 400, {
+            ok: false,
+            error: "At least one file is required.",
+          });
+          return;
+        }
+
+        const uploaded = [];
+
+        for (const file of files) {
+          const metadata = await saveFile(
+            Readable.from(file.buffer),
+            file.filename,
+            file.mime,
+            { config: attachmentConfig },
+          );
+          uploaded.push(metadata);
+        }
+
+        onAuditEvent?.({
+          type: "attachment.uploaded",
+          transport: "http",
+          remoteAddress: req.socket?.remoteAddress || null,
+          attachmentIds: uploaded.map((item) => item.id),
+        });
+
+        writeJson(res, 200, uploaded.length === 1 ? uploaded[0] : { files: uploaded });
+      } catch (error) {
+        writeAttachmentError(res, error);
+      }
+      return;
+    }
+
+    const attachmentContentMatch = url.pathname.match(/^\/attachments\/([^/]+)\/content$/);
+    if (req.method === "GET" && attachmentContentMatch) {
+      initAttachments(getAttachmentConfig(getConfig()));
+      const attachmentId = decodeURIComponent(attachmentContentMatch[1] || "");
+      const metadata = getMetadata(attachmentId);
+      const filePath = getFilePath(attachmentId);
+
+      if (!metadata || !filePath || !fs.existsSync(filePath)) {
+        writeJson(res, 404, {
+          ok: false,
+          error: "Attachment not found.",
+        });
+        return;
+      }
+
+      serveAttachmentFile(req, res, metadata, filePath);
+      return;
+    }
+
+    const attachmentThumbnailMatch = url.pathname.match(/^\/attachments\/([^/]+)\/thumbnail$/);
+    if (req.method === "GET" && attachmentThumbnailMatch) {
+      initAttachments(getAttachmentConfig(getConfig()));
+      const attachmentId = decodeURIComponent(attachmentThumbnailMatch[1] || "");
+      const metadata = getMetadata(attachmentId);
+      const thumbnailPath = getThumbnailPath(attachmentId);
+
+      if (!metadata || !thumbnailPath || !fs.existsSync(thumbnailPath)) {
+        writeJson(res, 404, {
+          ok: false,
+          error: "Attachment thumbnail not found.",
+        });
+        return;
+      }
+
+      serveAttachmentFile(req, res, {
+        ...toPublicMetadata(metadata),
+        filename: metadata.filename,
+        mime: metadata.mime,
+      }, thumbnailPath);
       return;
     }
 
@@ -843,9 +964,11 @@ async function createReceptionServer({
         .map((roomId) => String(roomId || "").trim())
         .filter(Boolean),
     )].filter((roomId) => rooms.some((room) => room.id === roomId));
+    const attachmentConfig = getAttachmentConfig(currentConfig);
+    const attachments = normalizeMessageAttachments(message.attachments, attachmentConfig);
 
-    if (!normalizedText) {
-      throw new Error("Message text is required.");
+    if (!normalizedText && attachments.length === 0) {
+      throw new Error("Message text or attachment is required.");
     }
 
     if (!["reception", "room"].includes(senderType)) {
@@ -890,6 +1013,7 @@ async function createReceptionServer({
       messageGroupKey,
       messageGroupLabel,
       messageGroupParticipantRoomIds,
+      attachments,
       source: String(message.source || "").trim() || (senderType === "reception" ? "reception-ui" : "client-panel"),
     };
   }
@@ -1063,6 +1187,72 @@ function isAuthorizedRequest(req, url, expectedAccessKey) {
   return getProvidedAccessKey(req, url) === expectedAccessKey;
 }
 
+function getAttachmentConfig(config) {
+  const attachments = config?.attachments || {};
+  const features = config?.features || {};
+  const whitelistMimeTypes =
+    Array.isArray(attachments.whitelistMimeTypes) && attachments.whitelistMimeTypes.length > 0
+      ? attachments.whitelistMimeTypes
+      : DEFAULT_ATTACHMENT_WHITELIST_MIME_TYPES;
+
+  return {
+    ...attachments,
+    enabled: features.attachments?.enabled !== false,
+    rootPath: String(attachments.rootPath || "").trim(),
+    maxFileSizeBytes: Math.max(
+      1,
+      Number(attachments.maxFileSizeBytes) || DEFAULT_ATTACHMENT_MAX_FILE_SIZE_BYTES,
+    ),
+    maxFilesPerMessage: Math.max(
+      1,
+      Number(attachments.maxFilesPerMessage) || DEFAULT_ATTACHMENT_MAX_FILES_PER_MESSAGE,
+    ),
+    whitelistMimeTypes: whitelistMimeTypes
+      .map((mime) => String(mime || "").trim().toLowerCase())
+      .filter(Boolean),
+    cloud: {
+      enabled: Boolean(attachments.cloud?.enabled),
+      provider: String(attachments.cloud?.provider || "").trim(),
+    },
+  };
+}
+
+function normalizeMessageAttachments(value, attachmentConfig) {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  if (!attachmentConfig.enabled) {
+    return [];
+  }
+
+  return value
+    .slice(0, attachmentConfig.maxFilesPerMessage)
+    .map((attachment) => ({
+      id: String(attachment?.id || "").trim(),
+      filename: sanitizeAttachmentDisplayFilename(attachment?.filename),
+      mime: String(attachment?.mime || "").trim().toLowerCase(),
+      size: Math.max(0, Number(attachment?.size) || 0),
+      url: String(attachment?.url || "").trim(),
+      thumbnailUrl: String(attachment?.thumbnailUrl || "").trim(),
+    }))
+    .filter((attachment) =>
+      attachment.id &&
+      attachment.filename &&
+      attachmentConfig.whitelistMimeTypes.includes(attachment.mime) &&
+      attachment.size <= attachmentConfig.maxFileSizeBytes &&
+      attachment.url.startsWith(`/attachments/${encodeURIComponent(attachment.id)}/`),
+    );
+}
+
+function sanitizeAttachmentDisplayFilename(filename) {
+  return String(filename || "attachment")
+    .replace(/[<>:"/\\|?*\u0000-\u001f]+/g, "_")
+    .replace(/\s+/g, " ")
+    .trim()
+    .slice(0, 120) || "attachment";
+}
+
 function sanitizeConfigForClient(config) {
   return {
     ...config,
@@ -1071,6 +1261,171 @@ function sanitizeConfigForClient(config) {
       accessKey: "",
     },
   };
+}
+
+function parseMultipartFiles(req, options = {}) {
+  const contentType = String(req.headers["content-type"] || "");
+  const boundaryMatch = contentType.match(/boundary=(?:"([^"]+)"|([^;]+))/i);
+  const boundary = boundaryMatch?.[1] || boundaryMatch?.[2] || "";
+
+  if (!boundary || !contentType.toLowerCase().includes("multipart/form-data")) {
+    const error = new Error("Expected multipart/form-data.");
+    error.code = "INVALID_MULTIPART";
+    return Promise.reject(error);
+  }
+
+  return readRequestBuffer(req, options.maxBytes).then((body) => {
+    const files = parseMultipartBuffer(body, boundary)
+      .filter((part) => part.name === "file" && part.filename && part.buffer.length > 0)
+      .map((part) => ({
+        filename: part.filename,
+        mime: part.mime || inferMimeFromFilename(part.filename) || "application/octet-stream",
+        buffer: part.buffer,
+      }));
+
+    if (files.length > Math.max(1, Number(options.maxFiles) || 1)) {
+      const error = new Error(`Upload supports up to ${options.maxFiles} files.`);
+      error.code = "TOO_MANY_FILES";
+      throw error;
+    }
+
+    return files;
+  });
+}
+
+function readRequestBuffer(req, maxBytes = 1024 * 1024) {
+  return new Promise((resolve, reject) => {
+    const chunks = [];
+    let totalBytes = 0;
+    let settled = false;
+
+    req.on("data", (chunk) => {
+      if (settled) {
+        return;
+      }
+
+      totalBytes += chunk.length;
+
+      if (totalBytes > maxBytes) {
+        settled = true;
+        const error = new Error(`Request body exceeds ${maxBytes} bytes.`);
+        error.code = "FILE_TOO_LARGE";
+        reject(error);
+        req.destroy();
+        return;
+      }
+
+      chunks.push(chunk);
+    });
+    req.on("end", () => {
+      if (!settled) {
+        settled = true;
+        resolve(Buffer.concat(chunks));
+      }
+    });
+    req.on("error", (error) => {
+      if (!settled) {
+        settled = true;
+        reject(error);
+      }
+    });
+  });
+}
+
+function parseMultipartBuffer(body, boundary) {
+  const delimiter = Buffer.from(`--${boundary}`);
+  const parts = [];
+  let cursor = body.indexOf(delimiter);
+
+  while (cursor !== -1) {
+    cursor += delimiter.length;
+
+    if (body[cursor] === 45 && body[cursor + 1] === 45) {
+      break;
+    }
+
+    if (body[cursor] === 13 && body[cursor + 1] === 10) {
+      cursor += 2;
+    }
+
+    const next = body.indexOf(delimiter, cursor);
+
+    if (next === -1) {
+      break;
+    }
+
+    let part = body.subarray(cursor, next);
+
+    if (part.length >= 2 && part[part.length - 2] === 13 && part[part.length - 1] === 10) {
+      part = part.subarray(0, part.length - 2);
+    }
+
+    const headerEnd = part.indexOf(Buffer.from("\r\n\r\n"));
+
+    if (headerEnd !== -1) {
+      const headerText = part.subarray(0, headerEnd).toString("utf8");
+      const content = part.subarray(headerEnd + 4);
+      const disposition = headerText.match(/content-disposition:\s*form-data;([^\r\n]+)/i)?.[1] || "";
+      const name = disposition.match(/name="([^"]+)"/i)?.[1] || "";
+      const filename = disposition.match(/filename="([^"]*)"/i)?.[1] || "";
+      const mime = headerText.match(/content-type:\s*([^\r\n]+)/i)?.[1]?.trim() || "";
+      parts.push({ name, filename, mime, buffer: content });
+    }
+
+    cursor = next;
+  }
+
+  return parts;
+}
+
+function inferMimeFromFilename(filename) {
+  const value = String(filename || "").trim().toLowerCase();
+
+  if (value.endsWith(".jpg") || value.endsWith(".jpeg")) return "image/jpeg";
+  if (value.endsWith(".png")) return "image/png";
+  if (value.endsWith(".gif")) return "image/gif";
+  if (value.endsWith(".webp")) return "image/webp";
+  if (value.endsWith(".pdf")) return "application/pdf";
+  if (value.endsWith(".txt")) return "text/plain";
+  if (value.endsWith(".mp3")) return "audio/mpeg";
+  if (value.endsWith(".wav")) return "audio/wav";
+  if (value.endsWith(".ogg")) return "audio/ogg";
+
+  return "";
+}
+
+function serveAttachmentFile(req, res, metadata, filePath) {
+  const dispositionMode = new URL(req.url, `http://${req.headers.host}`).searchParams.get("download") === "1"
+    ? "attachment"
+    : "inline";
+  const filename = sanitizeAttachmentDisplayFilename(metadata.filename);
+
+  res.writeHead(200, {
+    "Content-Type": metadata.mime || "application/octet-stream",
+    "Content-Length": fs.statSync(filePath).size,
+    "Content-Disposition": `${dispositionMode}; filename="${filename.replace(/"/g, "_")}"`,
+    "Cache-Control": "private, max-age=86400",
+    "Access-Control-Allow-Origin": "*",
+  });
+  fs.createReadStream(filePath).pipe(res);
+}
+
+function writeAttachmentError(res, error) {
+  const code = String(error?.code || "UPLOAD_FAILED");
+  const statusCode =
+    code === "FILE_TOO_LARGE" || code === "BODY_TOO_LARGE"
+      ? 413
+      : code === "UNSUPPORTED_TYPE"
+        ? 415
+        : code === "ATTACHMENTS_DISABLED" || code === "INVALID_MULTIPART" || code === "TOO_MANY_FILES"
+          ? 400
+          : 500;
+
+  writeJson(res, statusCode, {
+    ok: false,
+    code,
+    error: error?.message || "Attachment upload failed.",
+  });
 }
 
 function getAdvertisedHost(config) {

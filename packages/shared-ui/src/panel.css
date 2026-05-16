@@ -781,6 +781,116 @@
   min-width: 0;
 }
 
+.attachment-list {
+  grid-column: 1 / -1;
+  display: grid;
+  gap: 6px;
+  margin-bottom: 2px;
+}
+
+.attachment-list.hidden {
+  display: none;
+}
+
+.attachment-chip,
+.message-attachment {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  padding: 6px 8px;
+  border: 1px solid rgba(255, 255, 255, 0.72);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.45);
+  color: var(--text);
+  font-size: 12px;
+  line-height: 1.2;
+}
+
+.attachment-chip.is-error {
+  color: #b91c1c;
+}
+
+.attachment-chip-name,
+.message-attachment-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.attachment-chip-meta,
+.message-attachment-meta {
+  color: var(--muted);
+  font-size: 11px;
+  white-space: nowrap;
+}
+
+.attachment-remove-button {
+  width: 22px;
+  height: 22px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: currentColor;
+  cursor: pointer;
+  font-size: 16px;
+  line-height: 1;
+}
+
+.message-attach-button {
+  width: 29px;
+  min-width: 29px;
+  height: 38px;
+  border: 0;
+  border-radius: 999px;
+  padding: 0;
+  background: transparent;
+  color: var(--message-send-active-color, var(--active-room-accent));
+  cursor: pointer;
+  overflow: hidden;
+  position: relative;
+  text-indent: -9999px;
+}
+
+.message-attach-button::before {
+  content: "+";
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  font-size: 24px;
+  font-weight: 400;
+  line-height: 1;
+  text-indent: 0;
+}
+
+.message-attachments {
+  display: grid;
+  gap: 6px;
+  margin-top: 8px;
+  min-width: min(220px, 100%);
+}
+
+.message-attachment {
+  text-decoration: none;
+}
+
+.message-attachment-preview {
+  grid-column: 1 / -1;
+  display: block;
+  max-width: 220px;
+  max-height: 150px;
+  border-radius: 10px;
+  object-fit: cover;
+}
+
+.message-attachment audio {
+  grid-column: 1 / -1;
+  width: 220px;
+  max-width: 100%;
+}
+
 .message-emoji-button-container {
 }
 

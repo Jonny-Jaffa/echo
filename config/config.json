@@ -20,6 +20,31 @@
     "messageVolume": 80,
     "messageSound": "notification_sound_01"
   },
+  "features": {
+    "attachments": {
+      "enabled": true
+    }
+  },
+  "attachments": {
+    "rootPath": "",
+    "maxFileSizeBytes": 8388608,
+    "maxFilesPerMessage": 5,
+    "whitelistMimeTypes": [
+      "image/png",
+      "image/jpeg",
+      "image/gif",
+      "image/webp",
+      "application/pdf",
+      "text/plain",
+      "audio/mpeg",
+      "audio/wav",
+      "audio/ogg"
+    ],
+    "cloud": {
+      "enabled": false,
+      "provider": ""
+    }
+  },
   "hardware": {
     "leftAuxButton": {
       "enabled": true,

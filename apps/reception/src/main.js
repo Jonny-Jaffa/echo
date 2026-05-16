@@ -1529,6 +1529,15 @@ app.whenReady().then(async () => {
   saveConfigFn = saveConfig;
   formatTimeFn = formatTime;
   configState = normalizeConfig(loadConfigFn());
+  if (!String(configState?.attachments?.rootPath || "").trim()) {
+    configState = {
+      ...configState,
+      attachments: {
+        ...(configState.attachments || {}),
+        rootPath: path.join(app.getPath("userData"), "attachments"),
+      },
+    };
+  }
 
   if (!String(configState?.auth?.accessKey || "").trim()) {
     configState = saveConfigFn(ensureReceptionAccessKey(configState));

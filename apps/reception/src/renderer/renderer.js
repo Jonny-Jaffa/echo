@@ -1,5 +1,12 @@
 import { renderEmojis } from "./emojis.js";
 import { createEmojiPicker } from "./emoji-picker.js";
+import {
+  configureAttachmentClient,
+  formatBytes,
+  resolveAttachmentUrl,
+  uploadFile,
+  validateAttachmentFile,
+} from "./attachment-client.js";
 
 const card = document.querySelector("#notification-card");
 const alertList = document.querySelector("#alert-list");
@@ -25,6 +32,9 @@ const chatComposeInput = document.querySelector("#chat-compose-input");
 const chatSendButton = document.querySelector("#chat-send-button");
 const chatEmojiButton = document.querySelector("#chat-emoji-button");
 const chatEmojiPicker = document.querySelector("#chat-emoji-picker");
+const chatAttachmentInput = document.querySelector("#chat-attachment-input");
+const chatAttachmentButton = document.querySelector("#chat-attachment-button");
+const chatAttachmentList = document.querySelector("#chat-attachment-list");
 const settingsSidebarLinks = [...document.querySelectorAll("[data-settings-section-link]")];
 const settingsTabSections = [...document.querySelectorAll("[data-settings-section]")];
 const adminFeedback = document.querySelector("#admin-feedback");
@@ -107,6 +117,7 @@ function normalizeReceptionPingMessage(value) {
 }
 
 let appState = null;
+let pendingChatAttachments = [];
 let draftConfig = null;
 let lastReportedGadgetHeight = 0;
 const pendingPingRooms = new Map();
@@ -940,6 +951,7 @@ function renderChatMessages(state) {
       const isOutgoing = message.senderType === "reception";
       const senderRoom = getRoomById(String(message.senderRoomId || "").trim(), state);
       const text = String(message.text || "");
+      const attachmentsHtml = renderMessageAttachments(message.attachments);
       const timestamp = formatMessageTime(message.timestamp);
       const isSingleLine = text.length <= 34 && !text.includes("\n");
       const isDeleted = Boolean(message.deleted);
@@ -962,9 +974,10 @@ function renderChatMessages(state) {
         <article class="message-item ${isOutgoing ? "is-outgoing" : "is-incoming"}" style="--message-bubble-incoming: ${escapeHtml(senderRoom?.color || "#418191")}" data-message-id="${escapeHtml(messageId)}">
           <div class="message-bubble">
             <div class="message-bubble-body ${isSingleLine ? "is-single-line" : "is-multi-line"}">
-              <p class="message-item-text">${renderEmojis(text)}${editedLabel}</p>
+              ${text ? `<p class="message-item-text">${renderEmojis(text)}${editedLabel}</p>` : ""}
               <span class="message-item-time">${escapeHtml(timestamp)}</span>
             </div>
+            ${attachmentsHtml}
           </div>
         </article>
       `;
@@ -979,6 +992,55 @@ function renderChatMessages(state) {
   } else {
     requestAnimationFrame(updateChatScrollbar);
   }
+}
+
+function renderMessageAttachments(attachments) {
+  const items = Array.isArray(attachments) ? attachments : [];
+
+  if (items.length === 0) {
+    return "";
+  }
+
+  return `
+    <div class="message-attachments">
+      ${items.map(renderMessageAttachment).join("")}
+    </div>
+  `;
+}
+
+function renderMessageAttachment(attachment) {
+  const filename = String(attachment?.filename || "attachment").trim();
+  const mime = String(attachment?.mime || "").trim().toLowerCase();
+  const url = resolveAttachmentUrl(attachment?.url || `/attachments/${encodeURIComponent(attachment?.id || "")}/content`);
+  const thumbnailUrl = resolveAttachmentUrl(attachment?.thumbnailUrl || attachment?.url || "");
+  const sizeLabel = formatBytes(attachment?.size || 0);
+
+  if (mime.startsWith("image/")) {
+    return `
+      <a class="message-attachment" href="${escapeHtml(url)}" target="_blank" rel="noreferrer">
+        <img class="message-attachment-preview" src="${escapeHtml(thumbnailUrl || url)}" alt="${escapeHtml(filename)}" loading="lazy" />
+        <span class="message-attachment-name">${escapeHtml(filename)}</span>
+        <span class="message-attachment-meta">${escapeHtml(sizeLabel)}</span>
+      </a>
+    `;
+  }
+
+  if (mime.startsWith("audio/")) {
+    return `
+      <div class="message-attachment">
+        <span class="message-attachment-name">${escapeHtml(filename)}</span>
+        <span class="message-attachment-meta">${escapeHtml(sizeLabel)}</span>
+        <audio controls src="${escapeHtml(url)}"></audio>
+      </div>
+    `;
+  }
+
+  return `
+    <a class="message-attachment" href="${escapeHtml(url)}" target="_blank" rel="noreferrer">
+      <span class="message-attachment-name">${escapeHtml(filename)}</span>
+      <span class="message-attachment-meta">${escapeHtml(sizeLabel)}</span>
+    </a>
+  `;
 }
 
 function updateChatScrollbar() {
@@ -1017,7 +1079,7 @@ function syncChatComposerState() {
 
   const canSend = !(
     (!isAllChatRoomsThreadSelected && selectedChatRoomIds.size === 0) ||
-    !String(chatComposeInput.value || "").trim()
+    (!String(chatComposeInput.value || "").trim() && getReadyChatAttachments().length === 0)
   );
 
   chatSendButton.disabled = !canSend;
@@ -1037,6 +1099,71 @@ function updateChatComposerHeight() {
   chatComposeInput.style.height = "auto";
   chatComposeInput.style.height = `${Math.min(chatComposeInput.scrollHeight, 136)}px`;
   updateChatComposerScrollbar();
+}
+
+function renderPendingChatAttachments() {
+  if (!chatAttachmentList) {
+    return;
+  }
+
+  chatAttachmentList.classList.toggle("hidden", pendingChatAttachments.length === 0);
+  chatAttachmentList.innerHTML = pendingChatAttachments
+    .map((attachment, index) => `
+      <div class="attachment-chip ${attachment.error ? "is-error" : ""}">
+        <span class="attachment-chip-name">${escapeHtml(attachment.filename || "attachment")}</span>
+        <span class="attachment-chip-meta">${escapeHtml(attachment.error || attachment.status || formatBytes(attachment.size || 0))}</span>
+        <button class="attachment-remove-button" type="button" data-attachment-index="${index}" aria-label="Remove attachment">×</button>
+      </div>
+    `)
+    .join("");
+}
+
+async function addChatAttachmentFiles(files) {
+  configureChatAttachments(appState);
+  const fileList = Array.from(files || []);
+
+  for (const file of fileList) {
+    const localAttachment = {
+      filename: file.name || "attachment",
+      size: file.size || 0,
+      status: "Uploading 0%",
+      metadata: null,
+      error: "",
+    };
+
+    try {
+      validateAttachmentFile(file, pendingChatAttachments.length);
+      pendingChatAttachments.push(localAttachment);
+      renderPendingChatAttachments();
+      const metadata = await uploadFile(file, (progress) => {
+        localAttachment.status = `Uploading ${progress}%`;
+        renderPendingChatAttachments();
+      });
+      localAttachment.metadata = metadata;
+      localAttachment.status = formatBytes(metadata.size || file.size || 0);
+      renderPendingChatAttachments();
+    } catch (error) {
+      localAttachment.error = error?.message || "Upload failed";
+      if (!pendingChatAttachments.includes(localAttachment)) {
+        pendingChatAttachments.push(localAttachment);
+      }
+      renderPendingChatAttachments();
+    }
+  }
+
+  syncChatComposerState();
+  reportGadgetHeight();
+}
+
+function getReadyChatAttachments() {
+  return pendingChatAttachments
+    .map((attachment) => attachment.metadata)
+    .filter(Boolean);
+}
+
+function clearPendingChatAttachments() {
+  pendingChatAttachments = [];
+  renderPendingChatAttachments();
 }
 
 function updateChatComposerScrollbar() {
@@ -1088,6 +1215,7 @@ function focusChatComposer() {
 
 function applyState(state) {
   appState = state;
+  configureChatAttachments(state);
 
   if (isRoleWindow) {
     renderRoleView(state?.app || {});
@@ -1158,6 +1286,29 @@ function applyState(state) {
   if (!isSettingsWindow) {
     scheduleGadgetHeightReport();
   }
+}
+
+function configureChatAttachments(state) {
+  const config = state?.config || {};
+  const service = state?.service || {};
+  const attachmentsConfig = config.attachments || {};
+  const enabled = config.features?.attachments?.enabled !== false;
+  const baseUrl =
+    service.serverUrl ||
+    (service.advertisedHost && service.port
+      ? `http://${service.advertisedHost}:${service.port}`
+      : `http://127.0.0.1:${config.network?.port || 3210}`);
+
+  configureAttachmentClient({
+    baseUrl,
+    accessKey: config.auth?.accessKey || "",
+    enabled,
+    maxFileSizeBytes: attachmentsConfig.maxFileSizeBytes,
+    maxFilesPerMessage: attachmentsConfig.maxFilesPerMessage,
+    whitelistMimeTypes: attachmentsConfig.whitelistMimeTypes,
+  });
+  document.body.dataset.attachmentsEnabled = enabled ? "true" : "false";
+  chatAttachmentButton?.toggleAttribute("hidden", !enabled);
 }
 
 function updateDetectedServerAddress(state) {
@@ -1887,6 +2038,50 @@ chatComposeInput?.addEventListener("scroll", updateChatComposerScrollbar, { pass
 
 chatMessageList?.addEventListener("scroll", updateChatScrollbar, { passive: true });
 
+chatAttachmentButton?.addEventListener("click", () => {
+  chatAttachmentInput?.click();
+});
+
+chatAttachmentInput?.addEventListener("change", () => {
+  addChatAttachmentFiles(chatAttachmentInput.files).catch(() => {});
+  chatAttachmentInput.value = "";
+});
+
+chatAttachmentList?.addEventListener("click", (event) => {
+  const target = event.target;
+  if (!(target instanceof HTMLElement)) {
+    return;
+  }
+
+  const button = target.closest("[data-attachment-index]");
+  if (!(button instanceof HTMLElement)) {
+    return;
+  }
+
+  const index = Number(button.getAttribute("data-attachment-index"));
+  if (Number.isInteger(index) && index >= 0) {
+    pendingChatAttachments.splice(index, 1);
+    renderPendingChatAttachments();
+    syncChatComposerState();
+    reportGadgetHeight();
+  }
+});
+
+chatCard?.addEventListener("dragover", (event) => {
+  if (document.body.dataset.attachmentsEnabled !== "true") {
+    return;
+  }
+  event.preventDefault();
+});
+
+chatCard?.addEventListener("drop", (event) => {
+  if (document.body.dataset.attachmentsEnabled !== "true") {
+    return;
+  }
+  event.preventDefault();
+  addChatAttachmentFiles(event.dataTransfer?.files).catch(() => {});
+});
+
 chatAllHeaderButton?.addEventListener("click", () => {
   const visibleRooms = getVisibleRooms(appState);
   const isSingleRoomSelected =
@@ -1943,11 +2138,12 @@ chatAllRoomsButton?.addEventListener("click", () => {
 
 chatSendButton?.addEventListener("click", async () => {
   const text = String(chatComposeInput?.value || "").trim();
+  const attachments = getReadyChatAttachments();
   const recipientRoomIds = isAllChatRoomsThreadSelected
     ? getVisibleRooms(appState).map((room) => room.id)
     : [...selectedChatRoomIds];
 
-  if (!text || recipientRoomIds.length === 0) {
+  if ((!text && attachments.length === 0) || recipientRoomIds.length === 0) {
     syncChatComposerState();
     return;
   }
@@ -1958,6 +2154,7 @@ chatSendButton?.addEventListener("click", async () => {
     messageGroupLabel: isAllChatRoomsThreadSelected ? "All Rooms" : "",
     messageGroupParticipantRoomIds: isAllChatRoomsThreadSelected ? recipientRoomIds : [],
     text,
+    attachments,
   });
 
   if (!result?.ok) {
@@ -1968,6 +2165,7 @@ chatSendButton?.addEventListener("click", async () => {
   if (chatComposeInput) {
     chatComposeInput.value = "";
   }
+  clearPendingChatAttachments();
   updateChatComposerHeight();
   syncChatComposerState();
   reportGadgetHeight();

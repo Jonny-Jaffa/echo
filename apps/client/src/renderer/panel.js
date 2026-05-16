@@ -1,5 +1,12 @@
 import { renderEmojis } from "./emojis.js";
 import { createEmojiPicker } from "./emoji-picker.js";
+import {
+  configureAttachmentClient,
+  formatBytes,
+  resolveAttachmentUrl,
+  uploadFile,
+  validateAttachmentFile,
+} from "./attachment-client.js";
 
 const roomSelect = document.querySelector("#room-select");
 const serverInput = document.querySelector("#server-input");
@@ -27,6 +34,9 @@ const messageComposeInput = document.querySelector("#message-compose-input");
 const messageSendButton = document.querySelector("#message-send-button");
 const messageEmojiButton = document.querySelector("#message-emoji-button");
 const messageEmojiPicker = document.querySelector("#emoji-picker");
+const attachmentInput = document.querySelector("#attachment-input");
+const attachmentButton = document.querySelector("#attachment-button");
+const attachmentList = document.querySelector("#attachment-list");
 const messageGroupList = document.querySelector("#message-group-list");
 const addMessageGroupButton = document.querySelector("#add-message-group-button");
 const statusDot = document.querySelector("#status-dot");
@@ -189,6 +199,7 @@ let roomMessageThreadOrder = loadRoomMessageThreadOrder();
 let preferredRoomId = "";
 let roomSettingsInteractionLockUntil = 0;
 let chatMessages = [];
+let pendingAttachments = [];
 let activeMessageThreadKey = "";
 let isAppQuitting = false;
 let isReceptionOffline = false;
@@ -892,6 +903,7 @@ async function fetchConfig(options = {}) {
 
   configState = nextConfig;
   configHash = nextHash;
+  configureAttachmentsForServer();
   manualPanelReveal = false;
   if (revealPanel) {
     setPanelView("panel");
@@ -1780,7 +1792,7 @@ function syncMessageComposerState() {
 
   const canSend =
     Boolean(activeMessageThreadKey || "reception") &&
-    Boolean(String(messageComposeInput.value || "").trim()) &&
+    (Boolean(String(messageComposeInput.value || "").trim()) || getReadyAttachments().length > 0) &&
     Boolean(getCurrentMessageRoomId());
 
   messageSendButton.disabled = !canSend;
@@ -1798,6 +1810,55 @@ function getIncomingMessageBubbleColor(message) {
   const senderRoom = configState?.rooms?.find((room) => room.id === senderRoomId);
 
   return senderRoom?.color || "#418191";
+}
+
+function renderMessageAttachments(attachments) {
+  const items = Array.isArray(attachments) ? attachments : [];
+
+  if (items.length === 0) {
+    return "";
+  }
+
+  return `
+    <div class="message-attachments">
+      ${items.map(renderMessageAttachment).join("")}
+    </div>
+  `;
+}
+
+function renderMessageAttachment(attachment) {
+  const filename = String(attachment?.filename || "attachment").trim();
+  const mime = String(attachment?.mime || "").trim().toLowerCase();
+  const url = resolveAttachmentUrl(attachment?.url || `/attachments/${encodeURIComponent(attachment?.id || "")}/content`);
+  const thumbnailUrl = resolveAttachmentUrl(attachment?.thumbnailUrl || attachment?.url || "");
+  const sizeLabel = formatBytes(attachment?.size || 0);
+
+  if (mime.startsWith("image/")) {
+    return `
+      <a class="message-attachment" href="${escapeHtml(url)}" target="_blank" rel="noreferrer">
+        <img class="message-attachment-preview" src="${escapeHtml(thumbnailUrl || url)}" alt="${escapeHtml(filename)}" loading="lazy" />
+        <span class="message-attachment-name">${escapeHtml(filename)}</span>
+        <span class="message-attachment-meta">${escapeHtml(sizeLabel)}</span>
+      </a>
+    `;
+  }
+
+  if (mime.startsWith("audio/")) {
+    return `
+      <div class="message-attachment">
+        <span class="message-attachment-name">${escapeHtml(filename)}</span>
+        <span class="message-attachment-meta">${escapeHtml(sizeLabel)}</span>
+        <audio controls src="${escapeHtml(url)}"></audio>
+      </div>
+    `;
+  }
+
+  return `
+    <a class="message-attachment" href="${escapeHtml(url)}" target="_blank" rel="noreferrer">
+      <span class="message-attachment-name">${escapeHtml(filename)}</span>
+      <span class="message-attachment-meta">${escapeHtml(sizeLabel)}</span>
+    </a>
+  `;
 }
 
 function renderChatMessages() {
@@ -1826,6 +1887,7 @@ function renderChatMessages() {
       const isDeleted = Boolean(message.deleted);
       const messageId = String(message.messageId || "").trim();
       const text = String(message.text || "");
+      const attachmentsHtml = renderMessageAttachments(message.attachments);
       const isSingleLine = text.length <= 34 && !text.includes("\n");
       const incomingStyle = isOutgoing
         ? ""
@@ -1848,9 +1910,10 @@ function renderChatMessages() {
         <article class="message-item ${isOutgoing ? "is-outgoing" : "is-incoming"}"${incomingStyle} data-message-id="${escapeHtml(messageId)}">
           <div class="message-bubble">
             <div class="message-bubble-body ${isSingleLine ? "is-single-line" : "is-multi-line"}">
-              <p class="message-item-text">${renderEmojis(text)}${editedLabel}</p>
+              ${text ? `<p class="message-item-text">${renderEmojis(text)}${editedLabel}</p>` : ""}
               <span class="message-item-time">${escapeHtml(formatMessageTime(message.timestamp))}</span>
             </div>
+            ${attachmentsHtml}
           </div>
         </article>
       `;
@@ -1885,6 +1948,71 @@ function updateMessageComposerHeight() {
   messageComposeInput.style.height = "auto";
   messageComposeInput.style.height = `${Math.min(messageComposeInput.scrollHeight, 136)}px`;
   updateMessageComposerScrollbar();
+}
+
+function renderPendingAttachments() {
+  if (!attachmentList) {
+    return;
+  }
+
+  attachmentList.classList.toggle("hidden", pendingAttachments.length === 0);
+  attachmentList.innerHTML = pendingAttachments
+    .map((attachment, index) => `
+      <div class="attachment-chip ${attachment.error ? "is-error" : ""}">
+        <span class="attachment-chip-name">${escapeHtml(attachment.filename || "attachment")}</span>
+        <span class="attachment-chip-meta">${escapeHtml(attachment.error || attachment.status || formatBytes(attachment.size || 0))}</span>
+        <button class="attachment-remove-button" type="button" data-attachment-index="${index}" aria-label="Remove attachment">×</button>
+      </div>
+    `)
+    .join("");
+}
+
+async function addAttachmentFiles(files) {
+  configureAttachmentsForServer();
+  const fileList = Array.from(files || []);
+
+  for (const file of fileList) {
+    const localAttachment = {
+      filename: file.name || "attachment",
+      size: file.size || 0,
+      status: "Uploading 0%",
+      metadata: null,
+      error: "",
+    };
+
+    try {
+      validateAttachmentFile(file, pendingAttachments.length);
+      pendingAttachments.push(localAttachment);
+      renderPendingAttachments();
+      const metadata = await uploadFile(file, (progress) => {
+        localAttachment.status = `Uploading ${progress}%`;
+        renderPendingAttachments();
+      });
+      localAttachment.metadata = metadata;
+      localAttachment.status = formatBytes(metadata.size || file.size || 0);
+      renderPendingAttachments();
+    } catch (error) {
+      localAttachment.error = error?.message || "Upload failed";
+      if (!pendingAttachments.includes(localAttachment)) {
+        pendingAttachments.push(localAttachment);
+      }
+      renderPendingAttachments();
+    }
+  }
+
+  syncMessageComposerState();
+  setPanelDisplayMode(panelDisplayMode, { persist: false }).catch(() => {});
+}
+
+function getReadyAttachments() {
+  return pendingAttachments
+    .map((attachment) => attachment.metadata)
+    .filter(Boolean);
+}
+
+function clearPendingAttachments() {
+  pendingAttachments = [];
+  renderPendingAttachments();
 }
 
 function getMessageComposerHeightOffset() {
@@ -3023,6 +3151,23 @@ function buildAuthenticatedHeaders() {
     : {};
 }
 
+function configureAttachmentsForServer() {
+  const attachmentsConfig = configState?.attachments || {};
+  const featureConfig = configState?.features?.attachments || {};
+  const enabled = featureConfig.enabled !== false;
+
+  configureAttachmentClient({
+    baseUrl: serverInput.value.trim(),
+    accessKey: getServerAccessKeyValue(),
+    enabled,
+    maxFileSizeBytes: attachmentsConfig.maxFileSizeBytes,
+    maxFilesPerMessage: attachmentsConfig.maxFilesPerMessage,
+    whitelistMimeTypes: attachmentsConfig.whitelistMimeTypes,
+  });
+  document.body.dataset.attachmentsEnabled = enabled ? "true" : "false";
+  attachmentButton?.toggleAttribute("hidden", !enabled);
+}
+
 function buildAuthenticatedWebSocketUrl(url) {
   const nextUrl = new URL(url);
   const accessKey = getServerAccessKeyValue();
@@ -3168,9 +3313,10 @@ function renderButton(button, options = {}) {
 async function sendChatMessage() {
   const currentRoom = getCurrentMessageRoom();
   const text = String(messageComposeInput?.value || "").trim();
+  const attachments = getReadyAttachments();
   const activeThreadKey = activeMessageThreadKey || "reception";
 
-  if (!currentRoom?.id || !text || !activeThreadKey) {
+  if (!currentRoom?.id || (!text && attachments.length === 0) || !activeThreadKey) {
     return;
   }
 
@@ -3205,6 +3351,7 @@ async function sendChatMessage() {
       messageGroupLabel: activeGroupThread?.label || "",
       messageGroupParticipantRoomIds: activeGroupThread?.participantRoomIds || [],
       text,
+      attachments,
       source: "client-panel",
     }),
   });
@@ -3217,6 +3364,7 @@ async function sendChatMessage() {
   if (messageComposeInput) {
     messageComposeInput.value = "";
   }
+  clearPendingAttachments();
   await fetchChatMessages().catch(() => {});
   updateMessageComposerHeight();
   syncMessageComposerState();
@@ -3736,6 +3884,49 @@ messageComposeInput?.addEventListener("input", () => {
 messageComposeInput?.addEventListener("scroll", updateMessageComposerScrollbar, { passive: true });
 
 messageList?.addEventListener("scroll", updateMessageScrollbar, { passive: true });
+
+attachmentButton?.addEventListener("click", () => {
+  attachmentInput?.click();
+});
+
+attachmentInput?.addEventListener("change", () => {
+  addAttachmentFiles(attachmentInput.files).catch(() => {});
+  attachmentInput.value = "";
+});
+
+attachmentList?.addEventListener("click", (event) => {
+  const target = event.target;
+  if (!(target instanceof HTMLElement)) {
+    return;
+  }
+
+  const button = target.closest("[data-attachment-index]");
+  if (!(button instanceof HTMLElement)) {
+    return;
+  }
+
+  const index = Number(button.getAttribute("data-attachment-index"));
+  if (Number.isInteger(index) && index >= 0) {
+    pendingAttachments.splice(index, 1);
+    renderPendingAttachments();
+    syncMessageComposerState();
+  }
+});
+
+messageShell?.addEventListener("dragover", (event) => {
+  if (document.body.dataset.attachmentsEnabled !== "true") {
+    return;
+  }
+  event.preventDefault();
+});
+
+messageShell?.addEventListener("drop", (event) => {
+  if (document.body.dataset.attachmentsEnabled !== "true") {
+    return;
+  }
+  event.preventDefault();
+  addAttachmentFiles(event.dataTransfer?.files).catch(() => {});
+});
 
 // Right-click context menu for editing and deleting messages
 messageList?.addEventListener("contextmenu", (event) => {

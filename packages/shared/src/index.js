@@ -2,6 +2,8 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
+export * from "./attachment-store.js";
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
@@ -20,6 +22,19 @@ const DEFAULT_BUTTON_APPEARANCE = {
   activeBackground: "#000000",
 };
 const ROOM_SHORT_NAME_MAX_LENGTH = 7;
+const DEFAULT_ATTACHMENT_MAX_FILE_SIZE_BYTES = 8 * 1024 * 1024;
+const DEFAULT_ATTACHMENT_MAX_FILES_PER_MESSAGE = 5;
+const DEFAULT_ATTACHMENT_WHITELIST_MIME_TYPES = [
+  "image/png",
+  "image/jpeg",
+  "image/gif",
+  "image/webp",
+  "application/pdf",
+  "text/plain",
+  "audio/mpeg",
+  "audio/wav",
+  "audio/ogg",
+];
 
 export function normalizeRuntimeRole(
   runtimeRole,
@@ -252,6 +267,32 @@ export function normalizeConfig(config) {
       ),
       messageVolume: clampVolume(config.audio?.messageVolume),
       messageSound: normalizeAudioNotificationSound(config.audio?.messageSound),
+    },
+    features: {
+      ...(config.features || {}),
+      attachments: {
+        enabled: config.features?.attachments?.enabled !== false,
+      },
+    },
+    attachments: {
+      ...(config.attachments || {}),
+      rootPath: String(config.attachments?.rootPath || "").trim(),
+      maxFileSizeBytes: Math.max(
+        1,
+        Number(config.attachments?.maxFileSizeBytes) || DEFAULT_ATTACHMENT_MAX_FILE_SIZE_BYTES,
+      ),
+      maxFilesPerMessage: Math.max(
+        1,
+        Number(config.attachments?.maxFilesPerMessage) || DEFAULT_ATTACHMENT_MAX_FILES_PER_MESSAGE,
+      ),
+      whitelistMimeTypes:
+        Array.isArray(config.attachments?.whitelistMimeTypes) && config.attachments.whitelistMimeTypes.length > 0
+          ? config.attachments.whitelistMimeTypes.map((mime) => String(mime || "").trim().toLowerCase()).filter(Boolean)
+          : DEFAULT_ATTACHMENT_WHITELIST_MIME_TYPES,
+      cloud: {
+        enabled: Boolean(config.attachments?.cloud?.enabled),
+        provider: String(config.attachments?.cloud?.provider || "").trim(),
+      },
     },
     rooms: normalizedRooms,
     actions: legacyCompatibleNotifications.map(stripNotificationToAction),
