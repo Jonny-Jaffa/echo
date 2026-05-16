@@ -1467,7 +1467,7 @@ function getAppIcon() {
 }
 
 function getBrandLogoDataUrl() {
-  const logoPath = path.join(__dirname, "assets", "pip-logo-colour.png");
+  const logoPath = path.join(__dirname, "assets", "tray-icon.png");
 
   if (!fs.existsSync(logoPath)) {
     return "";
@@ -1571,9 +1571,10 @@ function showAboutDialog() {
 
         .about-logo {
           display: block;
-          width: min(108px, 100%);
-          height: auto;
+          width: 104px;
+          height: 104px;
           margin: 0 auto 22px;
+          object-fit: contain;
           filter: grayscale(1);
         }
 

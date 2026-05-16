@@ -565,6 +565,10 @@ function closeSocketSafely(targetSocket) {
   }
 
   try {
+    targetSocket.on?.("error", () => {
+      // Suppress expected shutdown errors from sockets that are still connecting.
+    });
+
     if (targetSocket.readyState === WebSocket.CONNECTING) {
       targetSocket.terminate?.();
       return;
