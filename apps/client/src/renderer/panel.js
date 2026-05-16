@@ -826,11 +826,15 @@ function renderPanelDisplayModeMenu() {
   });
 }
 
+function isPanelExpanded() {
+  return document.body.dataset.expanded === "true";
+}
+
 async function setPanelDisplayMode(mode, options = {}) {
   const nextMode = normalizePanelDisplayMode(mode);
   const previousMode = panelDisplayMode;
   const persist = options.persist !== false;
-  const resize = options.resize !== false;
+  const resize = options.resize !== false && !isPanelExpanded();
   const shouldResizeBeforeDomUpdate =
     !isSettingsWindow && resize && nextMode === "buttons" && previousMode !== "buttons";
   const shouldKeepMessagesPinned =
@@ -2045,6 +2049,12 @@ function clearPendingAttachments() {
 
 function resizePanelForComposerContent() {
   requestAnimationFrame(() => {
+    if (isPanelExpanded()) {
+      updateMessageScrollbar();
+      updateMessageComposerScrollbar();
+      return;
+    }
+
     setPanelDisplayMode(panelDisplayMode, { persist: false }).catch(() => {});
   });
 }
@@ -3929,6 +3939,12 @@ messageCollapseButton?.addEventListener("click", () => {
 messageComposeInput?.addEventListener("input", () => {
   updateMessageComposerHeight();
   syncMessageComposerState();
+  if (isPanelExpanded()) {
+    updateMessageScrollbar();
+    updateMessageComposerScrollbar();
+    return;
+  }
+
   setPanelDisplayMode(panelDisplayMode, { persist: false }).catch(() => {});
 });
 
@@ -4288,6 +4304,7 @@ panelExpandButton?.addEventListener("click", async () => {
       );
       panelExpandButton.title = result.isExpanded ? "Collapse window" : "Expand window";
     }
+    requestAnimationFrame(focusMessageComposer);
   } catch {
     // Ignore expand errors
   }

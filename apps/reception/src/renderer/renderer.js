@@ -1920,6 +1920,7 @@ async function toggleExpandWindow() {
     expanded: nextExpanded,
   });
   reportGadgetHeight();
+  requestAnimationFrame(focusChatComposer);
 }
 
 expandWindowButton?.addEventListener("click", toggleExpandWindow);
