@@ -23,6 +23,8 @@ let chatMessages = [];
 let measuredGadgetHeight = null;
 let saveWindowPositionTimer = null;
 let preExpandWindowPosition = null;
+let restorePositionOnNextGadgetHeight = null;
+let isProgrammaticWindowMove = false;
 let aboutWindow = null;
 let messagePopupWindow = null;
 let latestMessagePopupPayload = null;
@@ -52,9 +54,9 @@ const RECEPTION_MAIN_WINDOW_IS_TRANSPARENT = true;
 const RECEPTION_MAIN_WINDOW_BACKGROUND = "#00000000";
 const MESSAGE_POPUP_WIDTH = 380;
 const ALERT_POPUP_WIDTH = 460;
-const MESSAGE_POPUP_MIN_HEIGHT = 62;
+const MESSAGE_POPUP_MIN_HEIGHT = 48;
 const MESSAGE_POPUP_MAX_HEIGHT = 172;
-const ALERT_POPUP_HEIGHT = 62;
+const ALERT_POPUP_HEIGHT = 48;
 const MESSAGE_POPUP_MARGIN = 18;
 const STARTUP_LOG_PATH = path.join(os.tmpdir(), "pip-reception.log");
 const DEFAULT_RECEPTION_SOUND = "notification_sound_01";
@@ -1284,7 +1286,11 @@ function resizeForDisplayMode(options = {}) {
   mainWindow.setAlwaysOnTop(Boolean(configState.display.alwaysOnTop));
   mainWindow.setResizable(false);
   mainWindow.setMinimumSize(WINDOW_WIDTH, WINDOW_MINIMIZED_HEIGHT);
+  isProgrammaticWindowMove = true;
   mainWindow.setBounds(bounds, true);
+  setTimeout(() => {
+    isProgrammaticWindowMove = false;
+  }, 250);
 }
 
 function getWindowBounds(config, currentBounds = null, options = {}) {
@@ -1373,6 +1379,10 @@ function getSavedWindowPosition(config) {
 
 function scheduleWindowPositionSave() {
   if (!mainWindow || !configState || !saveConfigFn) {
+    return;
+  }
+
+  if (isProgrammaticWindowMove || configState.display?.expanded) {
     return;
   }
 
@@ -1486,15 +1496,28 @@ async function updateDisplaySettings(patch) {
   const willBeExpanded = typeof patch.expanded === "boolean" ? patch.expanded : wasExpanded;
 
   if (!wasExpanded && willBeExpanded && mainWindow && !mainWindow.isDestroyed()) {
-    const [x, y] = mainWindow.getPosition();
+    const { x, y } = mainWindow.getBounds();
     preExpandWindowPosition = { x, y };
   }
+
+  const restoredWindowPosition =
+    wasExpanded && !willBeExpanded && preExpandWindowPosition
+      ? preExpandWindowPosition
+      : null;
 
   configState = {
     ...configState,
     display: {
       ...configState.display,
       ...patch,
+      ...(restoredWindowPosition
+        ? {
+            windowPosition: {
+              x: restoredWindowPosition.x,
+              y: restoredWindowPosition.y,
+            },
+          }
+        : {}),
     },
   };
 
@@ -1502,8 +1525,9 @@ async function updateDisplaySettings(patch) {
   setLaunchAtStartup(configState.display.launchAtStartup);
 
   const resizeOptions = {};
-  if (wasExpanded && !willBeExpanded && preExpandWindowPosition) {
-    resizeOptions.overridePosition = preExpandWindowPosition;
+  if (restoredWindowPosition) {
+    resizeOptions.overridePosition = restoredWindowPosition;
+    restorePositionOnNextGadgetHeight = restoredWindowPosition;
   }
   resizeForDisplayMode(resizeOptions);
 
@@ -1929,7 +1953,12 @@ app.whenReady().then(async () => {
     }
 
     measuredGadgetHeight = nextHeight;
-    resizeForDisplayMode({ preserveBottom: true });
+    if (restorePositionOnNextGadgetHeight) {
+      resizeForDisplayMode({ overridePosition: restorePositionOnNextGadgetHeight });
+      restorePositionOnNextGadgetHeight = null;
+    } else {
+      resizeForDisplayMode({ preserveBottom: true });
+    }
 
     return { ok: true, height: measuredGadgetHeight };
   });

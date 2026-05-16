@@ -1017,29 +1017,46 @@ function renderMessageAttachment(attachment) {
 
   if (mime.startsWith("image/")) {
     return `
-      <a class="message-attachment" href="${escapeHtml(url)}" target="_blank" rel="noreferrer">
-        <img class="message-attachment-preview" src="${escapeHtml(thumbnailUrl || url)}" alt="${escapeHtml(filename)}" loading="lazy" />
-        <span class="message-attachment-name">${escapeHtml(filename)}</span>
-        <span class="message-attachment-meta">${escapeHtml(sizeLabel)}</span>
-      </a>
+      <div class="message-attachment">
+        <a class="message-attachment-preview-link" href="${escapeHtml(url)}" target="_blank" rel="noreferrer">
+          <img class="message-attachment-preview" src="${escapeHtml(thumbnailUrl || url)}" alt="${escapeHtml(filename)}" loading="lazy" />
+        </a>
+        <span class="message-attachment-body">
+          <a class="message-attachment-text" href="${escapeHtml(url)}" target="_blank" rel="noreferrer">
+            <span class="message-attachment-name">${escapeHtml(filename)}</span>
+            <span class="message-attachment-meta">${escapeHtml(sizeLabel)}</span>
+          </a>
+          <a class="message-attachment-download" href="${escapeHtml(url)}" target="_blank" rel="noreferrer" download="${escapeHtml(filename)}" aria-label="Download ${escapeHtml(filename)}">Download</a>
+        </span>
+      </div>
     `;
   }
 
   if (mime.startsWith("audio/")) {
     return `
       <div class="message-attachment">
-        <span class="message-attachment-name">${escapeHtml(filename)}</span>
-        <span class="message-attachment-meta">${escapeHtml(sizeLabel)}</span>
+        <span class="message-attachment-body">
+          <span class="message-attachment-text">
+            <span class="message-attachment-name">${escapeHtml(filename)}</span>
+            <span class="message-attachment-meta">${escapeHtml(sizeLabel)}</span>
+          </span>
+          <a class="message-attachment-download" href="${escapeHtml(url)}" target="_blank" rel="noreferrer" download="${escapeHtml(filename)}" aria-label="Download ${escapeHtml(filename)}">Download</a>
+        </span>
         <audio controls src="${escapeHtml(url)}"></audio>
       </div>
     `;
   }
 
   return `
-    <a class="message-attachment" href="${escapeHtml(url)}" target="_blank" rel="noreferrer">
-      <span class="message-attachment-name">${escapeHtml(filename)}</span>
-      <span class="message-attachment-meta">${escapeHtml(sizeLabel)}</span>
-    </a>
+    <div class="message-attachment">
+      <span class="message-attachment-body">
+        <a class="message-attachment-text" href="${escapeHtml(url)}" target="_blank" rel="noreferrer">
+          <span class="message-attachment-name">${escapeHtml(filename)}</span>
+          <span class="message-attachment-meta">${escapeHtml(sizeLabel)}</span>
+        </a>
+        <a class="message-attachment-download" href="${escapeHtml(url)}" target="_blank" rel="noreferrer" download="${escapeHtml(filename)}" aria-label="Download ${escapeHtml(filename)}">Download</a>
+      </span>
+    </div>
   `;
 }
 
