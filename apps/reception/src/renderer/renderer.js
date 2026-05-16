@@ -120,6 +120,7 @@ let appState = null;
 let pendingChatAttachments = [];
 let draftConfig = null;
 let lastReportedGadgetHeight = 0;
+let lastNaturalGadgetHeight = 0;
 const pendingPingRooms = new Map();
 const visibleAlertCountsByRoom = new Map();
 const selectedChatRoomIds = new Set();
@@ -676,6 +677,7 @@ function showMessageSection(options = {}) {
 function hideMessageSection(options = {}) {
   isMessageSectionVisible = false;
   document.body.dataset.messagesHidden = "true";
+  setManualMessageExtraHeight(0);
   if (options.persist) {
     persistMessageSectionVisibility();
   }
@@ -683,6 +685,9 @@ function hideMessageSection(options = {}) {
 
 function syncMessageSectionVisibility() {
   document.body.dataset.messagesHidden = isMessageSectionVisible ? "false" : "true";
+  if (!isMessageSectionVisible) {
+    setManualMessageExtraHeight(0);
+  }
 }
 
 function syncMessageContext(state = appState) {
@@ -1350,19 +1355,52 @@ function reportGadgetHeight() {
   const shellStyles = window.getComputedStyle(document.querySelector(".shell"));
   const shellVerticalPadding =
     parseFloat(shellStyles.paddingTop || "0") + parseFloat(shellStyles.paddingBottom || "0");
+  const previousManualExtra = document.body.style.getPropertyValue("--manual-message-extra-height");
+  setManualMessageExtraHeight(0);
   const measuredPanelHeight = Math.max(
     gadgetPanel.scrollHeight,
     Math.ceil(gadgetPanel.getBoundingClientRect().height),
   );
-  const windowsHeightAllowance = document.body.dataset.platform === "win32" ? 8 : 0;
-  const nextHeight = Math.ceil(measuredPanelHeight + shellVerticalPadding + windowsHeightAllowance);
+  if (previousManualExtra) {
+    document.body.style.setProperty("--manual-message-extra-height", previousManualExtra);
+  }
+  const isWindows = document.body.dataset.platform === "win32";
+  const isNormalMessagesView =
+    document.body.dataset.compactMode !== "true" && document.body.dataset.messagesHidden !== "true";
+  const platformHeightAllowance = isWindows ? 8 : 0;
+  const normalMessagesHeightAllowance = isNormalMessagesView ? 8 : 0;
+  const nextHeight = Math.ceil(
+    measuredPanelHeight + shellVerticalPadding + platformHeightAllowance + normalMessagesHeightAllowance,
+  );
 
   if (!Number.isFinite(nextHeight) || nextHeight <= 0 || nextHeight === lastReportedGadgetHeight) {
     return;
   }
 
   lastReportedGadgetHeight = nextHeight;
+  lastNaturalGadgetHeight = nextHeight;
+  updateManualMessageExtraHeight();
   window.pip.updateGadgetHeight(nextHeight).catch(() => {});
+}
+
+function setManualMessageExtraHeight(extraHeight) {
+  const nextHeight = Math.max(0, Math.floor(Number(extraHeight) || 0));
+  document.body.style.setProperty("--manual-message-extra-height", `${nextHeight}px`);
+}
+
+function updateManualMessageExtraHeight() {
+  if (
+    isSettingsWindow ||
+    !appState ||
+    appState.config.display.minimized ||
+    document.body.dataset.messagesHidden === "true"
+  ) {
+    setManualMessageExtraHeight(0);
+    return;
+  }
+
+  const baseHeight = lastNaturalGadgetHeight || lastReportedGadgetHeight || window.innerHeight;
+  setManualMessageExtraHeight(window.innerHeight - baseHeight);
 }
 
 function scheduleGadgetHeightReport() {
@@ -2518,8 +2556,8 @@ window.pip.onPingCleared((payload) => {
 });
 
 window.addEventListener("resize", () => {
+  updateManualMessageExtraHeight();
   updateChatScrollbar();
-  reportGadgetHeight();
 });
 
 init();

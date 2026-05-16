@@ -202,14 +202,14 @@ function createWindow(config) {
   mainWindow = new BrowserWindow({
     width: bounds.width,
     height: bounds.height,
-    resizable: false,
+    resizable: true,
     minWidth: WINDOW_WIDTH,
     minHeight: WINDOW_MINIMIZED_HEIGHT,
     frame: false,
     transparent: RECEPTION_MAIN_WINDOW_IS_TRANSPARENT,
     backgroundColor: RECEPTION_MAIN_WINDOW_BACKGROUND,
     hasShadow: false,
-    thickFrame: false,
+    thickFrame: true,
     alwaysOnTop: config.display.alwaysOnTop,
     skipTaskbar: false,
     icon: windowIcon,
@@ -1284,8 +1284,9 @@ function resizeForDisplayMode(options = {}) {
   const bounds = getWindowBounds(configState, mainWindow.getBounds(), options);
 
   mainWindow.setAlwaysOnTop(Boolean(configState.display.alwaysOnTop));
-  mainWindow.setResizable(false);
-  mainWindow.setMinimumSize(WINDOW_WIDTH, WINDOW_MINIMIZED_HEIGHT);
+  mainWindow.setResizable(true);
+  mainWindow.setMinimumSize(bounds.width, WINDOW_MINIMIZED_HEIGHT);
+  mainWindow.setMaximumSize(bounds.width, screen.getDisplayMatching(bounds).workArea.height);
   isProgrammaticWindowMove = true;
   mainWindow.setBounds(bounds, true);
   setTimeout(() => {
