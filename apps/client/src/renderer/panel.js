@@ -78,6 +78,13 @@ const MESSAGE_THREAD_ORDER_STORAGE_KEY = "pip-panel-message-thread-order";
 const MESSAGE_THREAD_RAIL_COLLAPSED_STORAGE_KEY = "pip-panel-message-thread-rail-collapsed";
 const MESSAGE_THREAD_PAGE_SIZE = 5;
 const MESSAGE_COMPOSER_ATTACHMENT_BOTTOM_BUFFER = 0;
+const SURGERY_RENDERER_WINDOW_HEIGHTS = {
+  messages: 380,
+  buttons: 232,
+  both: 555,
+  expandedDelta: 200,
+  banner: 50,
+};
 const NEO_BUTTON_LABEL_MAX_LENGTH = 7;
 const CONFIG_REFRESH_MS = 3000;
 const DEFAULT_BUTTON_APPEARANCE = {
@@ -830,6 +837,45 @@ function isPanelExpanded() {
   return document.body.dataset.expanded === "true";
 }
 
+function setManualMessageExtraHeight(extraHeight) {
+  const nextHeight = Math.max(0, Math.floor(Number(extraHeight) || 0));
+  document.body.style.setProperty("--manual-message-extra-height", `${nextHeight}px`);
+}
+
+function isVisibleElement(element) {
+  return element instanceof HTMLElement && !element.classList.contains("hidden");
+}
+
+function getVisibleBannerHeight() {
+  return isVisibleElement(receptionPingBanner) || isVisibleElement(receptionOfflineBanner)
+    ? SURGERY_RENDERER_WINDOW_HEIGHTS.banner
+    : 0;
+}
+
+function getNaturalPanelWindowHeight() {
+  const baseHeight =
+    panelDisplayMode === "buttons"
+      ? SURGERY_RENDERER_WINDOW_HEIGHTS.buttons
+      : panelDisplayMode === "both"
+        ? SURGERY_RENDERER_WINDOW_HEIGHTS.both
+        : SURGERY_RENDERER_WINDOW_HEIGHTS.messages;
+  const expandedHeight = isPanelExpanded() ? SURGERY_RENDERER_WINDOW_HEIGHTS.expandedDelta : 0;
+  const composerHeight = panelDisplayMode === "buttons" ? 0 : getMessageComposerHeightOffset();
+
+  return baseHeight + expandedHeight + composerHeight + getVisibleBannerHeight();
+}
+
+function updateManualMessageExtraHeight() {
+  const showMessages = panelDisplayMode === "messages" || panelDisplayMode === "both";
+
+  if (isSettingsWindow || isRoleWindow || !showMessages || document.body.dataset.offlineCompact === "true") {
+    setManualMessageExtraHeight(0);
+    return;
+  }
+
+  setManualMessageExtraHeight(window.innerHeight - getNaturalPanelWindowHeight());
+}
+
 async function setPanelDisplayMode(mode, options = {}) {
   const nextMode = normalizePanelDisplayMode(mode);
   const previousMode = panelDisplayMode;
@@ -845,6 +891,7 @@ async function setPanelDisplayMode(mode, options = {}) {
       mode: nextMode,
       previousMode,
       messageComposerHeightOffset: getMessageComposerHeightOffset(),
+      preserveManualHeight: Boolean(options.preserveManualHeight),
       ...resizeOptions,
     })
     .catch(() => {});
@@ -868,6 +915,7 @@ async function setPanelDisplayMode(mode, options = {}) {
   }
 
   updateMessageScrollbar();
+  updateManualMessageExtraHeight();
   renderPanelDisplayModeMenu();
 
   if (!isSettingsWindow && resize && !shouldResizeBeforeDomUpdate) {
@@ -1960,6 +2008,7 @@ function renderMessagingUi() {
   renderChatMessages();
   syncMessageComposerState();
   updateMessageComposerHeight();
+  updateManualMessageExtraHeight();
   updateMessageThreadRailAlignment();
 }
 
@@ -2047,15 +2096,21 @@ function clearPendingAttachments() {
   resizePanelForComposerContent();
 }
 
+function clearPendingAttachmentsWithoutResize() {
+  pendingAttachments = [];
+  renderPendingAttachments();
+}
+
 function resizePanelForComposerContent() {
   requestAnimationFrame(() => {
     if (isPanelExpanded()) {
+      updateManualMessageExtraHeight();
       updateMessageScrollbar();
       updateMessageComposerScrollbar();
       return;
     }
 
-    setPanelDisplayMode(panelDisplayMode, { persist: false }).catch(() => {});
+    setPanelDisplayMode(panelDisplayMode, { persist: false, preserveManualHeight: true }).catch(() => {});
   });
 }
 
@@ -3425,11 +3480,11 @@ async function sendChatMessage() {
   if (messageComposeInput) {
     messageComposeInput.value = "";
   }
-  clearPendingAttachments();
+  clearPendingAttachmentsWithoutResize();
   await fetchChatMessages().catch(() => {});
   updateMessageComposerHeight();
   syncMessageComposerState();
-  setPanelDisplayMode(panelDisplayMode, { persist: false }).catch(() => {});
+  setPanelDisplayMode(panelDisplayMode, { persist: false, preserveManualHeight: true }).catch(() => {});
 }
 
 async function sendPanelAction(buttonId) {
@@ -3940,12 +3995,13 @@ messageComposeInput?.addEventListener("input", () => {
   updateMessageComposerHeight();
   syncMessageComposerState();
   if (isPanelExpanded()) {
+    updateManualMessageExtraHeight();
     updateMessageScrollbar();
     updateMessageComposerScrollbar();
     return;
   }
 
-  setPanelDisplayMode(panelDisplayMode, { persist: false }).catch(() => {});
+  setPanelDisplayMode(panelDisplayMode, { persist: false, preserveManualHeight: true }).catch(() => {});
 });
 
 messageComposeInput?.addEventListener("scroll", updateMessageComposerScrollbar, { passive: true });
@@ -4853,6 +4909,8 @@ if (messageThreadList) {
 
 window.addEventListener("resize", () => {
   requestAnimationFrame(() => {
+    updateManualMessageExtraHeight();
+    updateMessageScrollbar();
     updateMessageThreadRailAlignment();
     updateMessageThreadScrollButtons();
   });

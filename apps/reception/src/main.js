@@ -1281,11 +1281,20 @@ function resizeForDisplayMode(options = {}) {
     return;
   }
 
-  const bounds = getWindowBounds(configState, mainWindow.getBounds(), options);
+  const currentBounds = mainWindow.getBounds();
+  const bounds = getWindowBounds(configState, currentBounds, options);
+  const minimumHeight = bounds.height;
+
+  if (options.preserveManualHeight && currentBounds.height > bounds.height) {
+    bounds.height = Math.min(currentBounds.height, screen.getDisplayMatching(bounds).workArea.height);
+    if (options.preserveBottom && !configState.display.minimized) {
+      bounds.y = currentBounds.y + currentBounds.height - bounds.height;
+    }
+  }
 
   mainWindow.setAlwaysOnTop(Boolean(configState.display.alwaysOnTop));
   mainWindow.setResizable(true);
-  mainWindow.setMinimumSize(bounds.width, WINDOW_MINIMIZED_HEIGHT);
+  mainWindow.setMinimumSize(bounds.width, minimumHeight);
   mainWindow.setMaximumSize(bounds.width, screen.getDisplayMatching(bounds).workArea.height);
   isProgrammaticWindowMove = true;
   mainWindow.setBounds(bounds, true);
@@ -1958,7 +1967,7 @@ app.whenReady().then(async () => {
       resizeForDisplayMode({ overridePosition: restorePositionOnNextGadgetHeight });
       restorePositionOnNextGadgetHeight = null;
     } else {
-      resizeForDisplayMode({ preserveBottom: true });
+      resizeForDisplayMode({ preserveBottom: true, preserveManualHeight: true });
     }
 
     return { ok: true, height: measuredGadgetHeight };

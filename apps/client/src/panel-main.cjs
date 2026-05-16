@@ -478,6 +478,7 @@ function createWindow({ showInitially = true } = {}) {
     height: getPanelDisplayModeHeight(clientSettings.panelDisplayMode),
     minWidth: getPanelDisplayModeWidth(clientSettings.panelDisplayMode),
     minHeight: getPanelDisplayModeHeight(clientSettings.panelDisplayMode),
+    resizable: true,
     autoHideMenuBar: true,
     show: false,
     skipTaskbar: false,
@@ -485,7 +486,7 @@ function createWindow({ showInitially = true } = {}) {
     transparent: SURGERY_MAIN_WINDOW_IS_TRANSPARENT,
     backgroundColor: SURGERY_MAIN_WINDOW_BACKGROUND,
     hasShadow: false,
-    thickFrame: false,
+    thickFrame: true,
     alwaysOnTop: clientSettings.alwaysOnTop,
     title: SURGERY_PANEL_WINDOW_TITLE,
     icon: windowIcon,
@@ -498,6 +499,10 @@ function createWindow({ showInitially = true } = {}) {
   if (typeof mainWindow.setHasShadow === "function") {
     mainWindow.setHasShadow(false);
   }
+  setMainWindowResizeBounds(
+    getPanelDisplayModeWidth(clientSettings.panelDisplayMode),
+    getPanelDisplayModeHeight(clientSettings.panelDisplayMode),
+  );
 
   mainWindow.loadFile(path.join(__dirname, "renderer", "panel.html"));
 
@@ -584,6 +589,21 @@ function createWindow({ showInitially = true } = {}) {
   mainWindow.on("hide", () => {
     hideThreadRailWindow();
   });
+}
+
+function setMainWindowResizeBounds(targetWidth, minimumHeight, referenceBounds = null) {
+  if (!mainWindow || mainWindow.isDestroyed()) {
+    return;
+  }
+
+  const roundedWidth = Math.max(1, Math.round(Number(targetWidth) || SURGERY_PANEL_WIDTH));
+  const roundedMinimumHeight = Math.max(1, Math.round(Number(minimumHeight) || SURGERY_WINDOW_HEIGHT));
+  const display = screen.getDisplayMatching(referenceBounds || mainWindow.getBounds());
+  const maxHeight = Math.max(roundedMinimumHeight, Math.round(display.workArea.height));
+
+  mainWindow.setResizable(true);
+  mainWindow.setMinimumSize(roundedWidth, roundedMinimumHeight);
+  mainWindow.setMaximumSize(roundedWidth, maxHeight);
 }
 
 function refreshTransparentWindowChrome(targetWindow = mainWindow) {
@@ -1688,6 +1708,8 @@ function setWindowSettingsExpanded(details) {
   const messageComposerHeightOffset = typeof details === "object" && details !== null
     ? Math.min(220, Math.max(0, Math.round(Number(details.messageComposerHeightOffset) || 0)))
     : 0;
+  const shouldPreserveManualHeight =
+    Boolean(typeof details === "object" && details !== null && details.preserveManualHeight);
   const previousMode = typeof details === "object" && details !== null && typeof details.previousMode === "string"
     ? normalizePanelDisplayMode(details.previousMode)
     : normalizePanelDisplayMode(clientSettings.panelDisplayMode);
@@ -1707,7 +1729,10 @@ function setWindowSettingsExpanded(details) {
   const targetWidth = getPanelDisplayModeWidth(mode);
   const previousVisibleWidth = getPanelDisplayModeWidth(previousMode);
   const currentRight = currentX + previousVisibleWidth;
-  const nextY = currentY + currentHeight - targetHeight;
+  const windowHeight = shouldPreserveManualHeight && currentHeight > targetHeight
+    ? currentHeight
+    : targetHeight;
+  const nextY = currentY + currentHeight - windowHeight;
   const workArea = screen.getDisplayMatching({
     x: currentX,
     y: currentY,
@@ -1721,8 +1746,14 @@ function setWindowSettingsExpanded(details) {
     x: nextX,
     y: nextY,
     width: targetWidth,
-    height: targetHeight,
+    height: windowHeight,
   }, shouldAnimateResize);
+  setMainWindowResizeBounds(targetWidth, minimumHeight, {
+    x: nextX,
+    y: nextY,
+    width: targetWidth,
+    height: windowHeight,
+  });
   positionThreadRailWindow();
   syncExternalThreadRailWindow();
 }
@@ -1752,6 +1783,12 @@ function setWindowBannerVisible(bannerVisible) {
     width: currentWidth,
     height: targetHeight,
   }, true);
+  setMainWindowResizeBounds(currentWidth, targetHeight, {
+    x: currentX,
+    y: nextY,
+    width: currentWidth,
+    height: targetHeight,
+  });
   positionThreadRailWindow();
   syncExternalThreadRailWindow();
 }
@@ -1774,6 +1811,12 @@ function setWindowOfflineCompact(isCompact) {
       width: currentWidth,
       height: targetHeight,
     }, true);
+    setMainWindowResizeBounds(currentWidth, targetHeight, {
+      x: currentX,
+      y: nextY,
+      width: currentWidth,
+      height: targetHeight,
+    });
     positionThreadRailWindow();
     syncExternalThreadRailWindow();
   } else {
@@ -1789,6 +1832,12 @@ function setWindowOfflineCompact(isCompact) {
       width: currentWidth,
       height: targetHeight,
     }, true);
+    setMainWindowResizeBounds(currentWidth, targetHeight, {
+      x: currentX,
+      y: nextY,
+      width: currentWidth,
+      height: targetHeight,
+    });
     positionThreadRailWindow();
     syncExternalThreadRailWindow();
   }
@@ -2036,19 +2085,24 @@ app.whenReady().then(async () => {
     if (currentWidth >= expandedWidth) {
       // Collapse back to original width
       if (preExpandWindowPosition) {
+        targetWindow.setMaximumSize(collapsedWidth, screen.getDisplayMatching(preExpandWindowPosition).workArea.height);
+        targetWindow.setMinimumSize(collapsedWidth, Math.max(1, Math.round(preExpandWindowPosition.height)));
         targetWindow.setBounds({
           x: preExpandWindowPosition.x,
           y: preExpandWindowPosition.y,
           width: collapsedWidth,
           height: preExpandWindowPosition.height,
         }, true);
+        setMainWindowResizeBounds(collapsedWidth, preExpandWindowPosition.height, preExpandWindowPosition);
         preExpandWindowPosition = null;
       } else {
+        targetWindow.setMaximumSize(collapsedWidth, screen.getDisplayMatching(targetWindow.getBounds()).workArea.height);
         targetWindow.setBounds({
           x: currentX,
           y: currentY,
           width: collapsedWidth,
         }, true);
+        setMainWindowResizeBounds(collapsedWidth, currentHeight, targetWindow.getBounds());
       }
 
       positionThreadRailWindow();
@@ -2080,12 +2134,20 @@ app.whenReady().then(async () => {
         workArea.y + (workArea.height - expandedHeight) / 2,
       );
 
+      targetWindow.setMaximumSize(expandedWidth, workArea.height);
+      targetWindow.setMinimumSize(expandedWidth, expandedHeight);
       targetWindow.setBounds({
         x: expandedX,
         y: expandedY,
         width: expandedWidth,
         height: expandedHeight,
       }, true);
+      setMainWindowResizeBounds(expandedWidth, expandedHeight, {
+        x: expandedX,
+        y: expandedY,
+        width: expandedWidth,
+        height: expandedHeight,
+      });
       positionThreadRailWindow();
 
       return { ok: true, isExpanded: true };
