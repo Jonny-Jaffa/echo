@@ -77,6 +77,7 @@ const LEGACY_PANEL_DEVICE_ID_STORAGE_KEY = "patient-ping-panel-device-id";
 const MESSAGE_THREAD_ORDER_STORAGE_KEY = "pip-panel-message-thread-order";
 const MESSAGE_THREAD_RAIL_COLLAPSED_STORAGE_KEY = "pip-panel-message-thread-rail-collapsed";
 const MESSAGE_THREAD_PAGE_SIZE = 5;
+const MESSAGE_COMPOSER_ATTACHMENT_BOTTOM_BUFFER = 15;
 const NEO_BUTTON_LABEL_MAX_LENGTH = 7;
 const CONFIG_REFRESH_MS = 3000;
 const DEFAULT_BUTTON_APPEARANCE = {
@@ -200,6 +201,7 @@ let preferredRoomId = "";
 let roomSettingsInteractionLockUntil = 0;
 let chatMessages = [];
 let pendingAttachments = [];
+let messageComposerBaseHeight = 0;
 let activeMessageThreadKey = "";
 let isAppQuitting = false;
 let isReceptionOffline = false;
@@ -1947,6 +1949,14 @@ function updateMessageComposerHeight() {
 
   messageComposeInput.style.height = "auto";
   messageComposeInput.style.height = `${Math.min(messageComposeInput.scrollHeight, 136)}px`;
+  const renderedHeight = Math.ceil(
+    messageComposeInput.getBoundingClientRect().height ||
+      messageComposeInput.clientHeight ||
+      0,
+  );
+  if (!messageComposerBaseHeight && renderedHeight > 0) {
+    messageComposerBaseHeight = renderedHeight;
+  }
   updateMessageComposerScrollbar();
 }
 
@@ -2001,7 +2011,7 @@ async function addAttachmentFiles(files) {
   }
 
   syncMessageComposerState();
-  setPanelDisplayMode(panelDisplayMode, { persist: false }).catch(() => {});
+  resizePanelForComposerContent();
 }
 
 function getReadyAttachments() {
@@ -2013,6 +2023,13 @@ function getReadyAttachments() {
 function clearPendingAttachments() {
   pendingAttachments = [];
   renderPendingAttachments();
+  resizePanelForComposerContent();
+}
+
+function resizePanelForComposerContent() {
+  requestAnimationFrame(() => {
+    setPanelDisplayMode(panelDisplayMode, { persist: false }).catch(() => {});
+  });
 }
 
 function getMessageComposerHeightOffset() {
@@ -2020,13 +2037,30 @@ function getMessageComposerHeightOffset() {
     return 0;
   }
 
+  const compose = messageComposeInput.closest(".message-compose");
   const inputStyle = window.getComputedStyle(messageComposeInput);
   const minHeight = Number.parseFloat(inputStyle.minHeight) || 38;
   const currentHeight = Math.ceil(
     messageComposeInput.getBoundingClientRect().height || messageComposeInput.clientHeight || minHeight,
   );
+  const baseHeight = messageComposerBaseHeight || Math.ceil(minHeight);
+  const inputOffset = Math.max(0, currentHeight - baseHeight);
 
-  return Math.max(0, currentHeight - Math.ceil(minHeight));
+  if (!(compose instanceof HTMLElement)) {
+    return inputOffset;
+  }
+
+  const composeStyle = window.getComputedStyle(compose);
+  const rowGap = Number.parseFloat(composeStyle.rowGap || composeStyle.gap || "0") || 0;
+  const attachmentHeight = attachmentList && !attachmentList.classList.contains("hidden")
+    ? Math.ceil(
+        attachmentList.getBoundingClientRect().height +
+          rowGap +
+          MESSAGE_COMPOSER_ATTACHMENT_BOTTOM_BUFFER,
+      )
+    : 0;
+
+  return inputOffset + attachmentHeight;
 }
 
 function updateMessageComposerScrollbar() {
@@ -3910,6 +3944,7 @@ attachmentList?.addEventListener("click", (event) => {
     pendingAttachments.splice(index, 1);
     renderPendingAttachments();
     syncMessageComposerState();
+    resizePanelForComposerContent();
   }
 });
 

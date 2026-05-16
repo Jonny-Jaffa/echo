@@ -764,6 +764,7 @@
   gap: 10px;
   align-items: end;
   position: relative;
+  padding-bottom: 4px;
   --compose-scrollbar-left: 0px;
   --compose-scrollbar-top: 0px;
   --compose-scrollbar-thumb-height: 0px;
@@ -773,6 +774,8 @@
   display: flex;
   align-items: end;
   gap: 4px;
+  grid-column: 1;
+  grid-row: 2;
   min-width: 0;
 }
 
@@ -783,22 +786,23 @@
 
 .attachment-list {
   grid-column: 1 / -1;
-  display: grid;
+  grid-row: 1;
+  display: flex;
   gap: 6px;
   margin-bottom: 2px;
+  width: 100%;
 }
 
 .attachment-list.hidden {
   display: none;
 }
 
-.attachment-chip,
-.message-attachment {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
+.attachment-chip {
+  display: flex;
   align-items: center;
   gap: 8px;
-  min-width: 0;
+  min-width: 100px;
+  max-width: 200px;
   padding: 6px 8px;
   border: 1px solid rgba(255, 255, 255, 0.72);
   border-radius: 10px;
@@ -806,6 +810,20 @@
   color: var(--text);
   font-size: 12px;
   line-height: 1.2;
+}
+
+.message-attachment {
+  display: flex;
+  align-items: start;
+  gap: 8px;
+  padding: 6px 8px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255);
+  color: var(--text);
+  font-size: 12px;
+  line-height: 1.2;
+  max-width: 100%;
+  flex-direction: column;
 }
 
 .attachment-chip.is-error {
@@ -839,8 +857,8 @@
 }
 
 .message-attach-button {
-  width: 29px;
-  min-width: 29px;
+  width: 24px;
+  min-width: 24px;
   height: 38px;
   border: 0;
   border-radius: 999px;
@@ -853,16 +871,28 @@
   text-indent: -9999px;
 }
 
+.message-send-button {
+  grid-column: 2;
+  grid-row: 2;
+  align-self: end;
+}
+
 .message-attach-button::before {
-  content: "+";
+  content: "";
   position: absolute;
   inset: 0;
-  display: grid;
-  place-items: center;
-  font-size: 24px;
-  font-weight: 400;
-  line-height: 1;
-  text-indent: 0;
+  width: 18px;
+  height: 18px;
+  margin: auto;
+  background-color: currentColor;
+  -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 448 512'%3E%3Cpath d='M256 64c0-17.7-14.3-32-32-32s-32 14.3-32 32l0 160-160 0c-17.7 0-32 14.3-32 32s14.3 32 32 32l160 0 0 160c0 17.7 14.3 32 32 32s32-14.3 32-32l0-160 160 0c17.7 0 32-14.3 32-32s-14.3-32-32-32l-160 0 0-160z'/%3E%3C/svg%3E");
+  mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 448 512'%3E%3Cpath d='M256 64c0-17.7-14.3-32-32-32s-32 14.3-32 32l0 160-160 0c-17.7 0-32 14.3-32 32s14.3 32 32 32l160 0 0 160c0 17.7 14.3 32 32 32s32-14.3 32-32l0-160 160 0c17.7 0 32-14.3 32-32s-14.3-32-32-32l-160 0 0-160z'/%3E%3C/svg%3E");
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  -webkit-mask-position: center;
+  mask-position: center;
+  -webkit-mask-size: contain;
+  mask-size: contain;
 }
 
 .message-attachments {

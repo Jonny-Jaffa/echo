@@ -45,7 +45,7 @@ const WINDOW_ADMIN_HEIGHT = 800;
 const GADGET_HEADER_HEIGHT = 0;
 const GADGET_ROW_HEIGHT = 40;
 const GADGET_FRAME_PADDING = 7;
-const GADGET_WINDOW_HEIGHT_TRIM = process.platform === "win32" ? 0 : 5;
+const GADGET_WINDOW_HEIGHT_TRIM = process.platform === "win32" ? 0 : 0;
 const GADGET_HIDDEN_MESSAGES_HEIGHT_TRIM = 5;
 const GADGET_COMPACT_HIDDEN_MESSAGES_HEIGHT_TRIM = 12;
 const RECEPTION_MAIN_WINDOW_IS_TRANSPARENT = true;
@@ -1827,6 +1827,7 @@ app.whenReady().then(async () => {
         messageGroupLabel: payload.messageGroupLabel,
         messageGroupParticipantRoomIds: payload.messageGroupParticipantRoomIds,
         text: payload.text,
+        attachments: Array.isArray(payload.attachments) ? payload.attachments : [],
         source: "reception-ui",
       }, {
         transport: "local",

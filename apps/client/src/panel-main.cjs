@@ -15,9 +15,9 @@ const SURGERY_THREAD_RAIL_TOP_BUFFER = 34;
 const SURGERY_WINDOW_WIDTH = SURGERY_PANEL_WIDTH + SURGERY_THREAD_RAIL_WIDTH;
 const SURGERY_WINDOW_EXPANDED_WIDTH = 780 + SURGERY_THREAD_RAIL_WIDTH;
 const SURGERY_SETTINGS_WINDOW_WIDTH = 780;
-const SURGERY_WINDOW_HEIGHT = 365;
-const SURGERY_WINDOW_BUTTONS_HEIGHT = 224;
-const SURGERY_WINDOW_BOTH_HEIGHT = 540;
+const SURGERY_WINDOW_HEIGHT = 380;
+const SURGERY_WINDOW_BUTTONS_HEIGHT = 232;
+const SURGERY_WINDOW_BOTH_HEIGHT = 555;
 const SURGERY_WINDOW_EXPANDED_HEIGHT_DELTA = 200;
 const SURGERY_BANNER_HEIGHT = 50;
 const SURGERY_OFFLINE_COMPACT_HEIGHT = 120;
@@ -1686,7 +1686,7 @@ function setWindowSettingsExpanded(details) {
       : "messages";
   currentPanelDisplayMode = mode;
   const messageComposerHeightOffset = typeof details === "object" && details !== null
-    ? Math.min(120, Math.max(0, Math.round(Number(details.messageComposerHeightOffset) || 0)))
+    ? Math.min(220, Math.max(0, Math.round(Number(details.messageComposerHeightOffset) || 0)))
     : 0;
   const previousMode = typeof details === "object" && details !== null && typeof details.previousMode === "string"
     ? normalizePanelDisplayMode(details.previousMode)

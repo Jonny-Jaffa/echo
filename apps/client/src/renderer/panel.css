@@ -238,7 +238,7 @@ body[data-window-view="main"] .message-compose {
 }
 
 body[data-window-view="main"] .message-compose {
-  padding-bottom: 12px;
+  padding-bottom: 0px;
 }
 
 body[data-window-view="settings"] .waiting-state,
@@ -2058,13 +2058,13 @@ body[data-thread-rail-collapsed="true"] .thread-rail .message-thread-scroll-wrap
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   gap: 10px;
-  align-items: center;
+  align-items: end;
 }
+
 
 .message-compose-input {
   width: 100%;
   min-height: 38px;
-  max-height: 144px;
   resize: none;
   border: 1px solid var(--line);
   border-radius: 18px;
@@ -2074,7 +2074,6 @@ body[data-thread-rail-collapsed="true"] .thread-rail .message-thread-scroll-wrap
   font: inherit;
   font-size: 15px;
   line-height: 1.4;
-  overflow: hidden;
 }
 
 .message-compose-input:focus {
