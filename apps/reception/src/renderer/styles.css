@@ -474,6 +474,10 @@ select {
   -webkit-app-region: no-drag;
 }
 
+body[data-expanded="true"] .message-shell.reception-message-shell {
+  grid-template-rows: auto 420px auto;
+}
+
 .message-shell.reception-message-shell.has-message-scrollbar::after {
   content: "";
   position: absolute;
@@ -919,6 +923,7 @@ select {
     );
   box-shadow: 0 10px 22px rgba(16, 35, 31, 0.12);
   overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.72);
 }
 
 .alert-row.is-new-alert .alert-message,

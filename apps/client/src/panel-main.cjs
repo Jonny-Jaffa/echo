@@ -18,6 +18,7 @@ const SURGERY_SETTINGS_WINDOW_WIDTH = 780;
 const SURGERY_WINDOW_HEIGHT = 365;
 const SURGERY_WINDOW_BUTTONS_HEIGHT = 224;
 const SURGERY_WINDOW_BOTH_HEIGHT = 540;
+const SURGERY_WINDOW_EXPANDED_HEIGHT_DELTA = 200;
 const SURGERY_BANNER_HEIGHT = 50;
 const SURGERY_OFFLINE_COMPACT_HEIGHT = 120;
 const SURGERY_SETTINGS_WINDOW_HEIGHT = 800;
@@ -2068,17 +2069,22 @@ app.whenReady().then(async () => {
         y: currentY,
       });
       const workArea = display.workArea;
+      const expandedHeight = Math.min(
+        currentHeight + SURGERY_WINDOW_EXPANDED_HEIGHT_DELTA,
+        workArea.height,
+      );
       const expandedX = Math.round(
         workArea.x + (workArea.width - expandedWidth) / 2,
       );
       const expandedY = Math.round(
-        workArea.y + (workArea.height - currentHeight) / 2,
+        workArea.y + (workArea.height - expandedHeight) / 2,
       );
 
       targetWindow.setBounds({
         x: expandedX,
         y: expandedY,
         width: expandedWidth,
+        height: expandedHeight,
       }, true);
       positionThreadRailWindow();
 

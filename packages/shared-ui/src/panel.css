@@ -571,6 +571,7 @@
   line-height: 1.4;
   color: var(--message-bubble-text);
   white-space: pre-wrap;
+  overflow-wrap: anywhere;
   word-break: break-word;
 }
 

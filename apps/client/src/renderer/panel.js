@@ -820,6 +820,8 @@ async function setPanelDisplayMode(mode, options = {}) {
   const resize = options.resize !== false;
   const shouldResizeBeforeDomUpdate =
     !isSettingsWindow && resize && nextMode === "buttons" && previousMode !== "buttons";
+  const shouldKeepMessagesPinned =
+    nextMode !== "buttons" && isMessageListPinnedToBottom();
 
   const resizePanelWindow = (resizeOptions = {}) => window.pipPanel
     .setSettingsExpanded?.({
@@ -853,6 +855,10 @@ async function setPanelDisplayMode(mode, options = {}) {
 
   if (!isSettingsWindow && resize && !shouldResizeBeforeDomUpdate) {
     await resizePanelWindow();
+  }
+
+  if (shouldKeepMessagesPinned) {
+    requestAnimationFrame(scrollMessageListToLatest);
   }
 
   if (!isSettingsWindow && persist) {
@@ -1804,11 +1810,7 @@ function renderChatMessages() {
     return;
   }
 
-  const wasPinnedToBottom =
-    messageList.scrollHeight -
-      messageList.scrollTop -
-      messageList.clientHeight <
-    24;
+  const wasPinnedToBottom = isMessageListPinnedToBottom();
   const messages = getVisibleChatMessages();
 
   if (messages.length === 0) {
@@ -1857,7 +1859,8 @@ function renderChatMessages() {
 
   if (wasPinnedToBottom) {
     requestAnimationFrame(() => {
-      messageList.scrollTop = messageList.scrollHeight;
+      scrollMessageListToLatest();
+      requestAnimationFrame(scrollMessageListToLatest);
       updateMessageScrollbar();
     });
   } else {
@@ -1943,6 +1946,43 @@ function focusMessageComposer() {
   messageComposeInput.focus({ preventScroll: true });
   const textLength = messageComposeInput.value.length;
   messageComposeInput.setSelectionRange(textLength, textLength);
+}
+
+function isMessageListPinnedToBottom() {
+  if (!messageList || messageList.clientHeight <= 0) {
+    return true;
+  }
+
+  return messageList.scrollHeight - messageList.scrollTop - messageList.clientHeight < 24;
+}
+
+function scrollMessageListToLatest() {
+  if (!messageList) {
+    return;
+  }
+
+  const maxScroll = Math.max(0, messageList.scrollHeight - messageList.clientHeight);
+  const latestMessage = messageList.lastElementChild;
+
+  if (latestMessage instanceof HTMLElement && messageList.clientHeight > 0) {
+    const listStyle = window.getComputedStyle(messageList);
+    const paddingBottom = Number.parseFloat(listStyle.paddingBottom) || 0;
+    const latestHeight = latestMessage.offsetHeight;
+    const latestBottom = latestMessage.offsetTop + latestHeight;
+    const availableHeight = messageList.clientHeight - paddingBottom;
+
+    if (latestHeight <= availableHeight) {
+      messageList.scrollTop = Math.max(
+        0,
+        Math.min(maxScroll, latestBottom + paddingBottom - messageList.clientHeight),
+      );
+      updateMessageScrollbar();
+      return;
+    }
+  }
+
+  messageList.scrollTop = maxScroll;
+  updateMessageScrollbar();
 }
 
 function updateMessageScrollbar() {
@@ -3997,6 +4037,7 @@ panelExpandButton?.addEventListener("click", async () => {
   try {
     const result = await window.pipPanel.expandWindow?.();
     if (result?.isExpanded !== undefined) {
+      document.body.dataset.expanded = result.isExpanded ? "true" : "false";
       panelExpandButton.classList.toggle("is-active", result.isExpanded);
       panelExpandButton.setAttribute(
         "aria-label",
