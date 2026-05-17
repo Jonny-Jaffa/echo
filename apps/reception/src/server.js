@@ -947,7 +947,9 @@ async function createReceptionServer({
 
   function createChatMessagePayload(message = {}) {
     const currentConfig = getConfig();
-    const rooms = Array.isArray(currentConfig?.rooms) ? currentConfig.rooms : [];
+    const rooms = Array.isArray(currentConfig?.rooms)
+      ? currentConfig.rooms.filter((room) => !room.hideFromEntireUI)
+      : [];
     const normalizedText = String(message.text || "").trim().slice(0, MAX_CHAT_TEXT_LENGTH);
     const senderType = String(message.senderType || "").trim().toLowerCase();
     const senderRoomId = String(message.senderRoomId || "").trim();

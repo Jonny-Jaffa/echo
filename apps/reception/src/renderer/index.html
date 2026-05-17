@@ -36,6 +36,14 @@
         </div>
       </section>
 
+      <aside class="thread-rail message-thread-bar no-drag" id="thread-sidebar" aria-label="Message threads">
+        <div class="message-thread-scroll-wrap">
+          <button class="message-thread-scroll-button is-scroll-left" id="thread-sidebar-scroll-up" type="button" aria-label="Scroll up" title="Scroll up" hidden>Scroll up</button>
+          <div class="message-thread-list" id="thread-sidebar-list"></div>
+          <button class="message-thread-scroll-button is-scroll-right" id="thread-sidebar-scroll-down" type="button" aria-label="Scroll down" title="Scroll down" hidden>Scroll down</button>
+        </div>
+      </aside>
+
       <section class="gadget-panel panel-card drag-region">
         <div class="status-row drag-region">
           <div class="brand-lockup">
@@ -47,11 +55,12 @@
             <div class="compact-mode-dropdown">
               <button class="icon-action-button compact-mode-button" id="compact-mode-button" type="button" aria-label="Toggle compact view" aria-expanded="false">Compact view</button>
               <div class="compact-mode-menu hidden" id="compact-mode-menu">
+                <button class="compact-mode-option" id="toggle-messaging-view-button" type="button">Show Messaging</button>
+                <div class="compact-mode-divider" role="separator"></div>
                 <button class="compact-mode-option" data-compact-mode="false" type="button">Normal View</button>
                 <button class="compact-mode-option" data-compact-mode="true" type="button">Compact View</button>
               </div>
             </div>
-            <button class="icon-action-button message-all-header-button" id="chat-all-header-button" type="button" aria-label="Message All Rooms" title="Message All Rooms">Message All Rooms</button>
             <button class="icon-action-button settings-button" id="admin-mode-button" type="button" aria-label="Settings">Settings</button>
             <button class="icon-action-button expand-window-button" id="expand-window-button" type="button" aria-label="Expand window" title="Expand window">Expand window</button>
             <button class="icon-action-button minimize-window-button" id="minimize-window-button" type="button" aria-label="Minimise window">Minimise window</button>
@@ -66,6 +75,16 @@
         <section class="message-shell reception-message-shell" id="chat-card">
           <div class="message-context-bar">
             <div class="message-context-copy">
+              <button
+                class="thread-rail-toggle"
+                id="thread-sidebar-toggle"
+                type="button"
+                aria-label="Collapse message threads"
+                aria-expanded="true"
+                title="Collapse message threads"
+              >
+                Message threads
+              </button>
               <span class="message-context-label" id="chat-context-label">Select a room</span>
             </div>
           </div>
@@ -112,7 +131,7 @@
         <div class="settings-layout">
           <aside class="settings-sidebar" aria-label="Settings sections">
             <button class="settings-sidebar-link is-active" type="button" data-settings-section-link="reception-settings-general">General</button>
-            <button class="settings-sidebar-link" type="button" data-settings-section-link="reception-settings-rooms">Rooms</button>
+            <button class="settings-sidebar-link" type="button" data-settings-section-link="reception-settings-rooms">Room/User</button>
             <button class="settings-sidebar-link" type="button" data-settings-section-link="reception-settings-sounds">Sounds</button>
             <button class="settings-sidebar-link" type="button" data-settings-section-link="reception-settings-alert-message">Alert Message</button>
             <button class="settings-sidebar-link" type="button" data-settings-section-link="reception-settings-messaging">Messaging</button>
@@ -170,7 +189,7 @@
               </div>
               <div class="settings-grid">
                 <label class="field full-width-field">
-                  <span>Room alert message</span>
+                  <span>Room/User alert message</span>
                   <input id="reception-ping-message-input" name="display.receptionPingMessage" type="text" maxlength="40" autocomplete="off" spellcheck="false" />
                 </label>
                 <p class="settings-hint full-width-field">Shown in surgery banners, popups, and Neo displays when Reception requests attention.</p>
@@ -180,9 +199,9 @@
             <section class="editor-card settings-tab-section" id="reception-settings-rooms" data-settings-section="reception-settings-rooms" hidden>
               <div class="editor-head">
                 <div>
-                  <h3>Rooms</h3>
+                  <h3>Room/User</h3>
                 </div>
-                <button class="small-button" id="add-room-button" type="button">Add Room</button>
+                <button class="small-button" id="add-room-button" type="button">Add Room/User</button>
               </div>
               <div class="list-editor" id="rooms-editor"></div>
             </section>

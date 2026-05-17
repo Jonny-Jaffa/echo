@@ -263,7 +263,7 @@ function getMessageThreadAccent(thread) {
 }
 
 function getVisibleConfigRooms() {
-  return (configState?.rooms || []).filter((room) => !room.hidden);
+  return (configState?.rooms || []).filter((room) => !room.hideFromEntireUI);
 }
 
 function canUseAllRoomsMessageThread() {
@@ -672,7 +672,8 @@ function saveRoomMessageThreadOrder() {
 }
 
 function loadMessageThreadRailCollapsed() {
-  return localStorage.getItem(MESSAGE_THREAD_RAIL_COLLAPSED_STORAGE_KEY) === "true";
+  const storedValue = localStorage.getItem(MESSAGE_THREAD_RAIL_COLLAPSED_STORAGE_KEY);
+  return storedValue === null ? true : storedValue === "true";
 }
 
 function setMessageThreadRailCollapsed(collapsed) {

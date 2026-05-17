@@ -25,7 +25,6 @@ const chatRecipientDrawerClose = document.querySelector("#chat-recipient-drawer-
 const chatRecipientDrawerList = document.querySelector("#chat-recipient-drawer-list");
 const chatContextLabel = document.querySelector("#chat-context-label");
 const chatAllRoomsButton = document.querySelector("#chat-all-rooms-button");
-const chatAllHeaderButton = document.querySelector("#chat-all-header-button");
 const chatCollapseButton = document.querySelector("#chat-collapse-button");
 const chatMessageList = document.querySelector("#chat-message-list");
 const chatComposeInput = document.querySelector("#chat-compose-input");
@@ -35,6 +34,11 @@ const chatEmojiPicker = document.querySelector("#chat-emoji-picker");
 const chatAttachmentInput = document.querySelector("#chat-attachment-input");
 const chatAttachmentButton = document.querySelector("#chat-attachment-button");
 const chatAttachmentList = document.querySelector("#chat-attachment-list");
+const threadSidebar = document.querySelector("#thread-sidebar");
+const threadSidebarToggle = document.querySelector("#thread-sidebar-toggle");
+const threadSidebarList = document.querySelector("#thread-sidebar-list");
+const threadSidebarScrollUp = document.querySelector("#thread-sidebar-scroll-up");
+const threadSidebarScrollDown = document.querySelector("#thread-sidebar-scroll-down");
 const settingsSidebarLinks = [...document.querySelectorAll("[data-settings-section-link]")];
 const settingsTabSections = [...document.querySelectorAll("[data-settings-section]")];
 const adminFeedback = document.querySelector("#admin-feedback");
@@ -42,6 +46,7 @@ const adminModeButton = document.querySelector("#admin-mode-button");
 const compactModeButton = document.querySelector("#compact-mode-button");
 const compactModeMenu = document.querySelector("#compact-mode-menu");
 const compactModeOptions = document.querySelectorAll(".compact-mode-option");
+const toggleMessagingViewButton = document.querySelector("#toggle-messaging-view-button");
 const expandWindowButton = document.querySelector("#expand-window-button");
 const expandAdminButton = document.querySelector("#expand-admin-button");
 const minimizeWindowButton = document.querySelector("#minimize-window-button");
@@ -92,6 +97,8 @@ const RECEPTION_SOUND_OPTIONS = Array.from({ length: 17 }, (_value, index) => {
 });
 const PINNED_CHAT_ROOMS_STORAGE_KEY = "pip-reception-pinned-chat-rooms";
 const CHAT_ROOM_ORDER_STORAGE_KEY = "pip-reception-chat-room-order";
+const THREAD_SIDEBAR_COLLAPSED_STORAGE_KEY = "pip-reception-thread-sidebar-collapsed";
+const THREAD_SIDEBAR_ORDER_STORAGE_KEY = "pip-reception-thread-sidebar-order";
 const RECEPTION_ALL_ROOMS_MESSAGE_GROUP_KEY = "reception-all-rooms";
 const ROOM_SHORT_NAME_MAX_LENGTH = 7;
 const NEUTRAL_MESSAGE_STRIP_BACKGROUND =
@@ -129,11 +136,15 @@ let hasUnreadAllRoomsMessage = false;
 let isAllChatRoomsThreadSelected = false;
 let pinnedChatRoomIds = loadPinnedChatRoomIds();
 let chatRoomOrderIds = loadChatRoomOrderIds();
+let threadSidebarOrderKeys = loadThreadSidebarOrderKeys();
 let isChatRecipientDrawerVisible = false;
 let isMessageSectionVisible = false;
+let isThreadSidebarCollapsed = loadThreadSidebarCollapsed();
 let hasRestoredMessageSectionVisibility = false;
 let draggedChatRoomId = "";
 let draggedChatRoomSource = "";
+let draggedThreadSidebarKey = "";
+let draggedThreadSidebarSource = "";
 
 function formatRuntimeRoleLabel(runtimeRole) {
   return runtimeRole === "room" ? "Room" : "Reception";
@@ -171,7 +182,11 @@ function getRoomById(roomId, state = appState) {
 }
 
 function getVisibleRooms(state = appState) {
-  return (state?.config?.rooms || []).filter((room) => !room.hidden);
+  return (state?.config?.rooms || []).filter((room) => !room.hideFromEntireUI);
+}
+
+function getAlertVisibleRooms(state = appState) {
+  return getVisibleRooms(state).filter((room) => !room.hideFromAlertSection);
 }
 
 function canUseAllRoomsThread(state = appState) {
@@ -232,6 +247,33 @@ function loadChatRoomOrderIds() {
   } catch {
     return [];
   }
+}
+
+function loadThreadSidebarCollapsed() {
+  const storedValue = localStorage.getItem(THREAD_SIDEBAR_COLLAPSED_STORAGE_KEY);
+  return storedValue === null ? true : storedValue === "true";
+}
+
+function loadThreadSidebarOrderKeys() {
+  try {
+    const parsed = JSON.parse(localStorage.getItem(THREAD_SIDEBAR_ORDER_STORAGE_KEY) || "[]");
+    return Array.isArray(parsed)
+      ? parsed.map((threadKey) => String(threadKey || "").trim()).filter(Boolean)
+      : [];
+  } catch {
+    return [];
+  }
+}
+
+function saveThreadSidebarCollapsed() {
+  localStorage.setItem(THREAD_SIDEBAR_COLLAPSED_STORAGE_KEY, isThreadSidebarCollapsed ? "true" : "false");
+}
+
+function saveThreadSidebarOrderKeys() {
+  localStorage.setItem(
+    THREAD_SIDEBAR_ORDER_STORAGE_KEY,
+    JSON.stringify([...new Set(threadSidebarOrderKeys)].filter(Boolean)),
+  );
 }
 
 function savePinnedChatRoomIds() {
@@ -367,7 +409,7 @@ function renderAlertList(state) {
     ...(state.activeNotification ? [state.activeNotification] : []),
     ...(state.queuedNotifications || []),
   ];
-  const rooms = getVisibleRooms(state);
+  const rooms = getAlertVisibleRooms(state);
 
   if (state.config?.display?.compactMode) {
     alertList.innerHTML = renderCompactAlertList(state, rooms, alerts);
@@ -669,6 +711,8 @@ function persistMessageSectionVisibility() {
 function showMessageSection(options = {}) {
   isMessageSectionVisible = true;
   document.body.dataset.messagesHidden = "false";
+  renderThreadSidebar(appState);
+  syncMessagingViewMenuItem();
   if (options.persist) {
     persistMessageSectionVisibility();
   }
@@ -678,6 +722,8 @@ function hideMessageSection(options = {}) {
   isMessageSectionVisible = false;
   document.body.dataset.messagesHidden = "true";
   setManualMessageExtraHeight(0);
+  renderThreadSidebar(appState);
+  syncMessagingViewMenuItem();
   if (options.persist) {
     persistMessageSectionVisibility();
   }
@@ -714,17 +760,7 @@ function syncMessageContext(state = appState) {
   chatAllRoomsButton?.classList.toggle("is-active", isAllRoomsSelected);
   chatAllRoomsButton?.classList.toggle("is-hidden", !canShowAllRoomsThread || isAllRoomsSelected);
   chatAllRoomsButton?.classList.toggle("is-unread", canShowAllRoomsThread && hasUnreadAllRoomsMessage && !isAllRoomsSelected);
-  chatAllHeaderButton?.classList.toggle("is-unread", canShowAllRoomsThread && hasUnreadAllRoomsMessage && !isAllRoomsSelected);
-  if (chatAllHeaderButton) {
-    const singleRoom = getVisibleRooms(state)[0] || null;
-    const headerLabel = canShowAllRoomsThread
-      ? "Message All Rooms"
-      : singleRoom
-        ? `Message ${singleRoom.name}`
-        : "Message rooms";
-    chatAllHeaderButton.setAttribute("aria-label", headerLabel);
-    chatAllHeaderButton.setAttribute("title", headerLabel);
-  }
+  syncMessagingViewMenuItem();
 
   if (!chatCard) {
     return;
@@ -933,6 +969,158 @@ function renderChatRecipients(state) {
   syncMessageContext(state);
 }
 
+function getThreadSidebarItems(state = appState) {
+  const rooms = getVisibleRooms(state);
+  const orderedRooms = orderRoomsByIds(rooms, chatRoomOrderIds);
+  const items = orderedRooms.map((room) => ({
+    key: room.id,
+    label: room.name,
+    displayLabel: getRoomShortLabel(room),
+    accent: room.color || "#0f766e",
+    unread: unreadChatRoomIds.has(room.id),
+    active: !isAllChatRoomsThreadSelected && selectedChatRoomIds.size === 1 && selectedChatRoomIds.has(room.id),
+  }));
+
+  const threads = canUseAllRoomsThread(state)
+    ? [{
+        key: "all",
+        label: "All Rooms",
+        displayLabel: "All",
+        accent: "#879293",
+        unread: hasUnreadAllRoomsMessage && !isAllChatRoomsThreadSelected,
+        active: isAllChatRoomsThreadSelected,
+      }, ...items]
+    : items;
+  const threadKeys = threads.map((thread) => thread.key);
+  threadSidebarOrderKeys = [
+    ...threadSidebarOrderKeys.filter((threadKey) => threadKeys.includes(threadKey)),
+    ...threadKeys.filter((threadKey) => !threadSidebarOrderKeys.includes(threadKey)),
+  ];
+  saveThreadSidebarOrderKeys();
+
+  return threadSidebarOrderKeys
+    .map((threadKey) => threads.find((thread) => thread.key === threadKey))
+    .filter(Boolean);
+}
+
+function renderThreadSidebar(state = appState) {
+  if (!threadSidebar || !threadSidebarList) {
+    return;
+  }
+
+  const items = getThreadSidebarItems(state);
+  const shouldShowRail = items.length > 0 && isMessageSectionVisible && !isSettingsWindow && !isRoleWindow;
+  document.body.dataset.threadRailAvailable = shouldShowRail ? "true" : "false";
+  document.body.dataset.threadRailCollapsed = isThreadSidebarCollapsed ? "true" : "false";
+  threadSidebar.classList.toggle("hidden", !shouldShowRail);
+  threadSidebar.classList.toggle("is-collapsed", isThreadSidebarCollapsed);
+  threadSidebarToggle?.setAttribute("aria-expanded", isThreadSidebarCollapsed ? "false" : "true");
+  if (threadSidebarToggle) {
+    threadSidebarToggle.setAttribute(
+      "aria-label",
+      isThreadSidebarCollapsed ? "Expand message threads" : "Collapse message threads",
+    );
+    threadSidebarToggle.title = isThreadSidebarCollapsed ? "Expand message threads" : "Collapse message threads";
+  }
+
+  threadSidebarList.innerHTML = items
+    .map((thread) => `
+      <button
+        class="message-thread-chip ${thread.active ? "is-active" : ""} ${thread.key === "all" ? "is-all-rooms" : ""} ${thread.unread ? "is-unread" : ""}"
+        style="--thread-accent: ${escapeHtml(thread.accent || "#0f766e")};"
+        data-message-thread-key="${escapeHtml(thread.key)}"
+        data-message-thread-drag-source="threads"
+        draggable="true"
+        type="button"
+        title="${escapeHtml(thread.label)}"
+      >
+        <span>${escapeHtml(thread.displayLabel || thread.label)}</span>
+        ${thread.unread ? '<span class="message-thread-dot" aria-hidden="true"></span>' : ""}
+      </button>
+    `)
+    .join("");
+  updateThreadSidebarRailAlignment();
+  requestAnimationFrame(updateThreadSidebarScrollButtons);
+}
+
+function updateThreadSidebarRailAlignment() {
+  if (!threadSidebar || !chatCard || threadSidebar.classList.contains("hidden")) {
+    return;
+  }
+
+  const rect = chatCard.getBoundingClientRect();
+  threadSidebar.style.setProperty("--thread-rail-top", `${Math.max(8, Math.round(rect.top || 8))}px`);
+}
+
+function updateThreadSidebarScrollButtons() {
+  if (!threadSidebarList || !threadSidebarScrollUp || !threadSidebarScrollDown) {
+    return;
+  }
+
+  const hasOverflow = threadSidebarList.scrollHeight - threadSidebarList.clientHeight > 2;
+  const atStart = threadSidebarList.scrollTop <= 2;
+  const atEnd = threadSidebarList.scrollTop + threadSidebarList.clientHeight >= threadSidebarList.scrollHeight - 2;
+
+  threadSidebarList.classList.toggle("has-overflow", hasOverflow);
+  threadSidebarScrollUp.hidden = !hasOverflow || atStart;
+  threadSidebarScrollDown.hidden = !hasOverflow || atEnd;
+}
+
+function scrollThreadSidebarPage(direction) {
+  if (!threadSidebarList) {
+    return;
+  }
+
+  const delta = Math.max(42, threadSidebarList.clientHeight - 24) * Math.sign(direction || 1);
+  threadSidebarList.scrollBy({ top: delta, behavior: "smooth" });
+}
+
+function toggleThreadSidebarCollapsed() {
+  if (document.body.dataset.threadRailAvailable !== "true") {
+    return;
+  }
+
+  isThreadSidebarCollapsed = !isThreadSidebarCollapsed;
+  saveThreadSidebarCollapsed();
+  renderThreadSidebar(appState);
+  reportGadgetHeight();
+}
+
+function selectThreadSidebarThread(threadKey) {
+  if (threadKey === "all") {
+    selectAllChatRooms(appState);
+  } else {
+    selectChatRoom(threadKey);
+  }
+
+  showMessageSection({ persist: true });
+  renderAlertList(appState);
+  renderChatRecipients(appState);
+  renderThreadSidebar(appState);
+  renderChatMessages(appState);
+  syncChatComposerState();
+  reportGadgetHeight();
+}
+
+function toggleMessagingSection() {
+  if (isMessageSectionVisible) {
+    hideMessageSection({ persist: true });
+    renderAlertList(appState);
+    reportGadgetHeight();
+    return;
+  }
+
+  selectHeaderMessageTarget(appState);
+  showMessageSection({ persist: true });
+  renderAlertList(appState);
+  renderChatRecipients(appState);
+  renderThreadSidebar(appState);
+  renderChatMessages(appState);
+  syncChatComposerState();
+  reportGadgetHeight();
+  requestAnimationFrame(focusChatComposer);
+}
+
 function renderChatMessages(state) {
   if (!chatMessageList) {
     return;
@@ -1113,6 +1301,15 @@ function syncChatComposerState() {
       : "select a room";
 }
 
+function syncMessagingViewMenuItem() {
+  if (!toggleMessagingViewButton) {
+    return;
+  }
+
+  toggleMessagingViewButton.textContent = isMessageSectionVisible ? "Hide Messaging" : "Show Messaging";
+  toggleMessagingViewButton.classList.toggle("is-active", isMessageSectionVisible);
+}
+
 function updateChatComposerHeight() {
   if (!chatComposeInput) {
     return;
@@ -1272,9 +1469,14 @@ function applyState(state) {
     compactModeButton.classList.toggle("is-active", Boolean(state.config.display.compactMode));
   }
   compactModeOptions.forEach((option) => {
+    if (!option.hasAttribute("data-compact-mode")) {
+      return;
+    }
+
     const isActive = option.getAttribute("data-compact-mode") === String(state.config.display.compactMode);
     option.classList.toggle("is-active", isActive);
   });
+  syncMessagingViewMenuItem();
   document.body.dataset.windowView = windowView;
   document.body.dataset.minimized = !isSettingsWindow && state.config.display.minimized ? "true" : "false";
   document.body.dataset.adminMode = isSettingsWindow ? "true" : "false";
@@ -1301,6 +1503,7 @@ function applyState(state) {
   updateDetectedServerAddress(state);
   renderAlertList(state);
   renderChatRecipients(state);
+  renderThreadSidebar(state);
   renderChatMessages(state);
   updateChatComposerHeight();
   syncChatComposerState();
@@ -1393,6 +1596,7 @@ function updateManualMessageExtraHeight() {
     isSettingsWindow ||
     !appState ||
     appState.config.display.minimized ||
+    document.body.dataset.compactMode === "true" ||
     document.body.dataset.messagesHidden === "true"
   ) {
     setManualMessageExtraHeight(0);
@@ -1480,22 +1684,30 @@ function renderRooms() {
       (room, index) => `
         <article class="editor-item">
           <div class="item-grid room-grid">
-            <label class="field">
+            <label class="field room-name-field">
               <span>Name</span>
               <input data-entity="room" data-index="${index}" data-key="name" type="text" maxlength="10" value="${escapeHtml(room.name)}" />
             </label>
-            <label class="field">
+            <label class="field room-short-field">
               <span>Short label</span>
               <input data-entity="room" data-index="${index}" data-key="shortName" type="text" maxlength="${ROOM_SHORT_NAME_MAX_LENGTH}" value="${escapeHtml(room.shortName || getDefaultRoomShortLabel(room.name, room.id, index))}" />
             </label>
-            <label class="field checkbox-field room-visibility-field">
-              <input data-entity="room" data-index="${index}" data-key="hidden" type="checkbox" ${room.hidden ? "checked" : ""} />
-              <span>Hide from UI</span>
-            </label>
             <div class="field room-remove-field">
-              <span>&nbsp;</span>
               <div class="room-remove-wrap">
                 <button class="danger-button inline-remove-button" data-remove="room" data-index="${index}" type="button">Remove</button>
+              </div>
+            </div>
+            <div class="field room-visibility-group">
+              <span>Visibility</span>
+              <div class="room-visibility-options">
+                <label class="checkbox-field room-visibility-field" title="Keeps this Room/User out of the Reception alert list while preserving its message thread. Cannot be enabled with Hide from entire UI.">
+                  <input data-entity="room" data-index="${index}" data-key="hideFromAlertSection" type="checkbox" ${room.hideFromAlertSection ? "checked" : ""} ${room.hideFromEntireUI && !room.hideFromAlertSection ? "disabled" : ""} />
+                  <span>Hide from alert section</span>
+                </label>
+                <label class="checkbox-field room-visibility-field" title="Removes this Room/User from alert controls and message thread UI. Cannot be enabled with Hide from alert section.">
+                  <input data-entity="room" data-index="${index}" data-key="hideFromEntireUI" type="checkbox" ${room.hideFromEntireUI ? "checked" : ""} ${room.hideFromAlertSection && !room.hideFromEntireUI ? "disabled" : ""} />
+                  <span>Hide from entire UI</span>
+                </label>
               </div>
             </div>
             <label class="field colour-field room-colour-field">
@@ -1675,6 +1887,15 @@ function updateDraftField(target) {
   if (entity === "room") {
     if (target instanceof HTMLInputElement && target.type === "checkbox") {
       draftConfig.rooms[index][key] = target.checked;
+      if (key === "hideFromAlertSection" && target.checked) {
+        draftConfig.rooms[index].hideFromEntireUI = false;
+      }
+      if (key === "hideFromEntireUI" && target.checked) {
+        draftConfig.rooms[index].hideFromAlertSection = false;
+      }
+      if (key === "hideFromAlertSection" || key === "hideFromEntireUI") {
+        renderRooms();
+      }
       return;
     }
 
@@ -1807,6 +2028,7 @@ alertList?.addEventListener("click", async (event) => {
     showMessageSection({ persist: true });
     renderAlertList(appState);
     renderChatRecipients(appState);
+    renderThreadSidebar(appState);
     renderChatMessages(appState);
     syncChatComposerState();
     reportGadgetHeight();
@@ -1828,11 +2050,21 @@ compactModeButton?.addEventListener("click", () => {
 
 compactModeOptions.forEach((option) => {
   option.addEventListener("click", async () => {
+    if (!option.hasAttribute("data-compact-mode")) {
+      return;
+    }
+
     const compactMode = option.getAttribute("data-compact-mode") === "true";
     await window.pip.updateDisplaySettings({ compactMode });
     compactModeButton.setAttribute("aria-expanded", "false");
     compactModeMenu?.classList.add("hidden");
   });
+});
+
+toggleMessagingViewButton?.addEventListener("click", () => {
+  toggleMessagingSection();
+  compactModeButton?.setAttribute("aria-expanded", "false");
+  compactModeMenu?.classList.add("hidden");
 });
 
 document.addEventListener("pointerdown", (event) => {
@@ -1850,6 +2082,24 @@ document.body.addEventListener("dragstart", (event) => {
   const target = event.target;
 
   if (!(target instanceof HTMLElement)) {
+    return;
+  }
+
+  const threadDragItem = target.closest("[data-message-thread-drag-source][data-message-thread-key]");
+
+  if (threadDragItem) {
+    draggedThreadSidebarKey = String(threadDragItem.getAttribute("data-message-thread-key") || "").trim();
+    draggedThreadSidebarSource = String(threadDragItem.getAttribute("data-message-thread-drag-source") || "").trim();
+
+    if (!draggedThreadSidebarKey || !draggedThreadSidebarSource) {
+      return;
+    }
+
+    threadDragItem.classList.add("is-dragging");
+    event.dataTransfer?.setData("text/plain", draggedThreadSidebarKey);
+    if (event.dataTransfer) {
+      event.dataTransfer.effectAllowed = "move";
+    }
     return;
   }
 
@@ -1879,12 +2129,36 @@ document.body.addEventListener("dragend", () => {
   });
   draggedChatRoomId = "";
   draggedChatRoomSource = "";
+  draggedThreadSidebarKey = "";
+  draggedThreadSidebarSource = "";
 });
 
 document.body.addEventListener("dragover", (event) => {
   const target = event.target;
 
-  if (!(target instanceof HTMLElement) || !draggedChatRoomId) {
+  if (!(target instanceof HTMLElement)) {
+    return;
+  }
+
+  if (draggedThreadSidebarKey) {
+    const threadDropItem = target.closest("[data-message-thread-drag-source][data-message-thread-key]");
+
+    if (
+      !threadDropItem ||
+      String(threadDropItem.getAttribute("data-message-thread-drag-source") || "") !== draggedThreadSidebarSource
+    ) {
+      return;
+    }
+
+    event.preventDefault();
+    if (event.dataTransfer) {
+      event.dataTransfer.dropEffect = "move";
+    }
+    threadDropItem.classList.add("is-drag-over");
+    return;
+  }
+
+  if (!draggedChatRoomId) {
     return;
   }
 
@@ -1909,13 +2183,34 @@ document.body.addEventListener("dragleave", (event) => {
 
   if (target instanceof HTMLElement) {
     target.closest("[data-chat-drag-source]")?.classList.remove("is-drag-over");
+    target.closest("[data-message-thread-drag-source]")?.classList.remove("is-drag-over");
   }
 });
 
 document.body.addEventListener("drop", (event) => {
   const target = event.target;
 
-  if (!(target instanceof HTMLElement) || !draggedChatRoomId) {
+  if (!(target instanceof HTMLElement)) {
+    return;
+  }
+
+  if (draggedThreadSidebarKey) {
+    const threadDropItem = target.closest("[data-message-thread-drag-source][data-message-thread-key]");
+    const targetThreadKey = String(threadDropItem?.getAttribute("data-message-thread-key") || "").trim();
+    const targetSource = String(threadDropItem?.getAttribute("data-message-thread-drag-source") || "").trim();
+
+    if (!targetThreadKey || targetSource !== draggedThreadSidebarSource) {
+      return;
+    }
+
+    event.preventDefault();
+    threadSidebarOrderKeys = reorderIds(threadSidebarOrderKeys, draggedThreadSidebarKey, targetThreadKey);
+    saveThreadSidebarOrderKeys();
+    renderThreadSidebar(appState);
+    return;
+  }
+
+  if (!draggedChatRoomId) {
     return;
   }
 
@@ -1938,6 +2233,7 @@ document.body.addEventListener("drop", (event) => {
   }
 
   renderChatRecipients(appState);
+  renderThreadSidebar(appState);
 });
 
 async function toggleExpandWindow() {
@@ -2017,7 +2313,8 @@ addRoomButton?.addEventListener("click", () => {
     id: `room-${nextRoomNumber}`,
     name: `Room ${nextRoomNumber}`,
     shortName: getDefaultRoomShortLabel(`Room ${nextRoomNumber}`, `room-${nextRoomNumber}`, nextRoomNumber - 1),
-    hidden: false,
+    hideFromAlertSection: false,
+    hideFromEntireUI: false,
     notifications: (baseRoom.notifications || []).map((notification, notificationIndex) => ({
       ...notification,
       id: `room-${nextRoomNumber}-action-${notificationIndex + 1}`,
@@ -2138,36 +2435,45 @@ chatCard?.addEventListener("drop", (event) => {
   addChatAttachmentFiles(event.dataTransfer?.files).catch(() => {});
 });
 
-chatAllHeaderButton?.addEventListener("click", () => {
-  const visibleRooms = getVisibleRooms(appState);
-  const isSingleRoomSelected =
-    visibleRooms.length === 1 &&
-    !isAllChatRoomsThreadSelected &&
-    selectedChatRoomIds.size === 1 &&
-    selectedChatRoomIds.has(visibleRooms[0].id);
-
-  if (isMessageSectionVisible && (areAllRoomsSelected(appState) || isSingleRoomSelected)) {
-    hideMessageSection({ persist: true });
-    renderAlertList(appState);
-    reportGadgetHeight();
-    return;
-  }
-
-  selectHeaderMessageTarget(appState);
-  showMessageSection({ persist: true });
-  renderAlertList(appState);
-  renderChatRecipients(appState);
-  renderChatMessages(appState);
-  syncChatComposerState();
-  reportGadgetHeight();
-  requestAnimationFrame(focusChatComposer);
-});
-
 chatCollapseButton?.addEventListener("click", () => {
   hideMessageSection({ persist: true });
   renderAlertList(appState);
   reportGadgetHeight();
 });
+
+threadSidebarToggle?.addEventListener("click", toggleThreadSidebarCollapsed);
+
+chatContextLabel?.addEventListener("click", (event) => {
+  if (document.body.dataset.threadRailAvailable !== "true") {
+    return;
+  }
+
+  const labelRect = chatContextLabel.getBoundingClientRect();
+
+  if (event.clientX - labelRect.left <= 55) {
+    toggleThreadSidebarCollapsed();
+  }
+});
+
+threadSidebarList?.addEventListener("click", (event) => {
+  const target = event.target;
+
+  if (!(target instanceof HTMLElement)) {
+    return;
+  }
+
+  const threadChip = target.closest("[data-message-thread-key]");
+  const threadKey = String(threadChip?.getAttribute("data-message-thread-key") || "").trim();
+
+  if (threadKey) {
+    selectThreadSidebarThread(threadKey);
+    requestAnimationFrame(focusChatComposer);
+  }
+});
+
+threadSidebarList?.addEventListener("scroll", updateThreadSidebarScrollButtons, { passive: true });
+threadSidebarScrollUp?.addEventListener("click", () => scrollThreadSidebarPage(-1));
+threadSidebarScrollDown?.addEventListener("click", () => scrollThreadSidebarPage(1));
 
 chatAllRoomsButton?.addEventListener("click", () => {
   if (!canUseAllRoomsThread(appState)) {
@@ -2175,6 +2481,7 @@ chatAllRoomsButton?.addEventListener("click", () => {
     showMessageSection({ persist: true });
     renderAlertList(appState);
     renderChatRecipients(appState);
+    renderThreadSidebar(appState);
     renderChatMessages(appState);
     syncChatComposerState();
     reportGadgetHeight();
@@ -2186,6 +2493,7 @@ chatAllRoomsButton?.addEventListener("click", () => {
   showMessageSection({ persist: true });
   renderAlertList(appState);
   renderChatRecipients(appState);
+  renderThreadSidebar(appState);
   renderChatMessages(appState);
   syncChatComposerState();
   reportGadgetHeight();
@@ -2248,6 +2556,7 @@ document.body.addEventListener("click", (event) => {
       : [...pinnedChatRoomIds, roomId];
     savePinnedChatRoomIds();
     renderChatRecipients(appState);
+    renderThreadSidebar(appState);
     return;
   }
 
@@ -2266,6 +2575,7 @@ document.body.addEventListener("click", (event) => {
     }
 
     renderChatRecipients(appState);
+  renderThreadSidebar(appState);
     renderChatMessages(appState);
     syncChatComposerState();
     return;
@@ -2289,6 +2599,7 @@ document.body.addEventListener("click", (event) => {
     }
 
     renderChatRecipients(appState);
+  renderThreadSidebar(appState);
     renderChatMessages(appState);
     syncChatComposerState();
     return;
@@ -2517,6 +2828,7 @@ window.pip.onMessagePopupOpen?.((payload = {}) => {
   showMessageSection({ persist: true });
   renderAlertList(appState);
   renderChatRecipients(appState);
+  renderThreadSidebar(appState);
   renderChatMessages(appState);
   syncChatComposerState();
   reportGadgetHeight();
@@ -2541,6 +2853,7 @@ window.pip.onChatUpdate((messages) => {
   };
   renderAlertList(appState);
   renderChatRecipients(appState);
+  renderThreadSidebar(appState);
   renderChatMessages(appState);
   syncChatComposerState();
   reportGadgetHeight();

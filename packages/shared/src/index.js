@@ -13,6 +13,7 @@ export const RUNTIME_ROLE_OPTIONS = [
   RUNTIME_ROLE_RECEPTION,
   RUNTIME_ROLE_ROOM,
 ];
+export const CONFIG_SCHEMA_VERSION = 2;
 
 // Keep config-path resolution lazy so packaged surgery clients can import
 // shared helpers without requiring a local writable config file.
@@ -196,18 +197,20 @@ export function formatTime(isoString) {
   }).format(new Date(isoString));
 }
 
-export function normalizeConfig(config) {
-  const normalizedActions = normalizeLegacyActions(config.actions);
-  const normalizedMappings = normalizeLegacyMappings(config.buttonMappings);
+export function normalizeConfig(config = {}) {
+  const migratedConfig = migrateConfig(config || {});
+  const normalizedActions = normalizeLegacyActions(migratedConfig.actions);
+  const normalizedMappings = normalizeLegacyMappings(migratedConfig.buttonMappings);
   const fallbackNotifications = buildFallbackNotifications(normalizedActions, normalizedMappings);
-  const normalizedRooms = Array.isArray(config.rooms)
-    ? config.rooms.map((room, index) => ({
+  const normalizedRooms = Array.isArray(migratedConfig.rooms)
+    ? migratedConfig.rooms.map((room, index) => ({
         id: String(room.id || `room-${index + 1}`).trim(),
         name: String(room.name || `Room ${index + 1}`).trim().slice(0, 10),
         shortName: normalizeRoomShortName(room.shortName, room.name, room.id, index),
         color: String(room.color || "#0f766e").trim(),
         icon: String(room.icon || "").trim(),
-        hidden: Boolean(room.hidden),
+        hideFromAlertSection: Boolean(room.hideFromAlertSection),
+        hideFromEntireUI: Boolean(room.hideFromEntireUI),
         receptionSound: normalizeReceptionSound(room.receptionSound),
         notifications: normalizeNotifications(
           Array.isArray(room.notifications) ? room.notifications : fallbackNotifications,
@@ -221,85 +224,85 @@ export function normalizeConfig(config) {
       : fallbackNotifications;
 
   return {
-    version: Number(config.version) || 1,
-    lastUpdated: config.lastUpdated || new Date().toISOString(),
+    version: CONFIG_SCHEMA_VERSION,
+    lastUpdated: migratedConfig.lastUpdated || new Date().toISOString(),
     network: {
-      host: config.network?.host || "0.0.0.0",
-      port: Number(config.network?.port) || 3210,
+      host: migratedConfig.network?.host || "0.0.0.0",
+      port: Number(migratedConfig.network?.port) || 3210,
     },
     auth: {
-      accessKey: normalizeAccessKey(config.auth?.accessKey),
+      accessKey: normalizeAccessKey(migratedConfig.auth?.accessKey),
     },
     display: {
       alwaysOnTop:
-        typeof config.display?.alwaysOnTop === "boolean"
-          ? config.display.alwaysOnTop
+        typeof migratedConfig.display?.alwaysOnTop === "boolean"
+          ? migratedConfig.display.alwaysOnTop
           : true,
-      autoHideMs: Math.max(0, Number(config.display?.autoHideMs) || 0),
-      compactMode: config.display?.compactMode !== false,
-      expanded: Boolean(config.display?.expanded),
-      messagesVisible: Boolean(config.display?.messagesVisible),
-      minimized: Boolean(config.display?.minimized),
-      adminMode: Boolean(config.display?.adminMode),
+      autoHideMs: Math.max(0, Number(migratedConfig.display?.autoHideMs) || 0),
+      compactMode: migratedConfig.display?.compactMode !== false,
+      expanded: Boolean(migratedConfig.display?.expanded),
+      messagesVisible: Boolean(migratedConfig.display?.messagesVisible),
+      minimized: Boolean(migratedConfig.display?.minimized),
+      adminMode: Boolean(migratedConfig.display?.adminMode),
       launchAtStartup:
-        typeof config.display?.launchAtStartup === "boolean"
-          ? config.display.launchAtStartup
+        typeof migratedConfig.display?.launchAtStartup === "boolean"
+          ? migratedConfig.display.launchAtStartup
           : true,
-      messageRetentionMinutes: Math.max(1, Number(config.display?.messageRetentionMinutes) || 60),
-      popupPosition: normalizePopupPosition(config.display?.popupPosition),
-      receptionPingMessage: normalizeReceptionPingMessage(config.display?.receptionPingMessage),
-      windowPosition: normalizeWindowPosition(config.display?.windowPosition),
+      messageRetentionMinutes: Math.max(1, Number(migratedConfig.display?.messageRetentionMinutes) || 60),
+      popupPosition: normalizePopupPosition(migratedConfig.display?.popupPosition),
+      receptionPingMessage: normalizeReceptionPingMessage(migratedConfig.display?.receptionPingMessage),
+      windowPosition: normalizeWindowPosition(migratedConfig.display?.windowPosition),
     },
     hardware: {
       leftAuxButton: {
-        enabled: config.hardware?.leftAuxButton?.enabled !== false,
+        enabled: migratedConfig.hardware?.leftAuxButton?.enabled !== false,
         mode:
-          String(config.hardware?.leftAuxButton?.mode || "party")
+          String(migratedConfig.hardware?.leftAuxButton?.mode || "party")
             .trim()
             .toLowerCase() || "party",
       },
-      buttonAppearance: normalizeButtonAppearance(config.hardware?.buttonAppearance),
+      buttonAppearance: normalizeButtonAppearance(migratedConfig.hardware?.buttonAppearance),
     },
     audio: {
-      masterVolume: clampVolume(config.audio?.masterVolume),
+      masterVolume: clampVolume(migratedConfig.audio?.masterVolume),
       notificationSound: normalizeAudioNotificationSound(
-        config.audio?.notificationSound ?? config.rooms?.[0]?.receptionSound?.sound,
+        migratedConfig.audio?.notificationSound ?? migratedConfig.rooms?.[0]?.receptionSound?.sound,
       ),
-      messageVolume: clampVolume(config.audio?.messageVolume),
-      messageSound: normalizeAudioNotificationSound(config.audio?.messageSound),
+      messageVolume: clampVolume(migratedConfig.audio?.messageVolume),
+      messageSound: normalizeAudioNotificationSound(migratedConfig.audio?.messageSound),
     },
     features: {
-      ...(config.features || {}),
+      ...(migratedConfig.features || {}),
       attachments: {
-        enabled: config.features?.attachments?.enabled !== false,
+        enabled: migratedConfig.features?.attachments?.enabled !== false,
       },
     },
     attachments: {
-      ...(config.attachments || {}),
-      rootPath: String(config.attachments?.rootPath || "").trim(),
+      ...(migratedConfig.attachments || {}),
+      rootPath: String(migratedConfig.attachments?.rootPath || "").trim(),
       maxFileSizeBytes: Math.max(
         1,
-        Number(config.attachments?.maxFileSizeBytes) || DEFAULT_ATTACHMENT_MAX_FILE_SIZE_BYTES,
+        Number(migratedConfig.attachments?.maxFileSizeBytes) || DEFAULT_ATTACHMENT_MAX_FILE_SIZE_BYTES,
       ),
       maxFilesPerMessage: Math.max(
         1,
-        Number(config.attachments?.maxFilesPerMessage) || DEFAULT_ATTACHMENT_MAX_FILES_PER_MESSAGE,
+        Number(migratedConfig.attachments?.maxFilesPerMessage) || DEFAULT_ATTACHMENT_MAX_FILES_PER_MESSAGE,
       ),
       whitelistMimeTypes:
-        Array.isArray(config.attachments?.whitelistMimeTypes) && config.attachments.whitelistMimeTypes.length > 0
-          ? config.attachments.whitelistMimeTypes.map((mime) => String(mime || "").trim().toLowerCase()).filter(Boolean)
+        Array.isArray(migratedConfig.attachments?.whitelistMimeTypes) && migratedConfig.attachments.whitelistMimeTypes.length > 0
+          ? migratedConfig.attachments.whitelistMimeTypes.map((mime) => String(mime || "").trim().toLowerCase()).filter(Boolean)
           : DEFAULT_ATTACHMENT_WHITELIST_MIME_TYPES,
       cloud: {
-        enabled: Boolean(config.attachments?.cloud?.enabled),
-        provider: String(config.attachments?.cloud?.provider || "").trim(),
+        enabled: Boolean(migratedConfig.attachments?.cloud?.enabled),
+        provider: String(migratedConfig.attachments?.cloud?.provider || "").trim(),
       },
     },
     updates: {
-      ...(config.updates || {}),
+      ...(migratedConfig.updates || {}),
       manualDownloadUrl: String(
-        config.updates?.manualDownloadUrl ||
-          config.updates?.downloadUrl ||
-          config.updates?.url ||
+        migratedConfig.updates?.manualDownloadUrl ||
+          migratedConfig.updates?.downloadUrl ||
+          migratedConfig.updates?.url ||
           "",
       ).trim(),
     },
@@ -311,6 +314,30 @@ export function normalizeConfig(config) {
         : index,
       actionId: notification.id,
     })),
+  };
+}
+
+export function migrateConfig(config = {}) {
+  return {
+    ...config,
+    version: CONFIG_SCHEMA_VERSION,
+    rooms: Array.isArray(config.rooms)
+      ? config.rooms.map((room) => {
+          const hideFromEntireUI = Boolean(
+            room.hideFromEntireUI ?? room.hideRoomFromUI ?? room.hidden,
+          );
+
+          const nextRoom = {
+            ...room,
+            hideFromAlertSection: Boolean(room.hideFromAlertSection),
+            hideFromEntireUI,
+          };
+
+          delete nextRoom.hideRoomFromUI;
+          delete nextRoom.hidden;
+          return nextRoom;
+        })
+      : [],
   };
 }
 
@@ -437,6 +464,10 @@ export function validateConfig(config) {
 
     if (!room.name) {
       errors.push("Each surgery room needs a name.");
+    }
+
+    if (room.hideFromAlertSection && room.hideFromEntireUI) {
+      errors.push(`Room/User "${room.name}" cannot be hidden from both the alert section and the entire UI.`);
     }
 
     if (!VALID_RECEPTION_SOUNDS.has(room.receptionSound?.sound)) {

@@ -128,6 +128,7 @@ Phase 6: Unified Product and Role Selection
 - [x] Add always-on and minimized behavior settings
 - [x] Add dismiss and auto-hide controls
 - [x] Add notification queue handling
+ - [x] Add thread sidebar to Reception so non-room users can view and participate in message threads
 
 ### Phase 3: Config Panel
 
@@ -135,6 +136,10 @@ Phase 6: Unified Product and Role Selection
 - [x] Build button/action mapping editor
 - [ ] Support icon upload or asset selection
 - [x] Persist config edits safely
+ - [x] Add `Hide from alert section` toggle in room/user setup and rename existing `Hide room from UI` → `Hide from entire UI`
+ - [x] Enforce mutual exclusivity for `Hide from alert section` and `Hide from entire UI` at both UI and server/config validation layers
+ - [x] Change label `Room` to `Room/User` across Reception settings and UIs to support non-room users
+ - [x] Add config schema versioning and a migration to preserve and rename existing visibility settings
 
 ### Phase 4: Elgato Integration
 
@@ -170,6 +175,8 @@ Phase 6: Unified Product and Role Selection
 - [ ] Keep role-specific startup logic isolated per mode
 - [ ] Reuse shared shell/messaging/settings primitives where safe
 - [ ] Preserve existing messaging, room-action, and Neo workflows during the migration
+ - [x] Update developer docs and acceptance criteria to include thread sidebar, newly-named `Room/User` label, and visibility-toggle migration
+ - [x] Add automated tests for visibility toggles and server-side validation
 
 ## Working Assumptions
 
@@ -202,6 +209,7 @@ Phase 6: Unified Product and Role Selection
 - Confirmed the surgery client can connect to reception, receive config, and sync Neo key colors from mapped actions
 - Confirmed the surgery app now shows a "Reception Offline" banner when the WebSocket connection drops
 - Confirmed the settings panel now shows settings (not waiting view) when Reception is offline
+- Added Reception thread sidebar, Room/User visibility toggles, schema migration for `hideFromEntireUI`, and validation for mutually exclusive visibility settings
 - A visual/manual review of the gadget window in the real desktop workflow is still recommended
 
 ## Future Features

@@ -40,6 +40,7 @@ let serviceState = {
   notificationCount: 0,
 };
 
+const THREAD_RAIL_WINDOW_WIDTH = 71;
 const WINDOW_WIDTH = 460;
 const WINDOW_EXPANDED_WIDTH = 800;
 const WINDOW_EXPANDED_HEIGHT_DELTA = 200;
@@ -581,6 +582,9 @@ function getReceptionMessagePopupPayload(message = {}) {
 
   const senderRoomId = String(message.senderRoomId || "").trim();
   const room = (configState?.rooms || []).find((item) => item.id === senderRoomId) || null;
+  if (!room || room.hideFromEntireUI) {
+    return null;
+  }
 
   return {
     messageId: String(message.messageId || "").trim(),
@@ -1245,6 +1249,10 @@ function escapePowerShellPath(value) {
 }
 
 function pushNotification(notification) {
+  if (!isNotificationRoomAlertVisible(notification)) {
+    return;
+  }
+
   playReceptionNotificationSound(notification);
   showAlertPopup(notification);
   notificationQueue.push(notification);
@@ -1332,7 +1340,13 @@ function clearNotificationsByIds(notificationIds = []) {
 }
 
 function pingRoomById(roomId) {
-  return configState.rooms.find((room) => room.id === roomId) || null;
+  return configState.rooms.find((room) => room.id === roomId && !room.hideFromEntireUI) || null;
+}
+
+function isNotificationRoomAlertVisible(notification = {}) {
+  const roomId = String(notification.roomId || "").trim();
+  const room = (configState?.rooms || []).find((item) => item.id === roomId) || null;
+  return Boolean(room && !room.hideFromEntireUI && !room.hideFromAlertSection);
 }
 
 function emitNotification(notification) {
@@ -1446,7 +1460,9 @@ function getWindowBounds(config, currentBounds = null, options = {}) {
     : screen.getPrimaryDisplay();
   const workArea = targetDisplay.workArea;
   const isExpanded = Boolean(config.display.expanded);
-  const desiredWidth = isExpanded ? WINDOW_EXPANDED_WIDTH : WINDOW_WIDTH;
+  const shouldReserveThreadRail = Boolean(config.display.messagesVisible) && !Boolean(config.display.minimized);
+  const desiredWidth = (isExpanded ? WINDOW_EXPANDED_WIDTH : WINDOW_WIDTH)
+    + (shouldReserveThreadRail ? THREAD_RAIL_WINDOW_WIDTH : 0);
   const overrideHeight = Math.round(Number(options.overrideHeight) || 0);
   const desiredHeight = config.display.minimized
     ? WINDOW_MINIMIZED_HEIGHT
@@ -1570,7 +1586,10 @@ function getGadgetHeight(config) {
     );
   }
 
-  const roomCount = Math.max(1, config.rooms?.length || 0);
+  const roomCount = Math.max(
+    1,
+    (config.rooms || []).filter((room) => !room.hideFromEntireUI && !room.hideFromAlertSection).length,
+  );
   return GADGET_HEADER_HEIGHT
     + roomCount * GADGET_ROW_HEIGHT
     + GADGET_FRAME_PADDING
@@ -2108,7 +2127,10 @@ app.whenReady().then(async () => {
     }
 
     measuredGadgetHeight = nextHeight;
-    resizeForDisplayMode({ preserveBottom: true, preserveManualHeight: true });
+    resizeForDisplayMode({
+      preserveBottom: true,
+      preserveManualHeight: !Boolean(configState.display?.compactMode),
+    });
 
     return { ok: true, height: measuredGadgetHeight };
   });
