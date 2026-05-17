@@ -1022,7 +1022,7 @@
 
 .message-emoji-button.is-active {
   color: var(--accent, #4f46e5);
-  background: color-mix(in srgb, var(--accent, #4f46e5) 14%, transparent);
+  background: none;
 }
 
 /* Emoji picker popup */

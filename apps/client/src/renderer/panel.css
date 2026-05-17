@@ -2131,6 +2131,10 @@ body[data-thread-rail-collapsed="true"] .thread-rail .message-thread-scroll-wrap
   color: var(--message-send-active-color, var(--active-room-accent));
 }
 
+.message-emoji-button.is-active {
+  background: none;
+}
+
 .room-message-shell .message-emoji-button svg,
 .room-message-shell .message-emoji-button path {
   fill: currentColor;

@@ -216,8 +216,8 @@ body[data-window-view="settings"] .thread-rail {
 .gadget-panel {
   display: grid;
   gap: 14px;
-  width: 460px;
-  padding: 8px 14px 12px;
+  width: 470px;
+  padding: 8px 12px 12px;
   align-self: start;
   align-content: start;
   grid-template-rows: auto auto auto;
@@ -698,6 +698,10 @@ body[data-expanded="true"] .message-shell.reception-message-shell {
 
 .reception-message-shell .message-emoji-button {
   color: var(--message-send-active-color, var(--active-room-accent));
+}
+
+.reception-message-shell .message-emoji-button .is-active {
+  background: none;
 }
 
 .reception-message-shell .message-emoji-button svg,
@@ -1340,11 +1344,11 @@ body[data-thread-rail-collapsed="true"] .thread-rail .message-thread-scroll-wrap
 
 .action-row {
   display: grid;
-  grid-template-columns: 72px 48px 36px 36px;
+  grid-template-columns: 72px 46px 25px 35px;
   align-items: center;
   gap: 4px;
   flex-shrink: 0;
-  min-width: 204px;
+  min-width: 190px;
 }
 
 .action-slot {
