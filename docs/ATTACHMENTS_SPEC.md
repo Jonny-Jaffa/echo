@@ -2,7 +2,7 @@
 
 Summary
 -------
-Add first-class file and image attachments to messages across apps (client, reception, echo, surgery). Attachments must be uploadable from the compose UI, uploaded to the backend, and viewable/downloadable in message views.
+Add first-class file and image attachments to messages across apps (client, reception, pip, surgery). Attachments must be uploadable from the compose UI, uploaded to the backend, and viewable/downloadable in message views.
 
 Limits and defaults
 -------------------

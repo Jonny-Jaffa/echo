@@ -269,9 +269,9 @@
 - Corrected the README quick start to use the confirmed local desktop smoke-test pair:
   - `npm run dev:reception`
   - `npm run dev:client-panel`
-- Refreshed the npm workspace install so the new `apps/echo` workspace can resolve the root Electron binary
-- Confirmed `npm run dev:echo` now launches instead of failing with `env: electron: No such file or directory`
-- Added the first transitional unified-app handoff from `apps/echo`:
+- Refreshed the npm workspace install so the new `apps/pip` workspace can resolve the root Electron binary
+- Confirmed `npm run dev:pip` now launches instead of failing with `env: electron: No such file or directory`
+- Added the first transitional unified-app handoff from `apps/pip`:
   - selected `Reception` role can open the existing full reception app
   - selected `Room` role can open the existing full room/client panel
   - the in-process transitional runtime stops before handoff so it does not conflict with the full app over LAN ports or Neo hardware
@@ -279,7 +279,7 @@
 ### Notes
 
 - The handoff still launches the trusted existing role apps as separate development processes
-- The next migration step is to host the full role-specific windows directly from the unified `apps/echo` process, then consolidate packaging around one `Pip` app identity
+- The next migration step is to host the full role-specific windows directly from the unified `apps/pip` process, then consolidate packaging around one `Pip` app identity
 
 ### Session 2
 
@@ -382,7 +382,7 @@
 
 ### Session 6
 
-- Added a dedicated unified bootstrap workspace at `apps/echo`
+- Added a dedicated unified bootstrap workspace at `apps/pip`
 - Added a new Electron bootstrap app shell with:
   - its own `main.js`
   - its own preload bridge
@@ -394,17 +394,17 @@
   - it explains the current migration stage
   - it does not yet pretend to fully hand off into the reception or room runtimes
 - Added root workspace launch scripts for the new unified bootstrap app:
-  - `npm run dev:echo`
-  - `npm run start:echo`
+  - `npm run dev:pip`
+  - `npm run start:pip`
 - Verified syntax for:
-  - `apps/echo/src/main.js`
-  - `apps/echo/src/preload.js`
-  - `apps/echo/src/renderer/renderer.js`
+  - `apps/pip/src/main.js`
+  - `apps/pip/src/preload.js`
+  - `apps/pip/src/renderer/renderer.js`
 
 ### Session 7
 
-- Upgraded the new `apps/echo` bootstrap app from a passive role chooser into a real transitional runtime host
-- `apps/echo` now starts the matching in-process role service based on the saved role:
+- Upgraded the new `apps/pip` bootstrap app from a passive role chooser into a real transitional runtime host
+- `apps/pip` now starts the matching in-process role service based on the saved role:
   - `Reception` starts the modular LAN host service from the reception codebase
   - `Room` starts the modular hardware client service from the surgery codebase
 - Added a runtime status panel to the unified bootstrap UI so the current role service can be monitored and restarted/stopped

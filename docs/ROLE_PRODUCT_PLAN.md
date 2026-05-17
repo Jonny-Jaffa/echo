@@ -156,7 +156,7 @@ Completed so far:
 - both current apps have a hidden standalone role window / role renderer path
 - both current apps support a manual `--choose-role` launch hook for testing
 - both current separate apps now refuse to boot the wrong runtime for an unsupported saved role and fall back to the chooser instead
-- a dedicated `apps/echo` bootstrap app now exists as the future unified single-installer entrypoint
+- a dedicated `apps/pip` bootstrap app now exists as the future unified single-installer entrypoint
 - the bootstrap app can persist the local machine role and start the matching transitional runtime service in-process:
   - reception LAN host service
   - room hardware client service
@@ -165,12 +165,12 @@ Completed so far:
   - `Room` launches the current client panel
   - the transitional in-process runtime is stopped first to avoid port or hardware conflicts
 - root workspace scripts now include:
-  - `npm run dev:echo`
-  - `npm run start:echo`
+  - `npm run dev:pip`
+  - `npm run start:pip`
 
 Still outstanding:
 
-- the full reception and room window experiences are not yet directly hosted inside the `apps/echo` process
+- the full reception and room window experiences are not yet directly hosted inside the `apps/pip` process
 - the product is still packaged as separate reception and surgery installers
 - shared assets and packaging still need to be consolidated around the new `Pip` bootstrap app
 

@@ -69,7 +69,7 @@ Phase 6: Unified Product and Role Selection
   - no hard merge into one always-shared panel UI
 - Hidden role-chooser renderer/window infrastructure has been added to both current apps as a migration foundation
 - Current separate apps now enforce role-compatible startup instead of silently booting the wrong runtime
-- A dedicated `apps/echo` unified bootstrap app scaffold now exists with:
+- A dedicated `apps/pip` unified bootstrap app scaffold now exists with:
   - its own Electron main/preload/renderer
   - persisted local role state
   - a visible role-selection shell for the future one-installer flow
@@ -77,8 +77,8 @@ Phase 6: Unified Product and Role Selection
     - reception LAN host
     - room hardware client
   - root launch scripts:
-    - `npm run dev:echo`
-    - `npm run start:echo`
+    - `npm run dev:pip`
+    - `npm run start:pip`
 - The unified bootstrap can now hand off from the selected saved role into the existing full role workspace:
   - `Reception` opens the current reception app
   - `Room` opens the current client panel
@@ -160,9 +160,9 @@ Phase 6: Unified Product and Role Selection
 - [ ] Add a persisted first-run role chooser
 - [x] Add persisted runtime-role state and hidden chooser-shell foundation
 - [x] Support guarded role-compatible startup in the current separate builds
-- [x] Add a dedicated unified `apps/echo` bootstrap scaffold
-- [x] Start the transitional role service stack from `apps/echo`
-- [x] Add a transitional handoff from `apps/echo` to the existing full Reception/Room workspaces
+- [x] Add a dedicated unified `apps/pip` bootstrap scaffold
+- [x] Start the transitional role service stack from `apps/pip`
+- [x] Add a transitional handoff from `apps/pip` to the existing full Reception/Room workspaces
 - [ ] Support full explicit runtime modes from one packaged app:
   - `Reception`
   - `Room`

@@ -2,7 +2,7 @@
 
 Pip is a lightweight LAN-based notification system for surgeries and reception desks. This repository currently contains:
 
-- `apps/echo`: future unified Pip bootstrap app for role selection and one-installer migration
+- `apps/pip`: future unified Pip bootstrap app for role selection and one-installer migration
 - `apps/reception`: Electron reception app with gadget window, settings window, messaging UI, and local HTTP/WebSocket service
 - `apps/client`: Electron surgery/room app with messaging-first panel, Neo integration, quick actions, and separate settings window
 - `packages/shared`: shared config and event helpers
@@ -14,7 +14,7 @@ Pip is a lightweight LAN-based notification system for surgeries and reception d
 
 - `Pip Reception` is currently the LAN host/server role
 - `Pip Surgery` is currently the room/client role
-- `apps/echo` is the new unified bootstrap scaffold for the future single-installer product, and now starts the transitional reception or room service layer based on the saved role
+- `apps/pip` is the new unified bootstrap scaffold for the future single-installer product, and now starts the transitional reception or room service layer based on the saved role
 - Both roles now support live messaging
 - The agreed next architectural direction is:
   - one packaged `Pip` product / one installer
@@ -50,5 +50,5 @@ For background-service-only testing, `npm run dev:client` starts the room client
 4. If you want to inspect the future unified bootstrap shell:
 
 ```bash
-npm run dev:echo
+npm run dev:pip
 ```
