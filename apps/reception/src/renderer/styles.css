@@ -1777,8 +1777,8 @@ body[data-admin-mode="true"] .admin-panel {
   grid-template-columns: minmax(220px, 1fr) minmax(120px, 170px) auto;
   grid-template-areas:
     "name short remove"
-    "visibility visibility visibility"
-    "colour colour colour";
+    "colour colour colour"
+    "visibility visibility visibility";
   align-items: start;
   gap: 14px 16px;
 }
@@ -1791,13 +1791,19 @@ body[data-admin-mode="true"] .admin-panel {
   grid-area: short;
 }
 
-.room-remove-field {
+.room-top-spacer {
   grid-area: remove;
-  align-self: end;
 }
 
 .room-visibility-group {
   grid-area: visibility;
+}
+
+.room-visibility-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: center;
 }
 
 .room-visibility-options {
@@ -2024,7 +2030,7 @@ body[data-admin-mode="true"] .admin-panel {
   color: var(--muted);
   font-size: 10px;
   line-height: 1.2;
-  margin-top: 6px;
+  margin-top: 12px;
 }
 
 .action-remove-wrap {
@@ -2037,7 +2043,7 @@ body[data-admin-mode="true"] .admin-panel {
   display: flex;
   align-items: center;
   justify-content: flex-end;
-  min-height: 38px;
+  min-height: 40px;
 }
 
 .inline-remove-button {
@@ -2276,9 +2282,12 @@ body[data-admin-mode="true"] .shell {
     grid-template-areas:
       "name"
       "short"
-      "visibility"
-      "remove"
-      "colour";
+      "colour"
+      "visibility";
+  }
+
+  .room-visibility-row {
+    grid-template-columns: 1fr;
   }
 
   .room-visibility-options {

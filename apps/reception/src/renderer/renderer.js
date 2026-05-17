@@ -116,6 +116,9 @@ const ROOM_COLOUR_PALETTE = [
   "#be123c",
   "#047857",
   "#475569",
+  "#854d0e",
+  "#115e59",
+  "#9a3412",
 ];
 
 function normalizeReceptionPingMessage(value) {
@@ -1692,31 +1695,32 @@ function renderRooms() {
               <span>Short label</span>
               <input data-entity="room" data-index="${index}" data-key="shortName" type="text" maxlength="${ROOM_SHORT_NAME_MAX_LENGTH}" value="${escapeHtml(room.shortName || getDefaultRoomShortLabel(room.name, room.id, index))}" />
             </label>
-            <div class="field room-remove-field">
-              <div class="room-remove-wrap">
-                <button class="danger-button inline-remove-button" data-remove="room" data-index="${index}" type="button">Remove</button>
-              </div>
-            </div>
-            <div class="field room-visibility-group">
-              <span>Visibility</span>
-              <div class="room-visibility-options">
-                <label class="checkbox-field room-visibility-field" title="Keeps this Room/User out of the Reception alert list while preserving its message thread. Cannot be enabled with Hide from entire UI.">
-                  <input data-entity="room" data-index="${index}" data-key="hideFromAlertSection" type="checkbox" ${room.hideFromAlertSection ? "checked" : ""} ${room.hideFromEntireUI && !room.hideFromAlertSection ? "disabled" : ""} />
-                  <span>Hide from alert section</span>
-                </label>
-                <label class="checkbox-field room-visibility-field" title="Removes this Room/User from alert controls and message thread UI. Cannot be enabled with Hide from alert section.">
-                  <input data-entity="room" data-index="${index}" data-key="hideFromEntireUI" type="checkbox" ${room.hideFromEntireUI ? "checked" : ""} ${room.hideFromAlertSection && !room.hideFromEntireUI ? "disabled" : ""} />
-                  <span>Hide from entire UI</span>
-                </label>
-              </div>
-            </div>
+            <span class="room-top-spacer" aria-hidden="true"></span>
             <label class="field colour-field room-colour-field">
               <span>Colour</span>
               <div class="room-colour-picker" role="group" aria-label="Colour for ${escapeHtml(room.name)}">
                 ${renderRoomColourSwatches(room, index)}
               </div>
-              <small class="room-colour-help">Dot means already used by another room.</small>
+              <small class="room-colour-help">A dot means already used by another room/user.</small>
             </label>
+            <div class="field room-visibility-group">
+              <span>Visibility</span>
+              <div class="room-visibility-row">
+                <div class="room-visibility-options">
+                  <label class="checkbox-field room-visibility-field" title="Keeps this Room/User out of the Reception alert list while preserving its message thread. Cannot be enabled with Hide from entire UI.">
+                    <input data-entity="room" data-index="${index}" data-key="hideFromAlertSection" type="checkbox" ${room.hideFromAlertSection ? "checked" : ""} ${room.hideFromEntireUI && !room.hideFromAlertSection ? "disabled" : ""} />
+                    <span>Hide from alert section</span>
+                  </label>
+                  <label class="checkbox-field room-visibility-field" title="Removes this Room/User from alert controls and message thread UI. Cannot be enabled with Hide from alert section.">
+                    <input data-entity="room" data-index="${index}" data-key="hideFromEntireUI" type="checkbox" ${room.hideFromEntireUI ? "checked" : ""} ${room.hideFromAlertSection && !room.hideFromEntireUI ? "disabled" : ""} />
+                    <span>Hide from entire UI</span>
+                  </label>
+                </div>
+                <div class="room-remove-wrap">
+                  <button class="danger-button inline-remove-button" data-remove="room" data-index="${index}" type="button">Remove</button>
+                </div>
+              </div>
+            </div>
           </div>
         </article>
       `,
