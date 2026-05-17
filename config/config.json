@@ -45,6 +45,9 @@
       "provider": ""
     }
   },
+  "updates": {
+    "manualDownloadUrl": "https://drive.google.com/drive/folders/1yoBdZxFcoyH9gm0AkG4s_Ok6Xjyxqc9P?usp=sharing"
+  },
   "hardware": {
     "leftAuxButton": {
       "enabled": true,

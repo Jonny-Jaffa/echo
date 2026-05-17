@@ -294,6 +294,15 @@ export function normalizeConfig(config) {
         provider: String(config.attachments?.cloud?.provider || "").trim(),
       },
     },
+    updates: {
+      ...(config.updates || {}),
+      manualDownloadUrl: String(
+        config.updates?.manualDownloadUrl ||
+          config.updates?.downloadUrl ||
+          config.updates?.url ||
+          "",
+      ).trim(),
+    },
     rooms: normalizedRooms,
     actions: legacyCompatibleNotifications.map(stripNotificationToAction),
     buttonMappings: legacyCompatibleNotifications.map((notification, index) => ({

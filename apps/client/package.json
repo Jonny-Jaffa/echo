@@ -1,6 +1,6 @@
 {
   "name": "@pip/client",
-  "version": "0.8.23",
+  "version": "0.9.0",
   "private": true,
   "author": "Blackworks",
   "type": "module",

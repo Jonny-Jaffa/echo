@@ -4,7 +4,7 @@ const dgram = require("node:dgram");
 const { randomUUID } = require("node:crypto");
 const { exec } = require("node:child_process");
 const { pathToFileURL } = require("node:url");
-const { app, BrowserWindow, ipcMain, Menu, Tray, nativeImage, screen, dialog } = require("electron");
+const { app, BrowserWindow, ipcMain, Menu, Tray, nativeImage, screen, dialog, shell } = require("electron");
 
 const DISCOVERY_PORT = 3210;
 const SURGERY_PANEL_WIDTH = 373;
@@ -183,6 +183,9 @@ let clientSettings = {
   roomPinnedMessageThreads: {},
   panelDisplayMode: "messages",
   popupPosition: "bottomRight",
+  updates: {
+    manualDownloadUrl: process.env.PIP_UPDATE_URL || "",
+  },
 };
 
 function normalizeRoomActionNotification(notification, index, roomId = "") {
@@ -1036,6 +1039,15 @@ function loadClientSettings() {
       roomPinnedMessageThreads: normalizeRoomPinnedMessageThreads(parsed.roomPinnedMessageThreads),
       panelDisplayMode: normalizePanelDisplayMode(parsed.panelDisplayMode),
       popupPosition: normalizePopupPosition(parsed.popupPosition),
+      updates: {
+        manualDownloadUrl: String(
+          parsed.updates?.manualDownloadUrl ||
+            parsed.updates?.downloadUrl ||
+            parsed.updateUrl ||
+            clientSettings.updates?.manualDownloadUrl ||
+            "",
+        ).trim(),
+      },
     };
     currentPanelDisplayMode = clientSettings.panelDisplayMode;
     if (shouldPurgeConfiguredMessageGroups) {
@@ -1857,6 +1869,100 @@ function minimizeWindow(targetWindow) {
   targetWindow.minimize();
 }
 
+function getBundledUpdateUrl() {
+  const candidatePaths = [
+    path.join(process.resourcesPath || "", "config", "config.json"),
+    path.join(__dirname, "..", "..", "config", "config.json"),
+    path.join(process.cwd(), "config", "config.json"),
+  ];
+
+  for (const configPath of candidatePaths) {
+    try {
+      if (!configPath || !fs.existsSync(configPath)) {
+        continue;
+      }
+
+      const parsed = JSON.parse(fs.readFileSync(configPath, "utf8"));
+      const url = String(
+        parsed.updates?.manualDownloadUrl ||
+          parsed.updates?.downloadUrl ||
+          parsed.updates?.url ||
+          "",
+      ).trim();
+
+      if (url) {
+        return url;
+      }
+    } catch {
+      // Ignore missing or invalid optional release config.
+    }
+  }
+
+  return "";
+}
+
+function getManualUpdateUrl() {
+  return String(
+    process.env.PIP_UPDATE_URL ||
+      clientSettings.updates?.manualDownloadUrl ||
+      getBundledUpdateUrl() ||
+      "",
+  ).trim();
+}
+
+function isSupportedExternalUpdateUrl(url) {
+  try {
+    const parsed = new URL(url);
+    return ["https:", "http:"].includes(parsed.protocol);
+  } catch {
+    return false;
+  }
+}
+
+async function checkForUpdatesManually(parentWindow = null) {
+  const updateUrl = getManualUpdateUrl();
+  const parent = parentWindow && !parentWindow.isDestroyed() ? parentWindow : undefined;
+
+  if (!updateUrl) {
+    await dialog.showMessageBox(parent, {
+      type: "info",
+      buttons: ["OK"],
+      title: "Check for Updates",
+      message: "No update location is configured yet.",
+      detail: `Current version: ${app.getVersion()}\n\nAdd an updates.manualDownloadUrl value to the release config to enable this menu item.`,
+      noLink: true,
+    });
+    return;
+  }
+
+  if (!isSupportedExternalUpdateUrl(updateUrl)) {
+    await dialog.showMessageBox(parent, {
+      type: "error",
+      buttons: ["OK"],
+      title: "Check for Updates",
+      message: "The configured update location is not a valid web address.",
+      detail: updateUrl,
+      noLink: true,
+    });
+    return;
+  }
+
+  const response = await dialog.showMessageBox(parent, {
+    type: "question",
+    buttons: ["Cancel", "Open Updates"],
+    defaultId: 1,
+    cancelId: 0,
+    title: "Check for Updates",
+    message: "Open the Pip update download page?",
+    detail: `Current version: ${app.getVersion()}`,
+    noLink: true,
+  });
+
+  if (response.response === 1) {
+    await shell.openExternal(updateUrl);
+  }
+}
+
 function refreshTrayMenu() {
   if (!tray) {
     return;
@@ -1898,6 +2004,14 @@ function refreshTrayMenu() {
       },
     },
     { type: "separator" },
+    {
+      label: "Check for updates...",
+      click: () => {
+        checkForUpdatesManually(mainWindow).catch((error) => {
+          appendClientServiceLog(`manual update check failed ${error.stack || error.message}`);
+        });
+      },
+    },
     {
       label: "About",
       click: () => {

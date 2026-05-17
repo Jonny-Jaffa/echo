@@ -3,7 +3,7 @@ const fs = require("node:fs");
 const os = require("node:os");
 const { spawn } = require("node:child_process");
 const { pathToFileURL } = require("node:url");
-const { app, BrowserWindow, ipcMain, Menu, Tray, nativeImage } = require("electron");
+const { app, BrowserWindow, ipcMain, Menu, Tray, nativeImage, dialog, shell } = require("electron");
 
 const RUNTIME_ROLE_RECEPTION = "reception";
 const RUNTIME_ROLE_ROOM = "room";
@@ -691,6 +691,17 @@ function refreshTrayMenu() {
         },
       },
       {
+        type: "separator",
+      },
+      {
+        label: "Check for updates...",
+        click: () => {
+          checkForUpdatesManually(mainWindow).catch((error) => {
+            appendLog("Manual update check failed", error?.stack || error?.message || error);
+          });
+        },
+      },
+      {
         label: "Quit",
         click: () => {
           isQuitting = true;
@@ -699,6 +710,102 @@ function refreshTrayMenu() {
       },
     ]),
   );
+}
+
+function getManualUpdateUrl() {
+  return String(
+    process.env.PIP_UPDATE_URL ||
+      receptionConfigState?.updates?.manualDownloadUrl ||
+      receptionConfigState?.updates?.downloadUrl ||
+      receptionConfigState?.updates?.url ||
+      getBundledUpdateUrl() ||
+      "",
+  ).trim();
+}
+
+function getBundledUpdateUrl() {
+  const candidatePaths = [
+    path.join(process.resourcesPath || "", "config", "config.json"),
+    path.join(__dirname, "..", "..", "config", "config.json"),
+    path.join(process.cwd(), "config", "config.json"),
+  ];
+
+  for (const configPath of candidatePaths) {
+    try {
+      if (!configPath || !fs.existsSync(configPath)) {
+        continue;
+      }
+
+      const parsed = JSON.parse(fs.readFileSync(configPath, "utf8"));
+      const url = String(
+        parsed.updates?.manualDownloadUrl ||
+          parsed.updates?.downloadUrl ||
+          parsed.updates?.url ||
+          "",
+      ).trim();
+
+      if (url) {
+        return url;
+      }
+    } catch {
+      // Ignore missing or invalid optional release config.
+    }
+  }
+
+  return "";
+}
+
+function isSupportedExternalUpdateUrl(url) {
+  try {
+    const parsed = new URL(url);
+    return ["https:", "http:"].includes(parsed.protocol);
+  } catch {
+    return false;
+  }
+}
+
+async function checkForUpdatesManually(parentWindow = null) {
+  const updateUrl = getManualUpdateUrl();
+  const parent = parentWindow && !parentWindow.isDestroyed() ? parentWindow : undefined;
+
+  if (!updateUrl) {
+    await dialog.showMessageBox(parent, {
+      type: "info",
+      buttons: ["OK"],
+      title: "Check for Updates",
+      message: "No update location is configured yet.",
+      detail: `Current version: ${app.getVersion()}\n\nAdd an updates.manualDownloadUrl value to the release config to enable this menu item.`,
+      noLink: true,
+    });
+    return;
+  }
+
+  if (!isSupportedExternalUpdateUrl(updateUrl)) {
+    await dialog.showMessageBox(parent, {
+      type: "error",
+      buttons: ["OK"],
+      title: "Check for Updates",
+      message: "The configured update location is not a valid web address.",
+      detail: updateUrl,
+      noLink: true,
+    });
+    return;
+  }
+
+  const response = await dialog.showMessageBox(parent, {
+    type: "question",
+    buttons: ["Cancel", "Open Updates"],
+    defaultId: 1,
+    cancelId: 0,
+    title: "Check for Updates",
+    message: "Open the Pip update download page?",
+    detail: `Current version: ${app.getVersion()}`,
+    noLink: true,
+  });
+
+  if (response.response === 1) {
+    await shell.openExternal(updateUrl);
+  }
 }
 
 function createTray() {

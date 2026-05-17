@@ -332,7 +332,7 @@ body[data-popup-kind="receptionPing"] .message-popup-open-message {
   border: 0;
   border-radius: 999px;
   background: transparent;
-  color: var(--text);
+  color: var(--popup-text);
   cursor: pointer;
   overflow: hidden;
   text-indent: -9999px;
@@ -369,7 +369,7 @@ body[data-popup-kind="receptionPing"] .message-popup-close {
   height: auto;
   border-radius: 0;
   background: transparent;
-  color: var(--text);
+  color: var(--popup-text);
   z-index: 3;
 }
 
