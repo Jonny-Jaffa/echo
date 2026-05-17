@@ -8,6 +8,8 @@ const { createReceptionServer } = require("./server.js");
 const RUNTIME_ROLE_RECEPTION = "reception";
 const RUNTIME_ROLE_ROOM = "room";
 const CURRENT_APP_RUNTIME_ROLE = RUNTIME_ROLE_RECEPTION;
+const SHOULD_SHOW_ABOUT_ON_LAUNCH =
+  process.env.PIP_SHOW_ABOUT === "1" || process.argv.includes("--show-about");
 
 let mainWindow;
 let settingsWindow = null;
@@ -764,7 +766,8 @@ function createTray() {
 
 function configureAboutPanel() {
   app.setAboutPanelOptions({
-    applicationName: "Pip (Reception)",
+    applicationName: "Pip",
+    applicationVariant: "Reception",
     applicationVersion: app.getVersion(),
     version: app.getVersion(),
     credits: "Developed by Blackworks",
@@ -788,7 +791,8 @@ function showAboutDialog() {
     return;
   }
 
-  const appName = "Pip (Reception)";
+  const appName = "Pip";
+  const appVariant = "Reception";
   const appVersion = app.getVersion();
   const brandLogoDataUrl = getBrandLogoDataUrl();
   const appIcon = getAppIcon();
@@ -872,12 +876,17 @@ function showAboutDialog() {
           height: 104px;
           margin: 0 auto 22px;
           object-fit: contain;
-          filter: grayscale(1);
         }
 
         .about-title {
           margin: 0;
-          font-size: 24px;
+          font-size: 28px;
+          font-weight: 700;
+        }
+
+        .about-variant {
+          margin: 0;
+          font-size: 18px;
           font-weight: 700;
         }
 
@@ -888,7 +897,7 @@ function showAboutDialog() {
         }
 
         .about-version {
-          font-weight: 700;
+          font-weight: 500;
         }
 
         .about-close {
@@ -936,6 +945,7 @@ function showAboutDialog() {
       <main class="about-card">
         ${brandLogoDataUrl ? `<img class="about-logo" src="${brandLogoDataUrl}" alt="Pip" />` : ""}
         <h1 class="about-title">${escapeHtml(appName)}</h1>
+        <p class="about-variant">${escapeHtml(appVariant)}</p>
         <p class="about-version">Version ${escapeHtml(appVersion)}</p>
         <p class="about-line">Developed by Blackworks</p>
         <p class="about-line">2026 &copy; Copyright | All Rights Reserved</p>
@@ -2036,6 +2046,10 @@ app.whenReady().then(async () => {
     logStartup(
       `startup blocked because saved runtimeRole=${localAppState.runtimeRole} is not supported by this build`,
     );
+  }
+
+  if (SHOULD_SHOW_ABOUT_ON_LAUNCH) {
+    showAboutDialog();
   }
 
   app.on("activate", () => {

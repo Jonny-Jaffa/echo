@@ -6,6 +6,7 @@
   "main": "src/main.js",
   "scripts": {
     "dev": "env -u ELECTRON_RUN_AS_NODE electron .",
+    "dev:about": "env -u ELECTRON_RUN_AS_NODE PIP_SHOW_ABOUT=1 electron .",
     "start": "env -u ELECTRON_RUN_AS_NODE electron ."
   },
   "dependencies": {

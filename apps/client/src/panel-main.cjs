@@ -1512,7 +1512,8 @@ function showAboutDialog() {
     return;
   }
 
-  const appName = "Pip (Client)";
+  const appName = "Pip";
+  const appVariant = "Client";
   const appVersion = app.getVersion();
   const brandLogoDataUrl = getBrandLogoDataUrl();
   const appIcon = getAppIcon();
@@ -1522,8 +1523,8 @@ function showAboutDialog() {
     : undefined;
 
   aboutWindow = new BrowserWindow({
-    width: 360,
-    height: 360,
+    width: 250,
+    height: 250,
     resizable: false,
     minimizable: false,
     maximizable: false,
@@ -1596,7 +1597,6 @@ function showAboutDialog() {
           height: 104px;
           margin: 0 auto 22px;
           object-fit: contain;
-          filter: grayscale(1);
         }
 
         .about-title {
@@ -1660,6 +1660,7 @@ function showAboutDialog() {
       <main class="about-card">
         ${brandLogoDataUrl ? `<img class="about-logo" src="${brandLogoDataUrl}" alt="Pip" />` : ""}
         <h1 class="about-title">${escapeHtml(appName)}</h1>
+        <p class="about-variant">${escapeHtml(appVariant)}</p>
         <p class="about-version">Version ${escapeHtml(appVersion)}</p>
         <p class="about-line">Developed by Blackworks</p>
         <p class="about-line">2026 &copy; Copyright | All Rights Reserved</p>
