@@ -220,6 +220,7 @@ let buttonAppearancePickerState = null;
 let draggedMessageThreadKey = "";
 let draggedMessageThreadSource = "";
 let panelDisplayMode = "messages";
+let panelDisplayModeBeforeExpand = null;
 let isPanelDisplayModeMenuVisible = false;
 let isEditingMessage = false;
 let messageSound = DEFAULT_ROOM_ALERT_SOUND;
@@ -4366,6 +4367,10 @@ panelMinimizeButton?.addEventListener("click", () => {
 panelExpandButton?.addEventListener("click", async () => {
   const previousExpanded = isPanelExpanded();
   const nextExpanded = !previousExpanded;
+  const previousPanelDisplayMode = panelDisplayMode;
+  const expandedPanelDisplayMode = !previousExpanded && previousPanelDisplayMode === "buttons"
+    ? "both"
+    : previousPanelDisplayMode;
   const applyExpandedState = (expanded) => {
     document.body.dataset.expanded = expanded ? "true" : "false";
     panelExpandButton.classList.toggle("is-active", expanded);
@@ -4378,15 +4383,30 @@ panelExpandButton?.addEventListener("click", async () => {
 
   try {
     setManualMessageExtraHeight(0);
+    if (!previousExpanded && previousPanelDisplayMode === "buttons") {
+      panelDisplayModeBeforeExpand = previousPanelDisplayMode;
+      await setPanelDisplayMode("both", { persist: false, resize: false });
+    }
     applyExpandedState(nextExpanded);
-    const result = await window.pipPanel.expandWindow?.();
+    const result = await window.pipPanel.expandWindow?.({
+      expandedMode: expandedPanelDisplayMode,
+      restoreMode: panelDisplayModeBeforeExpand || previousPanelDisplayMode,
+    });
     if (result?.isExpanded !== undefined) {
       applyExpandedState(result.isExpanded);
+      if (!result.isExpanded && panelDisplayModeBeforeExpand) {
+        await setPanelDisplayMode(panelDisplayModeBeforeExpand, { persist: false, resize: false });
+        panelDisplayModeBeforeExpand = null;
+      }
     }
     scheduleManualMessageExtraHeightUpdate();
     requestAnimationFrame(focusMessageComposer);
   } catch {
     applyExpandedState(previousExpanded);
+    if (!previousExpanded && previousPanelDisplayMode === "buttons") {
+      await setPanelDisplayMode(previousPanelDisplayMode, { persist: false, resize: false }).catch(() => {});
+      panelDisplayModeBeforeExpand = null;
+    }
   }
 });
 

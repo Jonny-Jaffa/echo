@@ -7,7 +7,7 @@ contextBridge.exposeInMainWorld("pipPanel", {
   hideWindow: () => ipcRenderer.invoke("panel:hideWindow"),
   quitApp: () => ipcRenderer.invoke("panel:quitApp"),
   minimizeWindow: () => ipcRenderer.invoke("panel:minimizeWindow"),
-  expandWindow: () => ipcRenderer.invoke("panel:expandWindow"),
+  expandWindow: (details) => ipcRenderer.invoke("panel:expandWindow", details),
   openSettingsWindow: () => ipcRenderer.invoke("panel:openSettingsWindow"),
   openRoleWindow: () => ipcRenderer.invoke("panel:openRoleWindow"),
   closeRoleWindow: () => ipcRenderer.invoke("panel:closeRoleWindow"),

@@ -2184,7 +2184,7 @@ app.whenReady().then(async () => {
     minimizeWindow(targetWindow);
     return { ok: true };
   });
-  ipcMain.handle("panel:expandWindow", (event) => {
+  ipcMain.handle("panel:expandWindow", (event, details = {}) => {
     const targetWindow = BrowserWindow.fromWebContents(event.sender);
 
     if (!targetWindow || targetWindow.isDestroyed()) {
@@ -2194,7 +2194,17 @@ app.whenReady().then(async () => {
     const [currentX, currentY] = targetWindow.getPosition();
     const [currentWidth, currentHeight] = targetWindow.getSize();
 
-    const collapsedWidth = getPanelDisplayModeWidth("messages");
+    const requestedExpandedMode = normalizePanelDisplayMode(
+      typeof details === "object" && details !== null && typeof details.expandedMode === "string"
+        ? details.expandedMode
+        : currentPanelDisplayMode,
+    );
+    const requestedRestoreMode = normalizePanelDisplayMode(
+      typeof details === "object" && details !== null && typeof details.restoreMode === "string"
+        ? details.restoreMode
+        : currentPanelDisplayMode,
+    );
+    const collapsedWidth = getPanelDisplayModeWidth(requestedRestoreMode);
     const expandedWidth = getPanelExpandedWidth();
 
     if (currentWidth >= expandedWidth) {
@@ -2209,10 +2219,10 @@ app.whenReady().then(async () => {
         targetWindow.setBounds({
           x: preExpandWindowPosition.x,
           y: preExpandWindowPosition.y,
-          width: collapsedWidth,
+          width: preExpandWindowPosition.width || collapsedWidth,
           height: preExpandWindowPosition.height,
         }, true);
-        setMainWindowResizeBounds(collapsedWidth, collapsedMinimumHeight, preExpandWindowPosition);
+        setMainWindowResizeBounds(preExpandWindowPosition.width || collapsedWidth, collapsedMinimumHeight, preExpandWindowPosition);
         preExpandWindowPosition = null;
       } else {
         targetWindow.setMaximumSize(collapsedWidth, screen.getDisplayMatching(targetWindow.getBounds()).workArea.height);
@@ -2235,7 +2245,7 @@ app.whenReady().then(async () => {
       preExpandWindowPosition = {
         x: currentX,
         y: currentY,
-        width: collapsedWidth,
+        width: getPanelDisplayModeWidth(requestedRestoreMode),
         height: currentHeight,
         minimumHeight: currentMinimumSize[1],
       };
@@ -2246,12 +2256,9 @@ app.whenReady().then(async () => {
         y: currentY,
       });
       const workArea = display.workArea;
-      const collapsedMinimumHeight = Math.max(
-        1,
-        Math.round(Number(currentMinimumSize[1]) || getPanelDisplayModeHeight(currentPanelDisplayMode)),
-      );
+      const bannerOffset = currentBannerVisible ? SURGERY_BANNER_HEIGHT : 0;
       const expandedHeight = Math.min(
-        collapsedMinimumHeight + SURGERY_WINDOW_EXPANDED_HEIGHT_DELTA,
+        getPanelDisplayModeHeight(requestedExpandedMode) + SURGERY_WINDOW_EXPANDED_HEIGHT_DELTA + bannerOffset,
         workArea.height,
       );
       const expandedX = Math.round(
