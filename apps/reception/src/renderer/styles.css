@@ -461,11 +461,7 @@ select {
   --active-room-accent: var(--accent);
   --message-context-label-color: white;
   --message-context-short-label-color: var(--active-room-accent);
-  --message-context-strip-background: linear-gradient(
-    90deg,
-    color-mix(in srgb, var(--active-room-accent) 8%, white),
-    color-mix(in srgb, var(--active-room-accent) 8%, white)
-  );
+  --message-context-strip-background: color-mix(in srgb, var(--active-room-accent) 8%, white);
   --message-list-background: var(--message-context-strip-background);
   --message-input-background: var(--message-context-strip-background);
   --message-bubble-outgoing: linear-gradient(180deg, #ffffff, #f7fbfb);

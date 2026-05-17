@@ -25,7 +25,6 @@ let chatMessages = [];
 let measuredGadgetHeight = null;
 let saveWindowPositionTimer = null;
 let preExpandWindowPosition = null;
-let restorePositionOnNextGadgetHeight = null;
 let isProgrammaticWindowMove = false;
 let aboutWindow = null;
 let messagePopupWindow = null;
@@ -43,6 +42,7 @@ let serviceState = {
 
 const WINDOW_WIDTH = 460;
 const WINDOW_EXPANDED_WIDTH = 800;
+const WINDOW_EXPANDED_HEIGHT_DELTA = 200;
 const WINDOW_MINIMIZED_HEIGHT = 96;
 const WINDOW_ADMIN_WIDTH = 780;
 const WINDOW_ADMIN_HEIGHT = 800;
@@ -1343,9 +1343,12 @@ function getWindowBounds(config, currentBounds = null, options = {}) {
   const workArea = targetDisplay.workArea;
   const isExpanded = Boolean(config.display.expanded);
   const desiredWidth = isExpanded ? WINDOW_EXPANDED_WIDTH : WINDOW_WIDTH;
+  const overrideHeight = Math.round(Number(options.overrideHeight) || 0);
   const desiredHeight = config.display.minimized
     ? WINDOW_MINIMIZED_HEIGHT
-    : getGadgetHeight(config);
+    : overrideHeight > 0
+      ? overrideHeight
+      : getGadgetHeight(config);
 
   const width = Math.min(desiredWidth, workArea.width);
   const height = Math.min(desiredHeight, workArea.height);
@@ -1565,11 +1568,17 @@ async function updateDisplaySettings(patch) {
   setLaunchAtStartup(configState.display.launchAtStartup);
 
   const resizeOptions = {};
+  if (!wasExpanded && willBeExpanded && preExpandWindowPosition) {
+    resizeOptions.overrideHeight = Math.max(
+      WINDOW_MINIMIZED_HEIGHT,
+      preExpandWindowPosition.minimumHeight + WINDOW_EXPANDED_HEIGHT_DELTA,
+    );
+    resizeOptions.overrideMinimumHeight = resizeOptions.overrideHeight;
+  }
   if (restoredWindowPosition) {
     resizeOptions.overridePosition = restoredWindowPosition;
     resizeOptions.overrideHeight = restoredWindowPosition.height;
     resizeOptions.overrideMinimumHeight = restoredWindowPosition.minimumHeight;
-    restorePositionOnNextGadgetHeight = restoredWindowPosition;
   }
   resizeForDisplayMode(resizeOptions);
 
@@ -1995,16 +2004,7 @@ app.whenReady().then(async () => {
     }
 
     measuredGadgetHeight = nextHeight;
-    if (restorePositionOnNextGadgetHeight) {
-      resizeForDisplayMode({
-        overridePosition: restorePositionOnNextGadgetHeight,
-        overrideHeight: restorePositionOnNextGadgetHeight.height,
-        overrideMinimumHeight: restorePositionOnNextGadgetHeight.minimumHeight,
-      });
-      restorePositionOnNextGadgetHeight = null;
-    } else {
-      resizeForDisplayMode({ preserveBottom: true, preserveManualHeight: true });
-    }
+    resizeForDisplayMode({ preserveBottom: true, preserveManualHeight: true });
 
     return { ok: true, height: measuredGadgetHeight };
   });

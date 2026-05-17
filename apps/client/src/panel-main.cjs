@@ -27,7 +27,7 @@ const MESSAGE_POPUP_WIDTH = 380;
 const RECEPTION_PING_POPUP_WIDTH = 352;
 const MESSAGE_POPUP_MIN_HEIGHT = 48;
 const MESSAGE_POPUP_MAX_HEIGHT = 172;
-const RECEPTION_PING_POPUP_HEIGHT = 238;
+const RECEPTION_PING_POPUP_HEIGHT = 240;
 const MESSAGE_POPUP_MARGIN = 18;
 const SURGERY_SOUND_FILE_MAP = Object.fromEntries(
   Array.from({ length: 17 }, (_value, index) => {
@@ -2132,8 +2132,12 @@ app.whenReady().then(async () => {
         y: currentY,
       });
       const workArea = display.workArea;
+      const collapsedMinimumHeight = Math.max(
+        1,
+        Math.round(Number(currentMinimumSize[1]) || getPanelDisplayModeHeight(currentPanelDisplayMode)),
+      );
       const expandedHeight = Math.min(
-        currentHeight + SURGERY_WINDOW_EXPANDED_HEIGHT_DELTA,
+        collapsedMinimumHeight + SURGERY_WINDOW_EXPANDED_HEIGHT_DELTA,
         workArea.height,
       );
       const expandedX = Math.round(

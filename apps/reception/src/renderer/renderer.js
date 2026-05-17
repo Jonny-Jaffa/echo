@@ -95,7 +95,7 @@ const CHAT_ROOM_ORDER_STORAGE_KEY = "pip-reception-chat-room-order";
 const RECEPTION_ALL_ROOMS_MESSAGE_GROUP_KEY = "reception-all-rooms";
 const ROOM_SHORT_NAME_MAX_LENGTH = 7;
 const NEUTRAL_MESSAGE_STRIP_BACKGROUND =
-  "linear-gradient(90deg, color-mix(in srgb, #879293 15%, white), color-mix(in srgb, #879293 8%, white))";
+  "color-mix(in srgb, #879293 8%, white)";
 const ROOM_COLOUR_PALETTE = [
   "#d0069a",
   "#e07c0b",
@@ -737,7 +737,7 @@ function syncMessageContext(state = appState) {
   const messageStripBackground = isAllRoomsSelected
     ? NEUTRAL_MESSAGE_STRIP_BACKGROUND
     : activeRoom
-      ? `linear-gradient(90deg, color-mix(in srgb, ${accent} 15%, white), color-mix(in srgb, ${accent} 8%, white))`
+      ? `color-mix(in srgb, ${accent} 8%, white)`
       : NEUTRAL_MESSAGE_STRIP_BACKGROUND;
   chatCard.style.setProperty("--message-context-strip-background", messageStripBackground);
   chatCard.style.setProperty("--message-list-background", messageStripBackground);

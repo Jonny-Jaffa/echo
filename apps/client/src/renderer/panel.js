@@ -1818,14 +1818,14 @@ function syncMessageContext() {
   const isAllRoomsThread = activeThread?.key === "all";
   const specialThreadAccent = isAllRoomsThread ? "#879293" : "#000000";
   const specialStripBackground =
-    `linear-gradient(90deg, color-mix(in srgb, ${specialThreadAccent} 15%, white), color-mix(in srgb, ${specialThreadAccent} 8%, white))`;
+    `color-mix(in srgb, ${specialThreadAccent} 8%, white)`;
   const accent = getMessageThreadAccent(activeThread);
   const labelColor = isAllRoomsThread ? "#3f4444" : activeRoom?.color || "var(--accent)";
   const iconColor = labelColor;
   const stripBackground = isAllRoomsThread
     ? specialStripBackground
     : activeRoom?.color
-      ? `linear-gradient(90deg, color-mix(in srgb, ${activeRoom.color} 15%, white), color-mix(in srgb, ${activeRoom.color} 8%, white))`
+      ? `color-mix(in srgb, ${activeRoom.color} 8%, white)`
       : specialStripBackground;
   const listBackground = stripBackground;
   const fullLabel = getThreadFullLabel(activeThread);
@@ -4364,22 +4364,29 @@ panelMinimizeButton?.addEventListener("click", () => {
 });
 
 panelExpandButton?.addEventListener("click", async () => {
+  const previousExpanded = isPanelExpanded();
+  const nextExpanded = !previousExpanded;
+  const applyExpandedState = (expanded) => {
+    document.body.dataset.expanded = expanded ? "true" : "false";
+    panelExpandButton.classList.toggle("is-active", expanded);
+    panelExpandButton.setAttribute(
+      "aria-label",
+      expanded ? "Collapse window" : "Expand window",
+    );
+    panelExpandButton.title = expanded ? "Collapse window" : "Expand window";
+  };
+
   try {
     setManualMessageExtraHeight(0);
+    applyExpandedState(nextExpanded);
     const result = await window.pipPanel.expandWindow?.();
     if (result?.isExpanded !== undefined) {
-      document.body.dataset.expanded = result.isExpanded ? "true" : "false";
-      panelExpandButton.classList.toggle("is-active", result.isExpanded);
-      panelExpandButton.setAttribute(
-        "aria-label",
-        result.isExpanded ? "Collapse window" : "Expand window",
-      );
-      panelExpandButton.title = result.isExpanded ? "Collapse window" : "Expand window";
+      applyExpandedState(result.isExpanded);
     }
     scheduleManualMessageExtraHeightUpdate();
     requestAnimationFrame(focusMessageComposer);
   } catch {
-    // Ignore expand errors
+    applyExpandedState(previousExpanded);
   }
 });
 

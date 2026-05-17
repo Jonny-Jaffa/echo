@@ -273,7 +273,7 @@ body[data-popup-kind="receptionPing"] .message-popup-button-grid {
   grid-template-columns: repeat(4, 68px);
   gap: 12px;
   justify-content: center;
-  padding: 0 16px;
+  padding: 6px 16px 0 16px;
   background: transparent;
   isolation: isolate;
 }
@@ -332,7 +332,7 @@ body[data-popup-kind="receptionPing"] .message-popup-open-message {
   border: 0;
   border-radius: 999px;
   background: transparent;
-  color: #16a34a;
+  color: var(--text);
   cursor: pointer;
   overflow: hidden;
   text-indent: -9999px;
@@ -369,7 +369,7 @@ body[data-popup-kind="receptionPing"] .message-popup-close {
   height: auto;
   border-radius: 0;
   background: transparent;
-  color: #16a34a;
+  color: var(--text);
   z-index: 3;
 }
 
