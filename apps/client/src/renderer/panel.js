@@ -876,6 +876,21 @@ function updateManualMessageExtraHeight() {
   setManualMessageExtraHeight(window.innerHeight - getNaturalPanelWindowHeight());
 }
 
+function scheduleManualMessageExtraHeightUpdate() {
+  requestAnimationFrame(() => {
+    updateManualMessageExtraHeight();
+    updateMessageScrollbar();
+    requestAnimationFrame(() => {
+      updateManualMessageExtraHeight();
+      updateMessageScrollbar();
+    });
+  });
+  window.setTimeout(() => {
+    updateManualMessageExtraHeight();
+    updateMessageScrollbar();
+  }, 260);
+}
+
 async function setPanelDisplayMode(mode, options = {}) {
   const nextMode = normalizePanelDisplayMode(mode);
   const previousMode = panelDisplayMode;
@@ -4350,6 +4365,7 @@ panelMinimizeButton?.addEventListener("click", () => {
 
 panelExpandButton?.addEventListener("click", async () => {
   try {
+    setManualMessageExtraHeight(0);
     const result = await window.pipPanel.expandWindow?.();
     if (result?.isExpanded !== undefined) {
       document.body.dataset.expanded = result.isExpanded ? "true" : "false";
@@ -4360,6 +4376,7 @@ panelExpandButton?.addEventListener("click", async () => {
       );
       panelExpandButton.title = result.isExpanded ? "Collapse window" : "Expand window";
     }
+    scheduleManualMessageExtraHeightUpdate();
     requestAnimationFrame(focusMessageComposer);
   } catch {
     // Ignore expand errors

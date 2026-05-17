@@ -2085,15 +2085,19 @@ app.whenReady().then(async () => {
     if (currentWidth >= expandedWidth) {
       // Collapse back to original width
       if (preExpandWindowPosition) {
+        const collapsedMinimumHeight = Math.max(
+          1,
+          Math.round(Number(preExpandWindowPosition.minimumHeight) || getPanelDisplayModeHeight(currentPanelDisplayMode)),
+        );
         targetWindow.setMaximumSize(collapsedWidth, screen.getDisplayMatching(preExpandWindowPosition).workArea.height);
-        targetWindow.setMinimumSize(collapsedWidth, Math.max(1, Math.round(preExpandWindowPosition.height)));
+        targetWindow.setMinimumSize(collapsedWidth, collapsedMinimumHeight);
         targetWindow.setBounds({
           x: preExpandWindowPosition.x,
           y: preExpandWindowPosition.y,
           width: collapsedWidth,
           height: preExpandWindowPosition.height,
         }, true);
-        setMainWindowResizeBounds(collapsedWidth, preExpandWindowPosition.height, preExpandWindowPosition);
+        setMainWindowResizeBounds(collapsedWidth, collapsedMinimumHeight, preExpandWindowPosition);
         preExpandWindowPosition = null;
       } else {
         targetWindow.setMaximumSize(collapsedWidth, screen.getDisplayMatching(targetWindow.getBounds()).workArea.height);
@@ -2109,12 +2113,16 @@ app.whenReady().then(async () => {
 
       return { ok: true, isExpanded: false };
     } else {
+      const currentMinimumSize = typeof targetWindow.getMinimumSize === "function"
+        ? targetWindow.getMinimumSize()
+        : [collapsedWidth, getPanelDisplayModeHeight(currentPanelDisplayMode)];
       // Save current position and collapse back
       preExpandWindowPosition = {
         x: currentX,
         y: currentY,
         width: collapsedWidth,
         height: currentHeight,
+        minimumHeight: currentMinimumSize[1],
       };
 
       // Center the expanded window on the current display

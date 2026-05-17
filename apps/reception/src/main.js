@@ -1283,10 +1283,22 @@ function resizeForDisplayMode(options = {}) {
 
   const currentBounds = mainWindow.getBounds();
   const bounds = getWindowBounds(configState, currentBounds, options);
-  const minimumHeight = bounds.height;
+  const overrideMinimumHeight = Math.round(Number(options.overrideMinimumHeight) || 0);
+  const minimumHeight = overrideMinimumHeight > 0
+    ? Math.max(WINDOW_MINIMIZED_HEIGHT, overrideMinimumHeight)
+    : bounds.height;
+  if (overrideMinimumHeight > 0) {
+    bounds.height = minimumHeight;
+  }
+  const workArea = screen.getDisplayMatching(bounds).workArea;
+  const overrideHeight = Math.round(Number(options.overrideHeight) || 0);
 
-  if (options.preserveManualHeight && currentBounds.height > bounds.height) {
-    bounds.height = Math.min(currentBounds.height, screen.getDisplayMatching(bounds).workArea.height);
+  if (overrideHeight > bounds.height) {
+    bounds.height = Math.min(overrideHeight, workArea.height);
+    const maxY = workArea.y + workArea.height - bounds.height;
+    bounds.y = Math.min(Math.max(bounds.y, workArea.y), Math.max(workArea.y, maxY));
+  } else if (options.preserveManualHeight && currentBounds.height > bounds.height) {
+    bounds.height = Math.min(currentBounds.height, workArea.height);
     if (options.preserveBottom && !configState.display.minimized) {
       bounds.y = currentBounds.y + currentBounds.height - bounds.height;
     }
@@ -1295,7 +1307,7 @@ function resizeForDisplayMode(options = {}) {
   mainWindow.setAlwaysOnTop(Boolean(configState.display.alwaysOnTop));
   mainWindow.setResizable(true);
   mainWindow.setMinimumSize(bounds.width, minimumHeight);
-  mainWindow.setMaximumSize(bounds.width, screen.getDisplayMatching(bounds).workArea.height);
+  mainWindow.setMaximumSize(bounds.width, workArea.height);
   isProgrammaticWindowMove = true;
   mainWindow.setBounds(bounds, true);
   setTimeout(() => {
@@ -1506,8 +1518,16 @@ async function updateDisplaySettings(patch) {
   const willBeExpanded = typeof patch.expanded === "boolean" ? patch.expanded : wasExpanded;
 
   if (!wasExpanded && willBeExpanded && mainWindow && !mainWindow.isDestroyed()) {
-    const { x, y } = mainWindow.getBounds();
-    preExpandWindowPosition = { x, y };
+    const { x, y, height } = mainWindow.getBounds();
+    const minimumSize = typeof mainWindow.getMinimumSize === "function"
+      ? mainWindow.getMinimumSize()
+      : [WINDOW_WIDTH, getGadgetHeight(configState)];
+    preExpandWindowPosition = {
+      x,
+      y,
+      height,
+      minimumHeight: minimumSize[1],
+    };
   }
 
   const restoredWindowPosition =
@@ -1537,6 +1557,8 @@ async function updateDisplaySettings(patch) {
   const resizeOptions = {};
   if (restoredWindowPosition) {
     resizeOptions.overridePosition = restoredWindowPosition;
+    resizeOptions.overrideHeight = restoredWindowPosition.height;
+    resizeOptions.overrideMinimumHeight = restoredWindowPosition.minimumHeight;
     restorePositionOnNextGadgetHeight = restoredWindowPosition;
   }
   resizeForDisplayMode(resizeOptions);
@@ -1964,7 +1986,11 @@ app.whenReady().then(async () => {
 
     measuredGadgetHeight = nextHeight;
     if (restorePositionOnNextGadgetHeight) {
-      resizeForDisplayMode({ overridePosition: restorePositionOnNextGadgetHeight });
+      resizeForDisplayMode({
+        overridePosition: restorePositionOnNextGadgetHeight,
+        overrideHeight: restorePositionOnNextGadgetHeight.height,
+        overrideMinimumHeight: restorePositionOnNextGadgetHeight.minimumHeight,
+      });
       restorePositionOnNextGadgetHeight = null;
     } else {
       resizeForDisplayMode({ preserveBottom: true, preserveManualHeight: true });
