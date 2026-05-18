@@ -59,6 +59,19 @@ test("normalizeConfig emits schema version and room/user visibility fields", () 
   assert.equal(normalized.rooms[0].hideFromEntireUI, false);
 });
 
+test("normalizeConfig defaults always on top to false while preserving saved choices", () => {
+  const defaulted = normalizeConfig(buildConfig());
+  const enabled = normalizeConfig({
+    ...buildConfig(),
+    display: {
+      alwaysOnTop: true,
+    },
+  });
+
+  assert.equal(defaulted.display.alwaysOnTop, false);
+  assert.equal(enabled.display.alwaysOnTop, true);
+});
+
 test("validateConfig rejects mutually exclusive room/user visibility toggles", () => {
   const result = validateConfig(buildConfig({
     hideFromAlertSection: true,

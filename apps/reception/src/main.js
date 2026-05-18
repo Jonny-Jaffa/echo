@@ -53,6 +53,7 @@ const GADGET_FRAME_PADDING = 7;
 const GADGET_WINDOW_HEIGHT_TRIM = process.platform === "win32" ? 0 : 0;
 const GADGET_HIDDEN_MESSAGES_HEIGHT_TRIM = 5;
 const GADGET_COMPACT_HIDDEN_MESSAGES_HEIGHT_TRIM = 12;
+const WINDOWS_GADGET_HEIGHT_JITTER_TOLERANCE = 8;
 const RECEPTION_MAIN_WINDOW_IS_TRANSPARENT = true;
 const RECEPTION_MAIN_WINDOW_BACKGROUND = "#00000000";
 const MESSAGE_POPUP_WIDTH = 380;
@@ -815,8 +816,8 @@ function showAboutDialog() {
     show: false,
     autoHideMenuBar: true,
     frame: false,
-    transparent: false,
-    backgroundColor: "#FFFFFF",
+    transparent: true,
+    backgroundColor: "#00000000",
     hasShadow: false,
     title: `About ${appName}`,
     icon: windowIcon,
@@ -841,19 +842,21 @@ function showAboutDialog() {
           --muted: #5f726c;
           --line: rgba(16, 35, 31, 0.10);
           --accent: #0f766e;
+          --about-radius: 24px;
         }
 
         * {
           box-sizing: border-box;
         }
 
+        html,
         body {
           margin: 0;
           width: 100vw;
           height: 100vh;
           overflow: hidden;
-          border-radius: 24px;
-          background: #ffffff;
+          border-radius: var(--about-radius);
+          background: transparent;
           color: var(--text);
           font-family: "Roboto", "Avenir Next", "Segoe UI", sans-serif;
         }
@@ -864,7 +867,7 @@ function showAboutDialog() {
           height: 100vh;
           padding: 28px 26px 22px;
           border: 1px solid var(--line);
-          border-radius: 24px;
+          border-radius: var(--about-radius);
           background: #ffffff;
           text-align: center;
           box-shadow: none;
@@ -2124,6 +2127,14 @@ app.whenReady().then(async () => {
 
     if (!Number.isFinite(nextHeight) || nextHeight <= 0) {
       return { ok: false };
+    }
+
+    if (
+      process.platform === "win32" &&
+      Number.isFinite(measuredGadgetHeight) &&
+      Math.abs(nextHeight - measuredGadgetHeight) <= WINDOWS_GADGET_HEIGHT_JITTER_TOLERANCE
+    ) {
+      return { ok: true, height: measuredGadgetHeight, ignoredJitter: true };
     }
 
     measuredGadgetHeight = nextHeight;

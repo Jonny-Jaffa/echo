@@ -237,7 +237,7 @@ export function normalizeConfig(config = {}) {
       alwaysOnTop:
         typeof migratedConfig.display?.alwaysOnTop === "boolean"
           ? migratedConfig.display.alwaysOnTop
-          : true,
+          : false,
       autoHideMs: Math.max(0, Number(migratedConfig.display?.autoHideMs) || 0),
       compactMode: migratedConfig.display?.compactMode !== false,
       expanded: Boolean(migratedConfig.display?.expanded),

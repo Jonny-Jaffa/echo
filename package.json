@@ -13,6 +13,7 @@
     "dev:reception": "npm run dev -w @pip/reception",
     "dev:reception:about": "npm run dev:about -w @pip/reception",
     "dev:client": "npm run dev -w @pip/client",
+    "dev:surgery:about": "npm run dev:about -w @pip/client",
     "dev:client-panel": "npm run dev:panel -w @pip/client",
     "dev:client-panel:room2": "npm run dev:panel:room2 -w @pip/client",
     "dev:all-panels": "./scripts/run-dev-all-panels.sh",

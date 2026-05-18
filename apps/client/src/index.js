@@ -819,6 +819,11 @@ function connectSocket() {
     if (!serviceRunning) {
       return;
     }
+    clearAllTrackedNotifications();
+    stopLcdPingFlash();
+    syncStreamDeckButtons().catch((error) => {
+      logClient("warn", "failed to clear buttons after reception disconnect", error);
+    });
     socketReconnectTimer = setTimeout(() => {
       connectSocket();
     }, 2000);

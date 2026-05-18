@@ -45,8 +45,8 @@ const adminFeedback = document.querySelector("#admin-feedback");
 const adminModeButton = document.querySelector("#admin-mode-button");
 const compactModeButton = document.querySelector("#compact-mode-button");
 const compactModeMenu = document.querySelector("#compact-mode-menu");
-const compactModeOptions = document.querySelectorAll(".compact-mode-option");
 const toggleMessagingViewButton = document.querySelector("#toggle-messaging-view-button");
+const toggleCompactViewButton = document.querySelector("#toggle-compact-view-button");
 const expandWindowButton = document.querySelector("#expand-window-button");
 const expandAdminButton = document.querySelector("#expand-admin-button");
 const minimizeWindowButton = document.querySelector("#minimize-window-button");
@@ -117,8 +117,6 @@ const ROOM_COLOUR_PALETTE = [
   "#047857",
   "#475569",
   "#854d0e",
-  "#115e59",
-  "#9a3412",
 ];
 
 function normalizeReceptionPingMessage(value) {
@@ -1313,6 +1311,16 @@ function syncMessagingViewMenuItem() {
   toggleMessagingViewButton.classList.toggle("is-active", isMessageSectionVisible);
 }
 
+function syncCompactViewMenuItem(state = appState) {
+  if (!toggleCompactViewButton) {
+    return;
+  }
+
+  const isCompactMode = Boolean(state?.config?.display?.compactMode);
+  toggleCompactViewButton.textContent = isCompactMode ? "Normal View" : "Compact View";
+  toggleCompactViewButton.classList.toggle("is-active", isCompactMode);
+}
+
 function updateChatComposerHeight() {
   if (!chatComposeInput) {
     return;
@@ -1471,14 +1479,7 @@ function applyState(state) {
     compactModeButton.title = state.config.display.compactMode ? "Disable compact view" : "Enable compact view";
     compactModeButton.classList.toggle("is-active", Boolean(state.config.display.compactMode));
   }
-  compactModeOptions.forEach((option) => {
-    if (!option.hasAttribute("data-compact-mode")) {
-      return;
-    }
-
-    const isActive = option.getAttribute("data-compact-mode") === String(state.config.display.compactMode);
-    option.classList.toggle("is-active", isActive);
-  });
+  syncCompactViewMenuItem(state);
   syncMessagingViewMenuItem();
   document.body.dataset.windowView = windowView;
   document.body.dataset.minimized = !isSettingsWindow && state.config.display.minimized ? "true" : "false";
@@ -2017,17 +2018,6 @@ alertList?.addEventListener("click", async (event) => {
       return;
     }
 
-    if (
-      isMessageSectionVisible &&
-      selectedChatRoomIds.size === 1 &&
-      selectedChatRoomIds.has(roomId)
-    ) {
-      hideMessageSection({ persist: true });
-      renderAlertList(appState);
-      reportGadgetHeight();
-      return;
-    }
-
     selectChatRoom(roomId);
     showMessageSection({ persist: true });
     renderAlertList(appState);
@@ -2052,17 +2042,11 @@ compactModeButton?.addEventListener("click", () => {
   compactModeMenu?.classList.toggle("hidden", isOpen);
 });
 
-compactModeOptions.forEach((option) => {
-  option.addEventListener("click", async () => {
-    if (!option.hasAttribute("data-compact-mode")) {
-      return;
-    }
-
-    const compactMode = option.getAttribute("data-compact-mode") === "true";
-    await window.pip.updateDisplaySettings({ compactMode });
-    compactModeButton.setAttribute("aria-expanded", "false");
-    compactModeMenu?.classList.add("hidden");
-  });
+toggleCompactViewButton?.addEventListener("click", async () => {
+  const compactMode = !Boolean(appState?.config?.display?.compactMode);
+  await window.pip.updateDisplaySettings({ compactMode });
+  compactModeButton?.setAttribute("aria-expanded", "false");
+  compactModeMenu?.classList.add("hidden");
 });
 
 toggleMessagingViewButton?.addEventListener("click", () => {

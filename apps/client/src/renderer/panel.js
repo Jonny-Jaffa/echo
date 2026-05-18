@@ -1130,6 +1130,8 @@ function connectSocket() {
       return;
     }
     setStatus("Offline", "offline");
+    clearAllPanelNotifications();
+    window.pipPanel.closeReceptionPingPopup?.().catch(() => {});
     showReceptionOfflineBanner();
     if (!configState && !manualPanelReveal) {
       setPanelView("panel");
@@ -1144,6 +1146,8 @@ function connectSocket() {
       return;
     }
     setStatus("Offline", "offline");
+    clearAllPanelNotifications();
+    window.pipPanel.closeReceptionPingPopup?.().catch(() => {});
     showReceptionOfflineBanner();
     if (!configState && !manualPanelReveal) {
       setPanelView("panel");

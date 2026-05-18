@@ -6,6 +6,8 @@ const { exec } = require("node:child_process");
 const { pathToFileURL } = require("node:url");
 const { app, BrowserWindow, ipcMain, Menu, Tray, nativeImage, screen, dialog, shell } = require("electron");
 
+const SHOULD_SHOW_ABOUT_ON_LAUNCH =
+  process.env.PIP_SHOW_ABOUT === "1" || process.argv.includes("--show-about");
 const DISCOVERY_PORT = 3210;
 const SURGERY_PANEL_WIDTH = 373;
 const SURGERY_THREAD_RAIL_WIDTH = 63;
@@ -170,7 +172,7 @@ let clientSettings = {
   deviceId: process.env.PIP_DEVICE_ID || randomUUID(),
   launchAtStartup: true,
   showPanelAtStartup: true,
-  alwaysOnTop: true,
+  alwaysOnTop: false,
   messageSound: DEFAULT_SURGERY_SOUND,
   messageVolume: 80,
   roomAlertVolumes: {},
@@ -462,7 +464,8 @@ function normalizeRoomRightAuxSettings(roomRightAuxSettings) {
 
 function configureAboutPanel() {
   app.setAboutPanelOptions({
-    applicationName: "Pip (Client)",
+    applicationName: "Pip",
+    applicationVariant: "Client",
     applicationVersion: app.getVersion(),
     version: app.getVersion(),
     credits: "Developed by Blackworks",
@@ -1535,8 +1538,8 @@ function showAboutDialog() {
     : undefined;
 
   aboutWindow = new BrowserWindow({
-    width: 250,
-    height: 250,
+    width: 360,
+    height: 360,
     resizable: false,
     minimizable: false,
     maximizable: false,
@@ -1544,8 +1547,8 @@ function showAboutDialog() {
     show: false,
     autoHideMenuBar: true,
     frame: false,
-    transparent: false,
-    backgroundColor: "#FFFFFF",
+    transparent: true,
+    backgroundColor: "#00000000",
     hasShadow: false,
     title: `About ${appName}`,
     icon: windowIcon,
@@ -1570,19 +1573,21 @@ function showAboutDialog() {
           --muted: #5f726c;
           --line: rgba(16, 35, 31, 0.10);
           --accent: #0f766e;
+          --about-radius: 24px;
         }
 
         * {
           box-sizing: border-box;
         }
 
+        html,
         body {
           margin: 0;
           width: 100vw;
           height: 100vh;
           overflow: hidden;
-          border-radius: 24px;
-          background: #ffffff;
+          border-radius: var(--about-radius);
+          background: transparent;
           color: var(--text);
           font-family: "Roboto", "Avenir Next", "Segoe UI", sans-serif;
         }
@@ -1593,7 +1598,7 @@ function showAboutDialog() {
           height: 100vh;
           padding: 28px 26px 22px;
           border: 1px solid var(--line);
-          border-radius: 24px;
+          border-radius: var(--about-radius);
           background: #ffffff;
           text-align: center;
           box-shadow: none;
@@ -1613,7 +1618,13 @@ function showAboutDialog() {
 
         .about-title {
           margin: 0;
-          font-size: 24px;
+          font-size: 28px;
+          font-weight: 700;
+        }
+
+        .about-variant {
+          margin: 0;
+          font-size: 18px;
           font-weight: 700;
         }
 
@@ -1624,7 +1635,7 @@ function showAboutDialog() {
         }
 
         .about-version {
-          font-weight: 700;
+          font-weight: 500;
         }
 
         .about-close {
@@ -2504,6 +2515,10 @@ app.whenReady().then(async () => {
       state: "stopped",
       detail: "Saved role is not supported by this build",
     });
+  }
+
+  if (SHOULD_SHOW_ABOUT_ON_LAUNCH) {
+    showAboutDialog();
   }
 
   app.on("activate", () => {

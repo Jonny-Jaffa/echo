@@ -589,9 +589,8 @@ body[data-view="waiting"] .waiting-state {
 }
 
 .panel-display-mode-option {
-  min-height: 32px;
-  border: 1px solid var(--line);
-  border-radius: 10px;
+  min-height: 26px;
+  border: none;
   padding: 0 10px;
   background: white;
   color: var(--text);
@@ -602,9 +601,9 @@ body[data-view="waiting"] .waiting-state {
 }
 
 .panel-display-mode-option.is-active {
-  border-color: transparent;
-  background: var(--accent);
-  color: white;
+  border-color: none;
+  color: var(--text);
+  font-weight: 700;
 }
 
 .brand-lockup {

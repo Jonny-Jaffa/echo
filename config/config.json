@@ -6,7 +6,7 @@
     "port": 3210
   },
   "display": {
-    "alwaysOnTop": true,
+    "alwaysOnTop": false,
     "autoHideMs": 0,
     "compactMode": true,
     "minimized": false,
