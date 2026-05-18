@@ -1,6 +1,6 @@
 {
   "name": "@pip/pip",
-  "version": "0.3.2",
+  "version": "0.3.3",
   "private": true,
   "author": "Blackworks",
   "main": "src/main.js",

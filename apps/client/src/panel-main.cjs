@@ -47,6 +47,27 @@ const LEGACY_SURGERY_SOUND_ALIASES = {
   funk: "notification_sound_04",
   pop: "notification_sound_05",
 };
+[
+  "Ping",
+  "Glass",
+  "Hero",
+  "Funk",
+  "Pop",
+  "Chime",
+  "Bell",
+  "Ripple",
+  "Spark",
+  "Pulse",
+  "Echo",
+  "Drift",
+  "Flash",
+  "Wave",
+  "Ember",
+  "Beacon",
+  "Nova",
+].forEach((label, index) => {
+  LEGACY_SURGERY_SOUND_ALIASES[label.toLowerCase()] = `notification_sound_${String(index + 1).padStart(2, "0")}`;
+});
 const DEFAULT_BUTTON_APPEARANCE = {
   defaultBackground: "#FDD905",
   defaultText: "#000000",

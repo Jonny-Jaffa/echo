@@ -88,11 +88,33 @@ const LEGACY_RECEPTION_SOUND_ALIASES = {
   funk: "notification_sound_04",
   pop: "notification_sound_05",
 };
+const NOTIFICATION_SOUND_LABELS = [
+  "Ping",
+  "Glass",
+  "Hero",
+  "Funk",
+  "Pop",
+  "Chime",
+  "Bell",
+  "Ripple",
+  "Spark",
+  "Pulse",
+  "Echo",
+  "Drift",
+  "Flash",
+  "Wave",
+  "Ember",
+  "Beacon",
+  "Nova",
+];
+NOTIFICATION_SOUND_LABELS.forEach((label, index) => {
+  LEGACY_RECEPTION_SOUND_ALIASES[label.toLowerCase()] = `notification_sound_${String(index + 1).padStart(2, "0")}`;
+});
 const RECEPTION_SOUND_OPTIONS = Array.from({ length: 17 }, (_value, index) => {
   const soundNumber = String(index + 1).padStart(2, "0");
   return {
     value: `notification_sound_${soundNumber}`,
-    label: `Sound ${soundNumber}`,
+    label: NOTIFICATION_SOUND_LABELS[index] || `Sound ${soundNumber}`,
   };
 });
 const PINNED_CHAT_ROOMS_STORAGE_KEY = "pip-reception-pinned-chat-rooms";
@@ -100,7 +122,7 @@ const CHAT_ROOM_ORDER_STORAGE_KEY = "pip-reception-chat-room-order";
 const THREAD_SIDEBAR_COLLAPSED_STORAGE_KEY = "pip-reception-thread-sidebar-collapsed";
 const THREAD_SIDEBAR_ORDER_STORAGE_KEY = "pip-reception-thread-sidebar-order";
 const RECEPTION_ALL_ROOMS_MESSAGE_GROUP_KEY = "reception-all-rooms";
-const ROOM_SHORT_NAME_MAX_LENGTH = 7;
+const ROOM_SHORT_NAME_MAX_LENGTH = 3;
 const NEUTRAL_MESSAGE_STRIP_BACKGROUND =
   "color-mix(in srgb, #879293 8%, white)";
 const ROOM_COLOUR_PALETTE = [

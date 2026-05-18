@@ -1,6 +1,6 @@
 {
   "name": "@pip/reception",
-  "version": "0.9.2",
+  "version": "0.9.3",
   "private": true,
   "author": "Blackworks",
   "main": "src/main.js",

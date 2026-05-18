@@ -22,7 +22,7 @@ const DEFAULT_BUTTON_APPEARANCE = {
   defaultBackground: "#FDD905",
   activeBackground: "#000000",
 };
-const ROOM_SHORT_NAME_MAX_LENGTH = 7;
+const ROOM_SHORT_NAME_MAX_LENGTH = 3;
 const DEFAULT_ATTACHMENT_MAX_FILE_SIZE_BYTES = 8 * 1024 * 1024;
 const DEFAULT_ATTACHMENT_MAX_FILES_PER_MESSAGE = 5;
 const DEFAULT_ATTACHMENT_WHITELIST_MIME_TYPES = [
@@ -597,11 +597,30 @@ function normalizeNotification(notification, index) {
 }
 
 export const DEFAULT_RECEPTION_SOUND = "notification_sound_01";
+const NOTIFICATION_SOUND_LABELS = [
+  "Ping",
+  "Glass",
+  "Hero",
+  "Funk",
+  "Pop",
+  "Chime",
+  "Bell",
+  "Ripple",
+  "Spark",
+  "Pulse",
+  "Echo",
+  "Drift",
+  "Flash",
+  "Wave",
+  "Ember",
+  "Beacon",
+  "Nova",
+];
 export const RECEPTION_SOUND_OPTIONS = Array.from({ length: 17 }, (_value, index) => {
   const soundNumber = String(index + 1).padStart(2, "0");
   return {
     value: `notification_sound_${soundNumber}`,
-    label: `Sound ${soundNumber}`,
+    label: NOTIFICATION_SOUND_LABELS[index] || `Sound ${soundNumber}`,
     fileName: `Notification_sound_${soundNumber}.wav`,
   };
 });
@@ -612,6 +631,10 @@ const LEGACY_RECEPTION_SOUND_ALIASES = new Map([
   ["hero", "notification_sound_03"],
   ["funk", "notification_sound_04"],
   ["pop", "notification_sound_05"],
+  ...NOTIFICATION_SOUND_LABELS.map((label, index) => [
+    label.toLowerCase(),
+    `notification_sound_${String(index + 1).padStart(2, "0")}`,
+  ]),
 ]);
 const VALID_RECEPTION_SOUNDS = new Set(RECEPTION_SOUND_OPTIONS.map((option) => option.value));
 

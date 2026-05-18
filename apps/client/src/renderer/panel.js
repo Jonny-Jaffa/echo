@@ -161,6 +161,28 @@ const LEGACY_ROOM_ALERT_SOUND_ALIASES = {
   funk: "notification_sound_04",
   pop: "notification_sound_05",
 };
+const NOTIFICATION_SOUND_LABELS = [
+  "Ping",
+  "Glass",
+  "Hero",
+  "Funk",
+  "Pop",
+  "Chime",
+  "Bell",
+  "Ripple",
+  "Spark",
+  "Pulse",
+  "Echo",
+  "Drift",
+  "Flash",
+  "Wave",
+  "Ember",
+  "Beacon",
+  "Nova",
+];
+NOTIFICATION_SOUND_LABELS.forEach((label, index) => {
+  LEGACY_ROOM_ALERT_SOUND_ALIASES[label.toLowerCase()] = `notification_sound_${String(index + 1).padStart(2, "0")}`;
+});
 const ROOM_ALERT_SOUND_FILE_MAP = Object.fromEntries(
   Array.from({ length: 17 }, (_value, index) => {
     const soundNumber = String(index + 1).padStart(2, "0");
@@ -174,7 +196,7 @@ const ROOM_ALERT_SOUND_OPTIONS = Array.from({ length: 17 }, (_value, index) => {
   const soundNumber = String(index + 1).padStart(2, "0");
   return {
     value: `notification_sound_${soundNumber}`,
-    label: `Sound ${soundNumber}`,
+    label: NOTIFICATION_SOUND_LABELS[index] || `Sound ${soundNumber}`,
   };
 });
 const ROOM_SETTINGS_INTERACTION_LOCK_MS = 8000;
@@ -1131,6 +1153,7 @@ function connectSocket() {
     }
     setStatus("Offline", "offline");
     clearAllPanelNotifications();
+    hideReceptionPingBanner();
     window.pipPanel.closeReceptionPingPopup?.().catch(() => {});
     showReceptionOfflineBanner();
     if (!configState && !manualPanelReveal) {
@@ -1147,6 +1170,7 @@ function connectSocket() {
     }
     setStatus("Offline", "offline");
     clearAllPanelNotifications();
+    hideReceptionPingBanner();
     window.pipPanel.closeReceptionPingPopup?.().catch(() => {});
     showReceptionOfflineBanner();
     if (!configState && !manualPanelReveal) {
@@ -3318,9 +3342,11 @@ function buildAuthenticatedWebSocketUrl(url) {
   return nextUrl.toString();
 }
 
-async function playRoomAlertSound(roomId) {
-  const sound = getRoomAlertSound(roomId);
-  const volume = getRoomAlertVolume(roomId);
+async function playRoomAlertSound(roomId, options = {}) {
+  const sound = getValidatedRoomAlertSound(options.sound || getRoomAlertSound(roomId));
+  const volume = Number.isFinite(Number(options.volume))
+    ? Math.max(0, Math.min(100, Math.round(Number(options.volume))))
+    : getRoomAlertVolume(roomId);
 
   if (volume <= 0) {
     return;
@@ -3340,19 +3366,22 @@ async function playRoomAlertSound(roomId) {
 }
 
 async function playRoomMessageSound() {
-  if (messageVolume <= 0) {
+  const sound = getValidatedRoomAlertSound(messageSoundInput?.value || messageSound);
+  const volume = normalizeMessageVolume(messageVolumeInput?.value ?? messageVolume);
+
+  if (volume <= 0) {
     return;
   }
 
   try {
     await playLocalAlertSound({
-      sound: messageSound,
-      volume: messageVolume,
+      sound,
+      volume,
     });
   } catch {
     await window.pipPanel.playAlertSound?.({
-      sound: messageSound,
-      volume: messageVolume,
+      sound,
+      volume,
     }).catch(() => {});
   }
 }
@@ -4691,6 +4720,32 @@ selectedRoomVolume?.addEventListener("input", (event) => {
   }
 });
 
+settingsRoomAlertSoundControls?.addEventListener("input", (event) => {
+  lockRoomSettingsRefresh();
+  const target = event.target;
+
+  if (!(target instanceof HTMLInputElement) || !target.dataset.roomVolumeId) {
+    return;
+  }
+
+  const roomId = String(target.dataset.roomVolumeId || "").trim();
+
+  if (!roomId) {
+    return;
+  }
+
+  const nextVolume = Math.max(0, Math.min(100, Number(target.value) || 0));
+  roomAlertVolumes = {
+    ...roomAlertVolumes,
+    [roomId]: nextVolume,
+  };
+
+  const volumeLabel = document.querySelector("#selected-room-volume-value");
+  if (volumeLabel) {
+    volumeLabel.textContent = `${nextVolume}%`;
+  }
+});
+
 selectedRoomVolume?.addEventListener("click", (event) => {
   const target = event.target;
 
@@ -4755,6 +4810,67 @@ selectedRoomVolume?.addEventListener("click", (event) => {
     renderButtonAppearancePicker();
     persistRoomSettings().catch(() => {});
   }
+});
+
+settingsRoomAlertSoundControls?.addEventListener("change", async (event) => {
+  lockRoomSettingsRefresh();
+  const target = event.target;
+
+  if (target instanceof HTMLInputElement && target.dataset.roomVolumeId) {
+    await persistRoomSettings();
+    return;
+  }
+
+  if (target instanceof HTMLSelectElement && target.dataset.roomSoundId) {
+    const roomId = String(target.dataset.roomSoundId || "").trim();
+
+    if (!roomId) {
+      return;
+    }
+
+    roomAlertSounds = {
+      ...roomAlertSounds,
+      [roomId]: getValidatedRoomAlertSound(target.value),
+    };
+    await persistRoomSettings();
+  }
+});
+
+settingsRoomAlertSoundControls?.addEventListener("click", async (event) => {
+  lockRoomSettingsRefresh();
+  const target = event.target;
+
+  if (!(target instanceof HTMLElement)) {
+    return;
+  }
+
+  const playButton = target.closest("[data-room-sound-test-id]");
+
+  if (!playButton) {
+    return;
+  }
+
+  const roomId = String(playButton.getAttribute("data-room-sound-test-id") || "").trim();
+
+  if (!roomId) {
+    return;
+  }
+
+  const soundSelect = Array.from(
+    settingsRoomAlertSoundControls.querySelectorAll("select[data-room-sound-id]"),
+  ).find((select) => select instanceof HTMLSelectElement && select.dataset.roomSoundId === roomId);
+  const volumeInput = Array.from(
+    settingsRoomAlertSoundControls.querySelectorAll("input[data-room-volume-id]"),
+  ).find((input) => input instanceof HTMLInputElement && input.dataset.roomVolumeId === roomId);
+  const selectedSound =
+    soundSelect instanceof HTMLSelectElement ? soundSelect.value : getRoomAlertSound(roomId);
+  const selectedVolume =
+    volumeInput instanceof HTMLInputElement ? Number(volumeInput.value) : getRoomAlertVolume(roomId);
+
+  await playRoomAlertSound(roomId, {
+    sound: selectedSound,
+    volume: selectedVolume,
+  }).catch(() => {});
 });
 
 selectedRoomVolume?.addEventListener("change", async (event) => {
@@ -5033,7 +5149,21 @@ selectedRoomVolume?.addEventListener("click", async (event) => {
       return;
     }
 
-    await playRoomAlertSound(roomId).catch(() => {});
+    const soundSelect = Array.from(
+      selectedRoomVolume.querySelectorAll("select[data-room-sound-id]"),
+    ).find((select) => select instanceof HTMLSelectElement && select.dataset.roomSoundId === roomId);
+    const volumeInput = Array.from(
+      selectedRoomVolume.querySelectorAll("input[data-room-volume-id]"),
+    ).find((input) => input instanceof HTMLInputElement && input.dataset.roomVolumeId === roomId);
+    const selectedSound =
+      soundSelect instanceof HTMLSelectElement ? soundSelect.value : getRoomAlertSound(roomId);
+    const selectedVolume =
+      volumeInput instanceof HTMLInputElement ? Number(volumeInput.value) : getRoomAlertVolume(roomId);
+
+    await playRoomAlertSound(roomId, {
+      sound: selectedSound,
+      volume: selectedVolume,
+    }).catch(() => {});
     return;
   }
 
