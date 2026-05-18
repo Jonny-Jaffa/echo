@@ -621,7 +621,7 @@ export const RECEPTION_SOUND_OPTIONS = Array.from({ length: 17 }, (_value, index
   return {
     value: `notification_sound_${soundNumber}`,
     label: NOTIFICATION_SOUND_LABELS[index] || `Sound ${soundNumber}`,
-    fileName: `Notification_sound_${soundNumber}.wav`,
+    fileName: `${NOTIFICATION_SOUND_LABELS[index] || `Sound_${soundNumber}`}.wav`,
   };
 });
 

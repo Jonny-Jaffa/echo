@@ -53,13 +53,29 @@ const ROOM_ACTION_BUTTON_COUNT = 8;
 const NEO_BUTTON_LABEL_MAX_LENGTH = 7;
 const PARTY_LCD_HEADLINE = "LETS PARTY!";
 const DEFAULT_SURGERY_SOUND = "notification_sound_01";
+const SURGERY_SOUND_FILE_NAMES = [
+  "Ping.wav",
+  "Glass.wav",
+  "Hero.wav",
+  "Funk.wav",
+  "Pop.wav",
+  "Chime.wav",
+  "Bell.wav",
+  "Ripple.wav",
+  "Spark.wav",
+  "Pulse.wav",
+  "Echo.wav",
+  "Drift.wav",
+  "Flash.wav",
+  "Wave.wav",
+  "Ember.wav",
+  "Beacon.wav",
+  "Nova.wav",
+];
 const SURGERY_SOUND_FILE_MAP = Object.fromEntries(
-  Array.from({ length: 17 }, (_value, index) => {
+  SURGERY_SOUND_FILE_NAMES.map((fileName, index) => {
     const soundNumber = String(index + 1).padStart(2, "0");
-    return [
-      `notification_sound_${soundNumber}`,
-      `Notification_sound_${soundNumber}.wav`,
-    ];
+    return [`notification_sound_${soundNumber}`, fileName];
   }),
 );
 

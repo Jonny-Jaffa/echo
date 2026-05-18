@@ -25,7 +25,6 @@ async function main() {
     resolve(ROOT, "packages/shared/src/emoji-assets"),
     resolve(ROOT, "apps/client/src/renderer/emoji-assets"),
     resolve(ROOT, "apps/reception/src/renderer/emoji-assets"),
-    resolve(ROOT, "apps/pip/src/renderer/emoji-assets"),
   ];
 
   // Ensure output directories exist

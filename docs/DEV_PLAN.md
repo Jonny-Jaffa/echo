@@ -13,19 +13,19 @@ Last updated: 2026-05-05
   - dialog copy
   - documentation headings and instructions
 - Internal package names, folder names, and legacy identifiers may still temporarily use older naming where changing them would risk breaking workspace wiring; user-facing branding should still read `Pip`
-- Windows installers should now ship as `Pip Reception` and `Pip Surgery` without any `Test` suffix in release filenames
+- Windows installers should now ship as `Pip Reception` and `Pip Client` without any `Test` suffix in release filenames
 
 ## Current Phase
 
-Phase 6: Unified Product and Role Selection
+Phase 6: Role Guardrails and Shared UX
 
 ## Goals
 
-- Establish a clean workspace for reception and surgery apps
+- Establish a clean workspace for reception and client apps
 - Create a shared config and message model
 - Stand up a reception-side HTTP and WebSocket service on the LAN
 - Build a minimal reception gadget window for incoming alerts
-- Add a surgery client simulator that fetches config and sends sample notifications
+- Add a client simulator that fetches config and sends sample notifications
 - Keep project context documented for future development sessions
 
 ## Progress Snapshot
@@ -44,7 +44,7 @@ Phase 6: Unified Product and Role Selection
 - In-app admin panel added to reception window
 - Rooms, actions, button mappings, and display settings can now be edited from the app
 - Shared config normalization and validation added before persistence
-- Optional surgery-side on-screen control panel added
+- Optional client-side on-screen control panel added
 - Direct Elgato Stream Deck Neo integration added to the surgery client
 - Surgery client now detects connected Stream Deck hardware and maps button presses through `buttonMappings`
 - Neo USB detection verified on macOS in this environment
@@ -63,43 +63,23 @@ Phase 6: Unified Product and Role Selection
   - `Messages`
   - `Buttons`
   - `Both`
-- Role-unification direction has been assessed and agreed at a high level:
-  - one product / one installer
-  - two explicit runtime roles
-  - no hard merge into one always-shared panel UI
+- Role-unification direction was explored, but the active product now uses separate Reception and Surgery installers.
 - Hidden role-chooser renderer/window infrastructure has been added to both current apps as a migration foundation
 - Current separate apps now enforce role-compatible startup instead of silently booting the wrong runtime
-- A dedicated `apps/pip` unified bootstrap app scaffold now exists with:
-  - its own Electron main/preload/renderer
-  - persisted local role state
-  - a visible role-selection shell for the future one-installer flow
-  - transitional in-process role service startup:
-    - reception LAN host
-    - room hardware client
-  - root launch scripts:
-    - `npm run dev:pip`
-    - `npm run start:pip`
-- The unified bootstrap can now hand off from the selected saved role into the existing full role workspace:
-  - `Reception` opens the current reception app
-  - `Room` opens the current client panel
-  - the transitional in-process runtime is stopped before handoff to avoid port/hardware conflicts
 - Fixed blank settings panel when Reception is offline — now shows settings with Connection tab instead of waiting view
-- Added persistent "Reception Offline" banner indicator in surgery app main panel
+- Added persistent "Reception Offline" banner indicator in client app main panel
 
 ### In Progress
 
 - Windows packaging hardening and installer validation
 - Final multi-machine deployment validation on physical reception/surgery PCs
-- Architecture planning for a single packaged `Pip` product with role-based startup
-- Full direct in-app hosting of the role-specific Reception and Room windows from the future `Pip` app
+- Keep the two separate installers aligned for shared settings, messaging, and sound behavior
 
 ### Next
 
 - Test the current build with Reception offline to verify the banner and settings panel behavior
 - Evaluate whether P2P room messaging (Future Feature) is worth implementing
-- Design first-run role selection for a single packaged `Pip` app
 - [x] Expose the role chooser from a deliberate settings/support path
-- Decide whether the first unified build should reuse one renderer entrypoint or introduce a dedicated bootstrap main process
 - Extract/share common shell, messaging, and settings-window pieces where it reduces duplication safely
 - Keep reception server startup isolated behind `Reception` mode only
 - Keep room/Neo startup isolated behind `Room` mode only
@@ -160,18 +140,11 @@ Phase 6: Unified Product and Role Selection
 - [x] Add background app-to-app pairing/authentication
 - [x] Add audit logging and safer config writes
 
-### Phase 6: Unified Product and Role Selection
+### Phase 6: Role Guardrails and Shared UX
 
-- [ ] Add a persisted first-run role chooser
 - [x] Add persisted runtime-role state and hidden chooser-shell foundation
 - [x] Support guarded role-compatible startup in the current separate builds
-- [x] Add a dedicated unified `apps/pip` bootstrap scaffold
-- [x] Start the transitional role service stack from `apps/pip`
-- [x] Add a transitional handoff from `apps/pip` to the existing full Reception/Room workspaces
-- [ ] Support full explicit runtime modes from one packaged app:
-  - `Reception`
-  - `Room`
-- [ ] Consolidate packaging into one installer/app identity
+- [x] Remove the legacy unified bootstrap scaffold and keep separate Reception/Surgery packaging
 - [ ] Keep role-specific startup logic isolated per mode
 - [ ] Reuse shared shell/messaging/settings primitives where safe
 - [ ] Preserve existing messaging, room-action, and Neo workflows during the migration
@@ -187,7 +160,7 @@ Phase 6: Unified Product and Role Selection
   - reception mode starts the local server/runtime
   - room mode starts the Neo/client/runtime
 - UI should stay compact and low-noise on the reception desk
-- The surgery app is now a primary end-user room UI, not only a background service helper
+- The client app is now a primary end-user room UI, not only a background service helper
 
 ## Decision Notes
 
@@ -207,7 +180,7 @@ Phase 6: Unified Product and Role Selection
 - Confirmed the Phase 3 code path still launches the reception app and accepts client notifications
 - Confirmed the surgery client can detect and open a connected Stream Deck Neo directly on macOS
 - Confirmed the surgery client can connect to reception, receive config, and sync Neo key colors from mapped actions
-- Confirmed the surgery app now shows a "Reception Offline" banner when the WebSocket connection drops
+- Confirmed the client app now shows a "Reception Offline" banner when the WebSocket connection drops
 - Confirmed the settings panel now shows settings (not waiting view) when Reception is offline
 - Added Reception thread sidebar, Room/User visibility toggles, schema migration for `hideFromEntireUI`, and validation for mutually exclusive visibility settings
 - A visual/manual review of the gadget window in the real desktop workflow is still recommended
@@ -218,24 +191,24 @@ Phase 6: Unified Product and Role Selection
 
 **Status:** Deferred — not yet implemented
 
-**Description:** Allow surgery apps to send chat messages directly to each other when the Reception app is not running, without requiring a central server.
+**Description:** Allow client apps to send chat messages directly to each other when the Reception app is not running, without requiring a central server.
 
-**Why this matters:** Currently, when Reception is offline, surgery apps show a "Reception Offline" banner and messaging between rooms is unavailable. This feature would enable room-to-room messaging to continue working even without Reception, making the system more resilient.
+**Why this matters:** Currently, when Reception is offline, client apps show a "Reception Offline" banner and messaging between rooms is unavailable. This feature would enable room-to-room messaging to continue working even without Reception, making the system more resilient.
 
 **Proposed approach:** Lightweight peer-to-peer messaging layer that activates only when Reception is confirmed offline:
 
-1. **Peer Discovery** — Extend the existing UDP discovery mechanism (`discoverReceptionServer()` in `panel-main.cjs`) so surgery apps can discover each other directly on the LAN when Reception doesn't respond.
+1. **Peer Discovery** — Extend the existing UDP discovery mechanism (`discoverReceptionServer()` in `panel-main.cjs`) so client apps can discover each other directly on the LAN when Reception doesn't respond.
 
-2. **Peer Server** — Each surgery app runs a tiny HTTP server (a few routes) that:
+2. **Peer Server** — Each client app runs a tiny HTTP server (a few routes) that:
    - Serves its room identity (name, color from local settings)
-   - Accepts incoming chat messages from other surgery apps
+   - Accepts incoming chat messages from other client apps
    - Forwards messages to its own renderer via IPC
 
-3. **Peer Client** — When Reception is offline, the surgery app:
-   - Discovers other surgery apps via UDP broadcast
+3. **Peer Client** — When Reception is offline, the client app:
+   - Discovers other client apps via UDP broadcast
    - Connects to them directly via HTTP
    - Shows available rooms in the thread list
-   - Sends messages directly to peer surgery apps
+   - Sends messages directly to peer client apps
 
 4. **Seamless Fallback** — When Reception comes back online, the app switches back to the normal Reception-based messaging path.
 
@@ -255,10 +228,10 @@ Phase 6: Unified Product and Role Selection
 - No changes to the shared packages
 
 **Risks and considerations:**
-- **Port conflicts:** Each surgery app needs a unique port. Can use `roomId` to derive a port (e.g., `3210 + roomIndex`) or use ephemeral ports broadcast via discovery.
+- **Port conflicts:** Each client app needs a unique port. Can use `roomId` to derive a port (e.g., `3210 + roomIndex`) or use ephemeral ports broadcast via discovery.
 - **Firewall/network isolation:** Direct machine-to-machine HTTP may be blocked on some networks. UDP discovery would fail gracefully, showing "no rooms available."
 - **Message ordering:** Without a central server, messages between peers could arrive out of order. Each message would need a timestamp + sequence number.
-- **Partial message history:** A surgery app that was offline won't have messages sent between other peers during that time. Acceptable — same as any messaging app being offline.
+- **Partial message history:** A client app that was offline won't have messages sent between other peers during that time. Acceptable — same as any messaging app being offline.
 - **Authentication:** In P2P mode, skip the access key check (local network only). Minor security consideration.
 - **No message persistence:** Messages are ephemeral in P2P mode (in-memory only). Full history is available again when Reception comes back online.
 

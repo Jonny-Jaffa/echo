@@ -8,12 +8,12 @@ Use two separate installers:
 
 - Reception computer:
   `dist/reception/Pip Reception Setup 0.2.1.exe`
-- Surgery computers:
-  `dist/surgery/Pip Surgery Setup 0.2.1.exe`
+- Client computers:
+  `dist/client/Pip Client Setup 0.2.1.exe`
 
 ZIP builds are also available in the same folders, but for normal Windows installation you should run the `Setup ... .exe` file directly. You do not need to unzip anything before running the installer.
 
-For surgery computers, each installed `Pip Surgery` app includes a room selector. Choose the room for that specific computer on first launch and it will save that room assignment locally, along with a persistent device ID, so multiple surgery PCs and Elgato Neo devices can all connect to the same reception app on the same LAN without colliding.
+For client computers, each installed `Pip Client` app includes a room selector. Choose the room/user for that specific computer on first launch and it will save that assignment locally, along with a persistent device ID, so multiple client PCs and Elgato Neo devices can all connect to the same reception app on the same LAN without colliding.
 
 ## Windows installer note
 
@@ -27,7 +27,7 @@ The packaged macOS reception app still needs proper Apple code signing and notar
 
 For now:
 
-- `Pip Surgery` can continue to be tested from the packaged app if it opens correctly on your Mac
+- `Pip Client` can continue to be tested from the packaged app if it opens correctly on your Mac
 - `Pip Reception` should be run using the local Mac test launcher below during development
 
 ## Local Mac test launcher for Reception
@@ -43,9 +43,9 @@ This launches the reception gadget directly from source and avoids the current u
 ## What goes where
 
 - Install `Pip Reception` on the front desk / reception computer
-- Install `Pip Surgery` on each surgery computer that will use:
+- Install `Pip Client` on each client computer that will use:
   - the Elgato Stream Deck Neo
-  - the optional on-screen surgery panel
+  - the optional on-screen client panel
 
 ## Reception setup
 
@@ -58,16 +58,16 @@ This launches the reception gadget directly from source and avoids the current u
    - connection settings, including the detected server address and pairing code
 4. Leave the reception app running on the local network
 
-## Surgery setup
+## Client setup
 
-1. Open `Pip Surgery`
-2. Select the correct surgery room for that machine
+1. Open `Pip Client`
+2. Select the correct room/user for that machine
 3. Enter the reception server address if needed
 4. Enter the same pairing code shown in reception
 5. Connect the Elgato Neo by USB
-6. Leave the surgery app running
+6. Leave the client app running
 
-The surgery app stores both a persistent `roomId` and a persistent `deviceId` locally, so each surgery computer keeps its own room assignment and device identity as a separate installation.
+The client app stores both a persistent `roomId` and a persistent `deviceId` locally, so each client computer keeps its own room assignment and device identity as a separate installation.
 
 ## Notes
 

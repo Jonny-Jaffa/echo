@@ -12,7 +12,8 @@
     "dev:panel:room2": "env -u ELECTRON_RUN_AS_NODE PIP_DEVICE_ID=pip-room-panel-2 PIP_ROOM_ID=surgery-2 electron --user-data-dir=.pip-room-panel-2 src/panel-main.cjs",
     "start": "node src/index.js",
     "start:panel": "env -u ELECTRON_RUN_AS_NODE electron src/panel-main.cjs",
-    "test:surgeries": "node src/test-all-surgeries.js"
+    "test:clients": "node src/test-all-surgeries.js",
+    "test:surgeries": "npm run test:clients"
   },
   "dependencies": {
     "@elgato-stream-deck/node": "^7.6.2",
@@ -24,12 +25,12 @@
     "electron": "42.1.0"
   },
   "build": {
-    "appId": "com.patientpip.surgery",
-    "productName": "Pip Surgery",
+    "appId": "com.patientpip.client",
+    "productName": "Pip Client",
     "icon": "build/icon.png",
     "copyright": "Copyright Blackworks",
     "directories": {
-      "output": "../../dist/surgery"
+      "output": "../../dist/client"
     },
     "npmRebuild": false,
     "extraResources": [

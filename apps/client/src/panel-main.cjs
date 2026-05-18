@@ -31,13 +31,29 @@ const MESSAGE_POPUP_MIN_HEIGHT = 48;
 const MESSAGE_POPUP_MAX_HEIGHT = 172;
 const RECEPTION_PING_POPUP_HEIGHT = 240;
 const MESSAGE_POPUP_MARGIN = 18;
+const SURGERY_SOUND_FILE_NAMES = [
+  "Ping.wav",
+  "Glass.wav",
+  "Hero.wav",
+  "Funk.wav",
+  "Pop.wav",
+  "Chime.wav",
+  "Bell.wav",
+  "Ripple.wav",
+  "Spark.wav",
+  "Pulse.wav",
+  "Echo.wav",
+  "Drift.wav",
+  "Flash.wav",
+  "Wave.wav",
+  "Ember.wav",
+  "Beacon.wav",
+  "Nova.wav",
+];
 const SURGERY_SOUND_FILE_MAP = Object.fromEntries(
-  Array.from({ length: 17 }, (_value, index) => {
+  SURGERY_SOUND_FILE_NAMES.map((fileName, index) => {
     const soundNumber = String(index + 1).padStart(2, "0");
-    return [
-      `notification_sound_${soundNumber}`,
-      `Notification_sound_${soundNumber}.wav`,
-    ];
+    return [`notification_sound_${soundNumber}`, fileName];
   }),
 );
 const LEGACY_SURGERY_SOUND_ALIASES = {
@@ -93,7 +109,7 @@ const CURRENT_APP_RUNTIME_ROLE = RUNTIME_ROLE_ROOM;
 const USE_EXTERNAL_THREAD_RAIL = process.platform === "win32";
 const SURGERY_MAIN_WINDOW_IS_TRANSPARENT = true;
 const SURGERY_MAIN_WINDOW_BACKGROUND = "#00000000";
-const SURGERY_PANEL_WINDOW_TITLE = process.platform === "win32" ? "\u200B" : "Pip Surgery";
+const SURGERY_PANEL_WINDOW_TITLE = process.platform === "win32" ? "\u200B" : "Pip Client";
 let allowNativeMinimize = false;
 
 function normalizePanelDisplayMode(mode) {
@@ -544,7 +560,7 @@ function createWindow({ showInitially = true } = {}) {
 
     mainWindow.webContents.executeJavaScript(
       `document.body.dataset.platform = ${JSON.stringify(process.platform)};
-       document.title = ${JSON.stringify(process.platform === "win32" ? "\u200B" : "Pip Surgery")};`,
+       document.title = ${JSON.stringify(process.platform === "win32" ? "\u200B" : "Pip Client")};`,
       true,
     ).catch(() => {});
   });
@@ -843,7 +859,7 @@ function createSettingsWindow() {
     minWidth: SURGERY_SETTINGS_WINDOW_WIDTH,
     minHeight: 680,
     autoHideMenuBar: true,
-    title: "Pip Surgery Settings",
+    title: "Pip Client Settings",
     show: false,
     skipTaskbar: false,
     frame: false,
@@ -948,6 +964,7 @@ function getSettingsPath() {
 function getLegacySettingsPaths() {
   return [
     path.join(app.getPath("appData"), "@patient-ping", "client", "client-settings.json"),
+    path.join(app.getPath("appData"), "Pip Surgery", "client-settings.json"),
     path.join(app.getPath("appData"), "Echo Surgery", "client-settings.json"),
   ];
 }
@@ -2073,7 +2090,7 @@ function refreshTrayMenu() {
     },
   ]);
 
-  tray.setToolTip("Pip Surgery");
+  tray.setToolTip("Pip Client");
   tray.setContextMenu(menu);
 }
 

@@ -64,13 +64,29 @@ const ALERT_POPUP_HEIGHT = 48;
 const MESSAGE_POPUP_MARGIN = 18;
 const STARTUP_LOG_PATH = path.join(os.tmpdir(), "pip-reception.log");
 const DEFAULT_RECEPTION_SOUND = "notification_sound_01";
+const RECEPTION_SOUND_FILE_NAMES = [
+  "Ping.wav",
+  "Glass.wav",
+  "Hero.wav",
+  "Funk.wav",
+  "Pop.wav",
+  "Chime.wav",
+  "Bell.wav",
+  "Ripple.wav",
+  "Spark.wav",
+  "Pulse.wav",
+  "Echo.wav",
+  "Drift.wav",
+  "Flash.wav",
+  "Wave.wav",
+  "Ember.wav",
+  "Beacon.wav",
+  "Nova.wav",
+];
 const RECEPTION_SOUND_FILE_MAP = Object.fromEntries(
-  Array.from({ length: 17 }, (_value, index) => {
+  RECEPTION_SOUND_FILE_NAMES.map((fileName, index) => {
     const soundNumber = String(index + 1).padStart(2, "0");
-    return [
-      `notification_sound_${soundNumber}`,
-      `Notification_sound_${soundNumber}.wav`,
-    ];
+    return [`notification_sound_${soundNumber}`, fileName];
   }),
 );
 const LEGACY_RECEPTION_SOUND_ALIASES = {

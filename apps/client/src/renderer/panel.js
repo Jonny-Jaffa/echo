@@ -184,12 +184,9 @@ NOTIFICATION_SOUND_LABELS.forEach((label, index) => {
   LEGACY_ROOM_ALERT_SOUND_ALIASES[label.toLowerCase()] = `notification_sound_${String(index + 1).padStart(2, "0")}`;
 });
 const ROOM_ALERT_SOUND_FILE_MAP = Object.fromEntries(
-  Array.from({ length: 17 }, (_value, index) => {
+  NOTIFICATION_SOUND_LABELS.map((label, index) => {
     const soundNumber = String(index + 1).padStart(2, "0");
-    return [
-      `notification_sound_${soundNumber}`,
-      `Notification_sound_${soundNumber}.wav`,
-    ];
+    return [`notification_sound_${soundNumber}`, `${label}.wav`];
   }),
 );
 const ROOM_ALERT_SOUND_OPTIONS = Array.from({ length: 17 }, (_value, index) => {
@@ -323,7 +320,7 @@ function renderRoleView(roleState = {}) {
   if (roleCurrentLabel) {
     roleCurrentLabel.textContent = isSupportedInThisBuild
       ? `Current saved role: ${formatRuntimeRoleLabel(runtimeRole)}`
-      : `This Pip Surgery build supports ${formatRuntimeRoleLabel(nativeRuntimeRole)} only. Switch back to ${formatRuntimeRoleLabel(nativeRuntimeRole)} to continue using this install.`;
+      : `This Pip Client build supports ${formatRuntimeRoleLabel(nativeRuntimeRole)} only. Switch back to ${formatRuntimeRoleLabel(nativeRuntimeRole)} to continue using this install.`;
   }
 }
 

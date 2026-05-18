@@ -60,7 +60,7 @@
 - Added client-side local acknowledgement sound playback using OS-native commands without extra dependencies
 - Added an optional Electron-based surgery control panel with 8 on-screen buttons
 - Added requested top-row panel icons: `15`, `30`, calendar, and heart
-- Added launch scripts for the optional surgery panel from the root workspace
+- Added launch scripts for the optional client panel from the root workspace
 
 ### Notes
 
@@ -104,7 +104,7 @@
   - receive live config
   - detect and open the connected Stream Deck Neo
   - sync mapped key colors to the Neo
-- Added macOS packaging for the reception and surgery apps using `electron-builder`
+- Added macOS packaging for the reception and client apps using `electron-builder`
 - Added installer documentation in `docs/INSTALL.md`
 - Fixed reception packaged-config handling so the installed reception app seeds a writable `config.json` into the app's user-data folder on first launch
 - Confirmed the packaged reception app bundle now includes the default config as an extra resource at `Contents/Resources/config/config.json`
@@ -129,7 +129,7 @@
 ### Session 1
 
 - Added LAN auto-discovery support so surgery installs can find the reception machine more easily on the local network
-- Added persistent surgery-side room/device identity so multiple surgery PCs can coexist on the same LAN without collisions
+- Added persistent client-side room/device identity so multiple surgery PCs can coexist on the same LAN without collisions
 - Added reception startup support and persisted gadget window position
 - Added a visible read-only detected server address field in reception settings
 - Added reception tray icon support using a generated branded icon instead of an empty image
@@ -154,7 +154,7 @@
 - Confirmed the rename should cover app titles, UI labels, tray text, installer product names, dialog copy, and documentation
 - Promoted the temporary reception test installer identity into the proper release branding:
   - `Pip Reception`
-  - `Pip Surgery`
+  - `Pip Client`
 - Aligned workspace package versions for the next Windows release build
 
 ### Notes
@@ -164,23 +164,23 @@
 
 ### Session 2
 
-- Investigated Windows-installed surgery app issue where the Stream Deck Neo remained visually blank even though surgery-to-reception messaging still worked
-- Reworked surgery-side Neo rendering to prefer Electron's built-in SVG rasterization in the installed app, while retaining `resvg-wasm` as a fallback renderer
+- Investigated Windows-installed client app issue where the Stream Deck Neo remained visually blank even though surgery-to-reception messaging still worked
+- Reworked client-side Neo rendering to prefer Electron's built-in SVG rasterization in the installed app, while retaining `resvg-wasm` as a fallback renderer
 - Added defensive Neo rendering fallbacks so button/LCD sync can still paint simple fallback artwork instead of aborting the entire render pass
 - Added surgery hardware status reporting from the background hardware service into the panel UI and the hardware log
-- Surfaced a visible `Neo:` status line in the surgery panel so installed Windows machines can show whether the device is connected, waiting, busy, stopped, or erroring
+- Surfaced a visible `Neo:` status line in the client panel so installed Windows machines can show whether the device is connected, waiting, busy, stopped, or erroring
 - Bumped workspace/app versions from `0.1.3` to `0.1.4` for the next installer output
 
 ### Session 3
 
 - Diagnosed the packaged surgery startup failure shown in the panel status as a shared-package import problem rather than a Stream Deck problem
 - Fixed `@pip/shared` so config-path resolution is lazy and only happens when `loadConfig()` or `saveConfig()` are actually called
-- Removed the packaged surgery app's accidental requirement for a local bundled `config.json` just to import `buildNotificationPayload()`
+- Removed the packaged client app's accidental requirement for a local bundled `config.json` just to import `buildNotificationPayload()`
 - Bumped workspace/app versions from `0.1.4` to `0.1.5` for the next installer output
 
 ### Session 4
 
-- Added a dedicated surgery-panel startup waiting state for the case where the surgery computer is running before reception is available
+- Added a dedicated surgery-panel startup waiting state for the case where the client computer is running before reception is available
 - The waiting state now shows only the Pip logo, an offline indicator, and the message `Waiting to connect to reception`
 - Fixed the Neo fallback button renderer so fallback mode still paints button labels instead of blank lit buttons
 - Increased the reception gadget alert icon size
@@ -199,15 +199,15 @@
 
 - Compared the current Neo renderer with the user-provided `old version` prototype to recover the cleaner text rendering path
 - Confirmed the old prototype used SVG text with the `Avenir Next, Segoe UI, Arial, sans-serif` font stack for the Neo button labels and LCD display, rasterized through `resvg-wasm`
-- Restored that SVG text rendering method for the Neo main buttons, LCD clock, and LCD alert banner in the current surgery app
+- Restored that SVG text rendering method for the Neo main buttons, LCD clock, and LCD alert banner in the current client app
 - Kept the bitmap artwork functions in place as fallback helpers so the app still has a backup path if SVG rendering fails again
 - Bumped workspace/app versions from `0.1.7` to `0.1.8` for the next installer output
 
 ### Session 7
 
 - Confirmed the restored SVG-font Neo approach still does not render text on the packaged Windows surgery build, even though button state colours and button presses still work
-- Added safe WebSocket shutdown handling so closing the surgery app before reception connection is established no longer throws `WebSocket was closed before the connection was established`
-- Added a hidden Electron canvas renderer for Neo button labels and LCD text so the packaged surgery app can use Chromium text rendering instead of SVG font resolution
+- Added safe WebSocket shutdown handling so closing the client app before reception connection is established no longer throws `WebSocket was closed before the connection was established`
+- Added a hidden Electron canvas renderer for Neo button labels and LCD text so the packaged client app can use Chromium text rendering instead of SVG font resolution
 - Kept the bitmap artwork functions as the final fallback path if both canvas and SVG-based rendering fail
 - Built a surgery-only release and bumped the surgery/shared workspace versions from `0.1.8` to `0.1.9`
 - Confirmed on the user-tested `0.1.9` surgery build that the hidden Electron canvas renderer displays Neo button text and LCD text correctly on the packaged Windows app
@@ -221,13 +221,13 @@
 ### Session 1
 
 - Replaced the old reception/surgery alert sounds with bundled per-app WAV assets so both apps now use the same local sound files instead of mixed OS/synth playback paths
-- Added support for `Notification_sound_17.wav` across both apps and kept the sound selector lists in sync
+- Added support for the full bundled sound set across both apps and kept the sound selector lists in sync
 - Changed the Neo LCD reception alert banner text from `Reception Alert` to `Reception` and vertically centered it
-- Increased the surgery app window height and kept the expanded settings height in sync
-- Fixed the surgery panel startup flow so it can recover from `Offline` to online automatically when reception starts later, without adding an aggressive retry loop
-- Moved button colour settings from reception into the surgery app on a per-room basis, including default/active text colours
-- Moved Neo left-button customisation from reception into the surgery app on a per-room basis
-- Added a per-room Neo right-button settings section in the surgery app as the future expansion point for new right-button modes
+- Increased the client app window height and kept the expanded settings height in sync
+- Fixed the client panel startup flow so it can recover from `Offline` to online automatically when reception starts later, without adding an aggressive retry loop
+- Moved button colour settings from reception into the client app on a per-room basis, including default/active text colours
+- Moved Neo left-button customisation from reception into the client app on a per-room basis
+- Added a per-room Neo right-button settings section in the client app as the future expansion point for new right-button modes
 - Refined the surgery settings layout:
   - button/text colour pickers now render in two-column rows
   - left-button toggle/dropdown now render in two columns
@@ -245,7 +245,7 @@
 - Added request-body size limits and safer atomic config writes with backup handling in the shared config helpers
 - Renamed the security field wording in the UI to friendlier pairing language aimed at non-technical staff
 - Added a new right Neo button mode called `Lucy`:
-  - selectable per room in the surgery app
+  - selectable per room in the client app
   - triggered by the physical right auxiliary Neo button
   - reveals `L`, `U`, `C`, `Y` across the top row one button at a time in vibrant yellow
   - then shows yellow hearts across the bottom row and slowly flashes the hearts
@@ -253,7 +253,7 @@
 - Bumped workspace/app versions to `0.2.1`
 - Built fresh Windows installers and ZIPs for both apps:
   - `dist/reception/Pip Reception Setup 0.2.1.exe`
-  - `dist/surgery/Pip Surgery Setup 0.2.1.exe`
+  - `dist/client/Pip Client Setup 0.2.1.exe`
 
 ### Notes
 
@@ -269,9 +269,9 @@
 - Corrected the README quick start to use the confirmed local desktop smoke-test pair:
   - `npm run dev:reception`
   - `npm run dev:client-panel`
-- Refreshed the npm workspace install so the new `apps/pip` workspace can resolve the root Electron binary
-- Confirmed `npm run dev:pip` now launches instead of failing with `env: electron: No such file or directory`
-- Added the first transitional unified-app handoff from `apps/pip`:
+- Refreshed the npm workspace install for the transitional unified bootstrap workspace
+- Confirmed the transitional bootstrap launch script started instead of failing with `env: electron: No such file or directory`
+- Added the first transitional unified-app handoff:
   - selected `Reception` role can open the existing full reception app
   - selected `Room` role can open the existing full room/client panel
   - the in-process transitional runtime stops before handoff so it does not conflict with the full app over LAN ports or Neo hardware
@@ -279,11 +279,11 @@
 ### Notes
 
 - The handoff still launches the trusted existing role apps as separate development processes
-- The next migration step is to host the full role-specific windows directly from the unified `apps/pip` process, then consolidate packaging around one `Pip` app identity
+- The next migration step was to host the full role-specific windows directly from the unified process, then consolidate packaging around one app identity
 
 ### Session 2
 
-- Fixed the surgery panel `Both` display mode so the message section matches the `Messages` view height without adding excess space between buttons and messages
+- Fixed the client panel `Both` display mode so the message section matches the `Messages` view height without adding excess space between buttons and messages
 - Added separate message sound settings from action/reception-alert sound settings:
   - Reception settings now include a dedicated `Message Sound` selector and volume slider
   - Surgery settings now include a dedicated `Message Sound` selector and volume slider
@@ -294,37 +294,37 @@
 
 ### Session 1
 
-- Reworked the surgery app into a messaging-first panel with a separate centered settings window
-- Added surgery-side live chat with:
+- Reworked the client app into a messaging-first panel with a separate centered settings window
+- Added client-side live chat with:
   - reception-to-room messaging
   - room-to-reception messaging
   - room-to-room messaging
   - `All` broadcast messaging
   - custom surgery-defined message groups
-- Added surgery-side pinned recipient threads plus a recipient drawer for larger recipient/group lists
-- Added unread indicators and chat-thread filtering so the surgery panel behaves more like a standard messaging app
-- Added WhatsApp-style message bubbles in the surgery panel:
+- Added client-side pinned recipient threads plus a recipient drawer for larger recipient/group lists
+- Added unread indicators and chat-thread filtering so the client panel behaves more like a standard messaging app
+- Added WhatsApp-style message bubbles in the client panel:
   - left/right bubble layout
   - 24-hour `H:MM` timestamps
   - single-line and multi-line timestamp placement rules
-- Added surgery panel display modes:
+- Added client panel display modes:
   - `Messages`
   - `Buttons`
   - `Both`
-- Persisted the surgery panel display mode per machine and fixed launch-time resize jitter so the panel now opens directly in the saved mode
-- Changed surgery panel resizing so height changes anchor from the bottom edge instead of pushing the composer out of view
+- Persisted the client panel display mode per machine and fixed launch-time resize jitter so the panel now opens directly in the saved mode
+- Changed client panel resizing so height changes anchor from the bottom edge instead of pushing the composer out of view
 - Added a quick-action toggle in the surgery header so Neo-style action buttons can be triggered directly from the computer as well as from the hardware device
 - Added a separator line between quick actions and messaging that only appears in `Both` mode
-- Moved room action editing from reception into the surgery app so each room now controls its own button labels/messages/colours locally
-- Added surgery-side room button colour, left/right Neo button, sound, and room-action configuration persistence
-- Added surgery-side `Always on top` setting and local settings sync
+- Moved room action editing from reception into the client app so each room now controls its own button labels/messages/colours locally
+- Added client-side room button colour, left/right Neo button, sound, and room-action configuration persistence
+- Added client-side `Always on top` setting and local settings sync
 - Added separate framed About windows and branded tray-menu updates for both apps
 - Updated both apps to use a coordinated frameless window style with custom minimize/close controls
 - Added reception-side messaging UI so reception and surgery now share the same chat feature set end to end
 - Fixed reception and surgery input/drag-region issues that were blocking text entry and scrolling in the frameless windows
 - Fixed surgery settings auto-refresh interruptions so message-group inputs and toggles no longer lose focus after a few seconds
 - Reused the existing per-app sound and volume configuration for incoming chat-message alert playback
-- Confirmed the surgery app now acts as a full desktop room panel rather than only a background/hardware helper
+- Confirmed the client app now acts as a full desktop room panel rather than only a background/hardware helper
 
 ### Session 2
 
@@ -345,7 +345,7 @@
 
 - Added shared runtime-role vocabulary to `packages/shared`
 - Added persisted local runtime-role state to both current apps:
-  - surgery app local settings now include `runtimeRole` and `runtimeRoleConfirmed`
+  - client app local settings now include `runtimeRole` and `runtimeRoleConfirmed`
   - reception app now keeps a separate local `app-state.json` with `runtimeRole` and `runtimeRoleConfirmed`
 - Added hidden role-chooser window infrastructure to both apps:
   - standalone `view=role` renderer path
@@ -382,7 +382,7 @@
 
 ### Session 6
 
-- Added a dedicated unified bootstrap workspace at `apps/pip`
+- Added a dedicated unified bootstrap workspace
 - Added a new Electron bootstrap app shell with:
   - its own `main.js`
   - its own preload bridge
@@ -393,18 +393,13 @@
   - it stores the chosen role
   - it explains the current migration stage
   - it does not yet pretend to fully hand off into the reception or room runtimes
-- Added root workspace launch scripts for the new unified bootstrap app:
-  - `npm run dev:pip`
-  - `npm run start:pip`
-- Verified syntax for:
-  - `apps/pip/src/main.js`
-  - `apps/pip/src/preload.js`
-  - `apps/pip/src/renderer/renderer.js`
+- Added root workspace launch scripts for the new unified bootstrap app
+- Verified syntax for the bootstrap main, preload, and renderer files
 
 ### Session 7
 
-- Upgraded the new `apps/pip` bootstrap app from a passive role chooser into a real transitional runtime host
-- `apps/pip` now starts the matching in-process role service based on the saved role:
+- Upgraded the bootstrap app from a passive role chooser into a real transitional runtime host
+- The bootstrap app starts the matching in-process role service based on the saved role:
   - `Reception` starts the modular LAN host service from the reception codebase
   - `Room` starts the modular hardware client service from the surgery codebase
 - Added a runtime status panel to the unified bootstrap UI so the current role service can be monitored and restarted/stopped
@@ -421,7 +416,7 @@
 
 ### Notes
 
-- The current surgery app should now be treated as a primary end-user desktop UI, not just a control-panel add-on
+- The current client app should now be treated as a primary end-user desktop UI, not just a control-panel add-on
 - Messaging, message groups, and pinned-thread behavior are now meaningful state that future role-unification work must preserve
 - The agreed architectural direction is a unified product with explicit runtime roles, not a single window trying to be reception and surgery simultaneously
 
@@ -430,7 +425,7 @@
 ### Session 1
 
 - Fixed blank settings panel issue: when the settings window opened while Reception was offline, it showed the waiting/offline view instead of the settings panel. Now it shows the settings panel with the Connection tab active, so users can adjust connection details directly.
-- Added a persistent "Reception Offline" banner indicator in the surgery app main panel:
+- Added a persistent "Reception Offline" banner indicator in the client app main panel:
   - A red banner at the top of the window displays "Reception is offline — alerts and messages won't be delivered until it's back"
   - Appears when the WebSocket connection drops or errors
   - Appears when the initial config fetch fails
@@ -440,7 +435,7 @@
 
 ### Notes
 
-- The Reception Offline banner solves the UX problem of surgery apps running without any indication that Reception is unavailable
+- The Reception Offline banner solves the UX problem of client apps running without any indication that Reception is unavailable
 - The settings panel fix ensures users can always access connection settings regardless of Reception's status
 - Full P2P messaging between rooms without Reception was considered but deferred — see DEV_PLAN for details
 
@@ -448,7 +443,7 @@
 
 - Test the current build with Reception offline to verify the banner and settings panel behavior
 - Evaluate whether P2P room messaging (Future Feature) is worth implementing
-- Document and implement a role-selection model for a unified `Pip` installer/app
+- Keep the current separate Reception/Surgery installer model documented
 - Identify what can be shared between reception and room modes without coupling the startup logic too tightly
 - Keep the reception server/runtime responsibilities isolated even if both roles eventually live inside one packaged Electron product
 - The pairing code is stored locally in each app config; new reception installs default to `1234` unless that value has already been changed and saved
