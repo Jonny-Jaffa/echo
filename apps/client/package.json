@@ -11,9 +11,7 @@
     "dev:about": "env -u ELECTRON_RUN_AS_NODE PIP_SHOW_ABOUT=1 electron src/panel-main.cjs",
     "dev:panel:room2": "env -u ELECTRON_RUN_AS_NODE PIP_DEVICE_ID=pip-room-panel-2 PIP_ROOM_ID=surgery-2 electron --user-data-dir=.pip-room-panel-2 src/panel-main.cjs",
     "start": "node src/index.js",
-    "start:panel": "env -u ELECTRON_RUN_AS_NODE electron src/panel-main.cjs",
-    "test:clients": "node src/test-all-surgeries.js",
-    "test:surgeries": "npm run test:clients"
+    "start:panel": "env -u ELECTRON_RUN_AS_NODE electron src/panel-main.cjs"
   },
   "dependencies": {
     "@elgato-stream-deck/node": "^7.6.2",
