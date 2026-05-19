@@ -248,7 +248,7 @@ export function normalizeConfig(config = {}) {
         typeof migratedConfig.display?.launchAtStartup === "boolean"
           ? migratedConfig.display.launchAtStartup
           : true,
-      messageRetentionMinutes: Math.max(1, Number(migratedConfig.display?.messageRetentionMinutes) || 60),
+      messageRetentionMinutes: Math.max(1, Number(migratedConfig.display?.messageRetentionMinutes) || 540),
       popupPosition: normalizePopupPosition(migratedConfig.display?.popupPosition),
       receptionPingMessage: normalizeReceptionPingMessage(migratedConfig.display?.receptionPingMessage),
       windowPosition: normalizeWindowPosition(migratedConfig.display?.windowPosition),

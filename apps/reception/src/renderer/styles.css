@@ -218,6 +218,7 @@ body[data-window-view="settings"] .thread-rail {
   gap: 14px;
   width: 470px;
   padding: 8px 12px 12px;
+  border: 1px solid var(--line);
   align-self: start;
   align-content: start;
   grid-template-rows: auto auto auto;

@@ -1677,7 +1677,7 @@ function populateEditor(config) {
   launchAtStartupInput.checked = draftConfig.display?.launchAtStartup !== false;
   alwaysOnTopInput.checked = Boolean(draftConfig.display.alwaysOnTop);
   if (messageRetentionInput) {
-    messageRetentionInput.value = String(draftConfig.display?.messageRetentionMinutes ?? 60);
+    messageRetentionInput.value = String(draftConfig.display?.messageRetentionMinutes ?? 540);
   }
   if (receptionPingMessageInput) {
     receptionPingMessageInput.value = normalizeReceptionPingMessage(draftConfig.display?.receptionPingMessage);
@@ -1962,7 +1962,7 @@ function buildConfigFromForm() {
       ...draftConfig.display,
       launchAtStartup: launchAtStartupInput.checked,
       alwaysOnTop: alwaysOnTopInput.checked,
-      messageRetentionMinutes: Number(messageRetentionInput?.value) || 60,
+      messageRetentionMinutes: Number(messageRetentionInput?.value) || 540,
       receptionPingMessage: normalizeReceptionPingMessage(receptionPingMessageInput?.value),
       adminMode: false,
     },

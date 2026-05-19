@@ -72,6 +72,12 @@ test("normalizeConfig defaults always on top to false while preserving saved cho
   assert.equal(enabled.display.alwaysOnTop, true);
 });
 
+test("normalizeConfig defaults message retention to 9 hours for new configs", () => {
+  const defaulted = normalizeConfig(buildConfig());
+
+  assert.equal(defaulted.display.messageRetentionMinutes, 540);
+});
+
 test("validateConfig rejects mutually exclusive room/user visibility toggles", () => {
   const result = validateConfig(buildConfig({
     hideFromAlertSection: true,

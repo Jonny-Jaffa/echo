@@ -698,7 +698,7 @@ async function createReceptionServer({
   function startNotificationPruneTimer() {
     stopNotificationPruneTimer();
     const currentConfig = getConfig();
-    const retentionMinutes = Number(currentConfig?.display?.messageRetentionMinutes) || 60;
+    const retentionMinutes = Number(currentConfig?.display?.messageRetentionMinutes) || 540;
     const checkIntervalMs = Math.min(retentionMinutes * 60 * 1000, 5 * 60 * 1000);
     const retentionMs = retentionMinutes * 60 * 1000;
 
