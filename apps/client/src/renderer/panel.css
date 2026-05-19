@@ -157,7 +157,7 @@ label {
   gap: 0;
   align-items: start;
   min-height: 100vh;
-  border-radius: 12px;
+  border-radius: 20px;
   background: transparent;
   overflow: hidden;
 }
@@ -200,7 +200,7 @@ body[data-window-view="main"] .panel-card {
   min-height: 100vh;
   max-height: 100vh;
   height: 100vh;
-  border-radius: 12px;
+  border-radius: 20px;
   padding-left: 4px;
   padding-right: 4px;
   padding-bottom: 0;
@@ -540,7 +540,7 @@ body[data-view="waiting"] .waiting-state {
 
 .panel-card {
   background: var(--panel);
-  border-radius: 12px;
+  border-radius: 20px;
   padding: 8px 14px 14px;
   display: grid;
   gap: 14px;

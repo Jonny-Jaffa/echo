@@ -71,6 +71,7 @@ Windows installer outputs are written to `dist/reception` and `dist/client`.
 ## Documentation
 
 - `docs/INSTALL.md`: install and setup notes.
+- `docs/FEATURE_LIST.md`: product feature list for future sales and marketing material.
 - `docs/DEV_PLAN.md`: current development plan and backlog.
 - `docs/DEV_LOG.md`: chronological development log.
 - `docs/ATTACHMENTS_SPEC.md`: attachment feature specification.

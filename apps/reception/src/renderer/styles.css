@@ -209,7 +209,7 @@ body[data-window-view="settings"] .thread-rail {
 .admin-panel {
   background: rgba(255, 255, 255, 0.85);
   backdrop-filter: blur(10px);
-  border-radius: 12px;
+  border-radius: 20px;
   box-shadow: none;
 }
 
@@ -228,7 +228,7 @@ body[data-expanded="true"] .gadget-panel {
 }
 
 body[data-platform="win32"] .gadget-panel {
-  border-radius: 12px;
+  border-radius: 20px;
 }
 
 body[data-admin-mode="true"] .gadget-panel {
@@ -1057,10 +1057,11 @@ body[data-thread-rail-collapsed="true"] .thread-rail .message-thread-scroll-wrap
   background:
     radial-gradient(circle at 18% 10%, rgba(255, 255, 255, 0.92) 0 14%, transparent 42%),
     linear-gradient(135deg, rgba(255, 255, 255, 0.95), color-mix(in srgb, var(--row-accent, #0f766e) 18%, white));
-  box-shadow:
+  /* box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.9),
     0 4px 12px rgba(16, 35, 31, 0.1),
-    0 0 14px color-mix(in srgb, var(--row-accent, #0f766e) 16%, transparent);
+    0 0 14px color-mix(in srgb, var(--row-accent, #0f766e) 16%, transparent); */
+  box-shadow: none;
   backdrop-filter: blur(16px) saturate(1.3) contrast(1.04);
   -webkit-backdrop-filter: blur(16px) saturate(1.3) contrast(1.04);
   overflow: hidden;
@@ -1201,7 +1202,8 @@ body[data-thread-rail-collapsed="true"] .thread-rail .message-thread-scroll-wrap
 }
 
 .alert-row.is-idle {
-  box-shadow: 0 8px 18px rgba(16, 35, 31, 0.08);
+  /* box-shadow: 0 8px 18px rgba(16, 35, 31, 0.08); */
+  box-shadow: none;
 }
 
 .alert-copy {
@@ -1602,6 +1604,12 @@ body[data-minimized="true"] .thread-rail {
 
 body[data-messages-hidden="true"] .reception-message-shell {
   display: none;
+}
+
+body[data-messages-hidden="true"] .gadget-panel,
+body[data-messages-hidden="true"] #notification-card,
+body[data-messages-hidden="true"] .alert-list {
+  padding-bottom: 5px;
 }
 
 body[data-minimized="true"] .alert-message,
