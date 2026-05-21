@@ -196,6 +196,7 @@ let tray = null;
 let aboutWindow = null;
 let messagePopupWindow = null;
 let latestMessagePopupPayload = null;
+let messageTaskbarOverlayIcon = null;
 let isQuitting = false;
 let isSettingsPanelExpanded = false;
 let currentPanelDisplayMode = "messages";
@@ -678,6 +679,7 @@ function getThreadRailWindowBounds() {
   }
 
   const bounds = mainWindow.getBounds();
+  const workArea = screen.getDisplayMatching(bounds).workArea;
   const topOffset = Math.max(8, Math.round(Number(latestThreadRailPayload?.top) || 8));
   const threadCount = Array.isArray(latestThreadRailPayload?.threads)
     ? latestThreadRailPayload.threads.length
@@ -691,10 +693,15 @@ function getThreadRailWindowBounds() {
     Math.max(84, contentHeight),
     Math.max(84, bounds.height - topOffset + SURGERY_THREAD_RAIL_TOP_BUFFER),
   );
+  const x = Math.max(workArea.x, bounds.x - SURGERY_THREAD_RAIL_WIDTH);
+  const y = Math.min(
+    Math.max(bounds.y + topOffset + 10 - SURGERY_THREAD_RAIL_TOP_BUFFER, workArea.y),
+    Math.max(workArea.y, workArea.y + workArea.height - height),
+  );
 
   return {
-    x: bounds.x - SURGERY_THREAD_RAIL_WIDTH,
-    y: bounds.y + topOffset + 10 - SURGERY_THREAD_RAIL_TOP_BUFFER,
+    x,
+    y,
     width: SURGERY_THREAD_RAIL_WIDTH,
     height,
   };
@@ -1105,17 +1112,40 @@ function saveClientSettings() {
 }
 
 function shouldAutoDiscoverServerUrl(serverUrl) {
-  const normalized = String(serverUrl || "").trim().toLowerCase();
+  const normalized = String(serverUrl || "").trim();
 
   if (!normalized) {
     return true;
   }
 
+  try {
+    const { hostname } = new URL(normalized);
+    const lowerHostname = hostname.toLowerCase();
+
+    if (lowerHostname === "localhost" || lowerHostname === "127.0.0.1") {
+      return true;
+    }
+
+    return isPrivateIpv4Address(lowerHostname);
+  } catch {
+    return false;
+  }
+}
+
+function isPrivateIpv4Address(hostname) {
+  const parts = String(hostname || "").split(".").map((part) => Number(part));
+
+  if (parts.length !== 4 || parts.some((part) => !Number.isInteger(part) || part < 0 || part > 255)) {
+    return false;
+  }
+
+  const [first, second] = parts;
+
   return (
-    normalized === "http://127.0.0.1:3210" ||
-    normalized === "http://localhost:3210" ||
-    normalized.startsWith("http://127.0.0.1:") ||
-    normalized.startsWith("http://localhost:")
+    first === 10 ||
+    (first === 172 && second >= 16 && second <= 31) ||
+    (first === 192 && second === 168) ||
+    (first === 169 && second === 254)
   );
 }
 
@@ -1193,6 +1223,30 @@ async function autoDetectServerUrlIfNeeded() {
 
   clientSettings.serverUrl = discoveredServerUrl;
   saveClientSettings();
+}
+
+async function refreshDiscoveredServerUrl() {
+  if (!shouldAutoDiscoverServerUrl(clientSettings.serverUrl)) {
+    appendClientServiceLog(`skipping reception discovery refresh for ${clientSettings.serverUrl}`);
+    return null;
+  }
+
+  appendClientServiceLog(`refreshing reception discovery from ${clientSettings.serverUrl}`);
+  const discoveredServerUrl = await discoverReceptionServer(2500);
+
+  if (!discoveredServerUrl) {
+    appendClientServiceLog("no reception server discovered during refresh");
+    return null;
+  }
+
+  if (discoveredServerUrl !== clientSettings.serverUrl) {
+    appendClientServiceLog(`updating reception server URL ${clientSettings.serverUrl} -> ${discoveredServerUrl}`);
+    clientSettings.serverUrl = discoveredServerUrl;
+    saveClientSettings();
+    broadcastPanelSettings();
+  }
+
+  return discoveredServerUrl;
 }
 
 function loadClientServiceModule() {
@@ -1538,6 +1592,39 @@ function getAppIcon() {
   }
 
   return nativeImage.createEmpty();
+}
+
+function getMessageTaskbarOverlayIcon() {
+  if (messageTaskbarOverlayIcon) {
+    return messageTaskbarOverlayIcon;
+  }
+
+  const svg = `
+    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16">
+      <circle cx="8" cy="8" r="7" fill="#1d9ce5"/>
+      <circle cx="8" cy="8" r="4" fill="#ffffff"/>
+    </svg>
+  `;
+  messageTaskbarOverlayIcon = nativeImage.createFromDataURL(
+    `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`,
+  );
+  return messageTaskbarOverlayIcon;
+}
+
+function setTaskbarMessageBadge(visible) {
+  if (
+    process.platform !== "win32" ||
+    !mainWindow ||
+    mainWindow.isDestroyed() ||
+    typeof mainWindow.setOverlayIcon !== "function"
+  ) {
+    return;
+  }
+
+  mainWindow.setOverlayIcon(
+    visible ? getMessageTaskbarOverlayIcon() : null,
+    visible ? "Unread message" : "",
+  );
 }
 
 function getBrandLogoDataUrl() {
@@ -2157,6 +2244,10 @@ app.whenReady().then(async () => {
     closeReceptionPingPopup();
     return { ok: true };
   });
+  ipcMain.handle("panel:setMessageBadge", (_event, visible) => {
+    setTaskbarMessageBadge(Boolean(visible));
+    return { ok: true };
+  });
   ipcMain.handle("panel:syncThreadRail", (_event, payload = {}) => {
     if (!USE_EXTERNAL_THREAD_RAIL) {
       return { ok: true, external: false };
@@ -2253,36 +2344,100 @@ app.whenReady().then(async () => {
         ? details.restoreMode
         : currentPanelDisplayMode,
     );
-    const collapsedWidth = getPanelDisplayModeWidth(requestedRestoreMode);
+    const requestedCollapseMode =
+      typeof details === "object" && details !== null && typeof details.collapseToMode === "string"
+        ? normalizePanelDisplayMode(details.collapseToMode)
+        : null;
+    const collapsedMode = requestedCollapseMode || requestedRestoreMode;
+    const collapsedWidth = getPanelDisplayModeWidth(collapsedMode);
     const expandedWidth = getPanelExpandedWidth();
+    const shouldKeepExpanded =
+      typeof details === "object" && details !== null && details.keepExpanded === true;
+
+    if (currentWidth >= expandedWidth && shouldKeepExpanded) {
+      const display = screen.getDisplayMatching(targetWindow.getBounds());
+      const workArea = display.workArea;
+      const bannerOffset = currentBannerVisible ? SURGERY_BANNER_HEIGHT : 0;
+      const expandedHeight = Math.min(
+        getPanelDisplayModeHeight(requestedExpandedMode) + SURGERY_WINDOW_EXPANDED_HEIGHT_DELTA + bannerOffset,
+        workArea.height,
+      );
+      const expandedY = Math.min(
+        Math.max(currentY + currentHeight - expandedHeight, workArea.y),
+        Math.max(workArea.y, workArea.y + workArea.height - expandedHeight),
+      );
+      const expandedX = clampWindowXToVisibleWidth(currentX, expandedWidth, workArea);
+
+      targetWindow.setMaximumSize(expandedWidth, workArea.height);
+      targetWindow.setMinimumSize(expandedWidth, expandedHeight);
+      targetWindow.setBounds({
+        x: expandedX,
+        y: expandedY,
+        width: expandedWidth,
+        height: expandedHeight,
+      }, true);
+      setMainWindowResizeBounds(expandedWidth, expandedHeight, {
+        x: expandedX,
+        y: expandedY,
+        width: expandedWidth,
+        height: expandedHeight,
+      });
+      currentPanelDisplayMode = requestedExpandedMode;
+      positionThreadRailWindow();
+
+      return { ok: true, isExpanded: true };
+    }
 
     if (currentWidth >= expandedWidth) {
       // Collapse back to original width
+      const bannerOffset = currentBannerVisible ? SURGERY_BANNER_HEIGHT : 0;
+      const forcedCollapsedHeight = requestedCollapseMode
+        ? getPanelDisplayModeHeight(requestedCollapseMode) + bannerOffset
+        : null;
+
       if (preExpandWindowPosition) {
         const collapsedMinimumHeight = Math.max(
           1,
-          Math.round(Number(preExpandWindowPosition.minimumHeight) || getPanelDisplayModeHeight(currentPanelDisplayMode)),
+          Math.round(
+            Number(forcedCollapsedHeight || preExpandWindowPosition.minimumHeight) ||
+            getPanelDisplayModeHeight(currentPanelDisplayMode),
+          ),
         );
+        const collapsedHeight = forcedCollapsedHeight || preExpandWindowPosition.height;
+        const collapsedY = forcedCollapsedHeight
+          ? preExpandWindowPosition.y + preExpandWindowPosition.height - collapsedHeight
+          : preExpandWindowPosition.y;
         targetWindow.setMaximumSize(collapsedWidth, screen.getDisplayMatching(preExpandWindowPosition).workArea.height);
         targetWindow.setMinimumSize(collapsedWidth, collapsedMinimumHeight);
         targetWindow.setBounds({
           x: preExpandWindowPosition.x,
-          y: preExpandWindowPosition.y,
-          width: preExpandWindowPosition.width || collapsedWidth,
-          height: preExpandWindowPosition.height,
+          y: collapsedY,
+          width: collapsedWidth,
+          height: collapsedHeight,
         }, true);
-        setMainWindowResizeBounds(preExpandWindowPosition.width || collapsedWidth, collapsedMinimumHeight, preExpandWindowPosition);
+        setMainWindowResizeBounds(collapsedWidth, collapsedMinimumHeight, {
+          x: preExpandWindowPosition.x,
+          y: collapsedY,
+          width: collapsedWidth,
+          height: collapsedHeight,
+        });
         preExpandWindowPosition = null;
       } else {
+        const collapsedHeight = forcedCollapsedHeight || currentHeight;
+        const collapsedY = forcedCollapsedHeight ? currentY + currentHeight - collapsedHeight : currentY;
         targetWindow.setMaximumSize(collapsedWidth, screen.getDisplayMatching(targetWindow.getBounds()).workArea.height);
         targetWindow.setBounds({
           x: currentX,
-          y: currentY,
+          y: collapsedY,
           width: collapsedWidth,
+          height: collapsedHeight,
         }, true);
-        setMainWindowResizeBounds(collapsedWidth, currentHeight, targetWindow.getBounds());
+        setMainWindowResizeBounds(collapsedWidth, forcedCollapsedHeight || currentHeight, targetWindow.getBounds());
       }
 
+      if (requestedCollapseMode) {
+        currentPanelDisplayMode = requestedCollapseMode;
+      }
       positionThreadRailWindow();
 
       return { ok: true, isExpanded: false };
@@ -2346,6 +2501,9 @@ app.whenReady().then(async () => {
   });
 
   ipcMain.handle("panel:getSettings", () => clientSettings);
+  ipcMain.handle("panel:discoverReceptionServer", async () => ({
+    serverUrl: await refreshDiscoveredServerUrl(),
+  }));
   ipcMain.handle("panel:getRoleState", () => ({
     runtimeRole: clientSettings.runtimeRole,
     runtimeRoleConfirmed: Boolean(clientSettings.runtimeRoleConfirmed),

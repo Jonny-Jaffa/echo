@@ -22,6 +22,7 @@ contextBridge.exposeInMainWorld("pip", {
   showNextNotification: () => ipcRenderer.invoke("notification:next"),
   playReceptionTestSound: (options) => ipcRenderer.invoke("audio:playReceptionTestSound", options),
   updateDisplaySettings: (patch) => ipcRenderer.invoke("display:update", patch),
+  setTaskbarMessageBadge: (visible) => ipcRenderer.invoke("display:setMessageBadge", visible),
   updateGadgetHeight: (height) => ipcRenderer.invoke("display:updateGadgetHeight", height),
   onNotificationUpdate: (callback) => {
     ipcRenderer.on("notification:update", (_event, payload) => callback(payload));

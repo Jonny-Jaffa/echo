@@ -209,6 +209,7 @@ let configState = null;
 let socket = null;
 let reconnectTimer = null;
 let configRefreshTimer = null;
+let receptionDiscoveryPromise = null;
 let configHash = "";
 let panelDeviceId = "";
 let isServerPanelVisible = false;
@@ -858,6 +859,21 @@ function isPanelExpanded() {
   return document.body.dataset.expanded === "true";
 }
 
+function setPanelExpandedState(expanded) {
+  document.body.dataset.expanded = expanded ? "true" : "false";
+
+  if (!panelExpandButton) {
+    return;
+  }
+
+  panelExpandButton.classList.toggle("is-active", expanded);
+  panelExpandButton.setAttribute(
+    "aria-label",
+    expanded ? "Collapse window" : "Expand window",
+  );
+  panelExpandButton.title = expanded ? "Collapse window" : "Expand window";
+}
+
 function setManualMessageExtraHeight(extraHeight) {
   const nextHeight = Math.max(0, Math.floor(Number(extraHeight) || 0));
   document.body.style.setProperty("--manual-message-extra-height", `${nextHeight}px`);
@@ -916,7 +932,10 @@ async function setPanelDisplayMode(mode, options = {}) {
   const nextMode = normalizePanelDisplayMode(mode);
   const previousMode = panelDisplayMode;
   const persist = options.persist !== false;
-  const resize = options.resize !== false && !isPanelExpanded();
+  const isExpandedBeforeModeChange = isPanelExpanded();
+  const shouldCollapseExpandedToButtons =
+    !isSettingsWindow && isExpandedBeforeModeChange && nextMode === "buttons";
+  const resize = options.resize !== false && !isExpandedBeforeModeChange;
   const shouldResizeBeforeDomUpdate =
     !isSettingsWindow && resize && nextMode === "buttons" && previousMode !== "buttons";
   const shouldKeepMessagesPinned =
@@ -934,6 +953,21 @@ async function setPanelDisplayMode(mode, options = {}) {
 
   if (shouldResizeBeforeDomUpdate) {
     await resizePanelWindow({ animate: false });
+  }
+
+  if (shouldCollapseExpandedToButtons) {
+    setManualMessageExtraHeight(0);
+    setPanelExpandedState(false);
+    panelDisplayModeBeforeExpand = null;
+    await window.pipPanel.expandWindow?.({
+      restoreMode: "buttons",
+      collapseToMode: "buttons",
+    }).catch(() => {});
+  } else if (!isSettingsWindow && isExpandedBeforeModeChange) {
+    await window.pipPanel.expandWindow?.({
+      expandedMode: nextMode,
+      keepExpanded: true,
+    }).catch(() => {});
   }
 
   panelDisplayMode = nextMode;
@@ -1030,6 +1064,39 @@ async function fetchChatMessages() {
   renderMessagingUi();
 }
 
+async function discoverAndApplyReceptionServerUrl() {
+  if (typeof window.pipPanel?.discoverReceptionServer !== "function") {
+    return false;
+  }
+
+  if (receptionDiscoveryPromise) {
+    return receptionDiscoveryPromise;
+  }
+
+  receptionDiscoveryPromise = (async () => {
+    const previousServerUrl = serverInput.value.trim();
+    const result = await window.pipPanel.discoverReceptionServer().catch(() => null);
+    const discoveredServerUrl = String(result?.serverUrl || "").trim();
+
+    if (!discoveredServerUrl || discoveredServerUrl === previousServerUrl) {
+      return false;
+    }
+
+    serverInput.value = discoveredServerUrl;
+    await window.pipPanel.updateSettings({
+      serverUrl: discoveredServerUrl,
+      serverAccessKey: getServerAccessKeyValue(),
+      roomId: roomSelect.value,
+    }).catch(() => {});
+    saveState();
+    return true;
+  })().finally(() => {
+    receptionDiscoveryPromise = null;
+  });
+
+  return receptionDiscoveryPromise;
+}
+
 function connectSocket() {
   const serverUrl = serverInput.value.trim();
 
@@ -1119,13 +1186,20 @@ function connectSocket() {
     if (message.type === "chat:message" && message.payload) {
       const threadKey = getIncomingMessageThreadKey(message.payload);
       const shouldNotifyIncomingChat = shouldPlayIncomingChatSound(message.payload);
+      const isMessageThreadVisible = panelDisplayMode === "messages" || panelDisplayMode === "both";
+      const shouldOpenIncomingThreadFromButtons = Boolean(threadKey) && panelDisplayMode === "buttons";
+      const shouldMarkIncomingThreadUnread =
+        threadKey &&
+        !shouldOpenIncomingThreadFromButtons &&
+        (threadKey !== (activeMessageThreadKey || "reception") || !isMessageThreadVisible);
       const shouldRevealIncomingThread =
         threadKey &&
         threadKey !== (activeMessageThreadKey || "reception") &&
-        (panelDisplayMode === "messages" || panelDisplayMode === "both");
+        isMessageThreadVisible;
 
-      if (shouldRevealIncomingThread) {
+      if (shouldMarkIncomingThreadUnread) {
         unreadMessageThreadKeys.add(threadKey);
+        syncTaskbarMessageBadge();
       }
 
       if (shouldNotifyIncomingChat) {
@@ -1135,6 +1209,24 @@ function connectSocket() {
         ).catch(() => {});
       }
       chatMessages = [...chatMessages, message.payload].slice(-200);
+
+      if (shouldOpenIncomingThreadFromButtons) {
+        activeMessageThreadKey = threadKey;
+        unreadMessageThreadKeys.delete(threadKey);
+        syncTaskbarMessageBadge();
+        setPanelDisplayMode("both", { persist: false })
+          .then(() => {
+            renderMessageThreads();
+            renderMessagingUi();
+            requestAnimationFrame(focusMessageComposer);
+          })
+          .catch(() => {
+            renderMessageThreads();
+            renderMessagingUi();
+          });
+        return;
+      }
+
       renderMessageThreads();
       renderMessagingUi();
 
@@ -1570,6 +1662,7 @@ function ensureActiveMessageThread() {
 
   activeMessageThreadKey = latestThread?.key || "reception";
   unreadMessageThreadKeys.delete(activeMessageThreadKey);
+  syncTaskbarMessageBadge();
   return threads;
 }
 
@@ -1986,6 +2079,12 @@ function renderChatMessages() {
 
   const wasPinnedToBottom = isMessageListPinnedToBottom();
   const messages = getVisibleChatMessages();
+  const isMessageThreadVisible = panelDisplayMode === "messages" || panelDisplayMode === "both";
+
+  if (isMessageThreadVisible && activeMessageThreadKey) {
+    unreadMessageThreadKeys.delete(activeMessageThreadKey);
+    syncTaskbarMessageBadge();
+  }
 
   if (messages.length === 0) {
     messageList.innerHTML = "";
@@ -1994,6 +2093,7 @@ function renderChatMessages() {
   }
 
   const currentRoomId = getCurrentMessageRoomId();
+  const isAllRoomsThread = activeMessageThreadKey === "all";
   messageList.innerHTML = messages
     .map((message) => {
       const isOutgoing = String(message?.senderRoomId || "").trim() === currentRoomId;
@@ -2001,16 +2101,23 @@ function renderChatMessages() {
       const messageId = String(message.messageId || "").trim();
       const text = String(message.text || "");
       const attachmentsHtml = renderMessageAttachments(message.attachments);
-      const isSingleLine = text.length <= 34 && !text.includes("\n");
+      const senderLabel = isAllRoomsThread && !isOutgoing
+        ? getMessageSenderLabel(message)
+        : "";
+      const isSingleLine = !senderLabel && text.length <= 34 && !text.includes("\n");
       const incomingStyle = isOutgoing
         ? ""
         : ` style="--message-bubble-incoming: ${escapeHtml(getIncomingMessageBubbleColor(message))}; --message-bubble-text: white; --message-bubble-time: #ededed;"`;
+      const senderLabelHtml = senderLabel
+        ? `<span class="message-item-label">${escapeHtml(senderLabel)}</span>`
+        : "";
 
       if (isDeleted) {
         return `
           <article class="message-item ${isOutgoing ? "is-outgoing" : "is-incoming"} is-deleted"${incomingStyle}>
             <div class="message-bubble">
-              <div class="message-bubble-body is-single-line">
+              <div class="message-bubble-body ${senderLabel ? "is-multi-line" : "is-single-line"}">
+                ${senderLabelHtml}
                 <p class="message-item-text message-item-text-deleted">Message deleted</p>
               </div>
             </div>
@@ -2023,6 +2130,7 @@ function renderChatMessages() {
         <article class="message-item ${isOutgoing ? "is-outgoing" : "is-incoming"}"${incomingStyle} data-message-id="${escapeHtml(messageId)}">
           <div class="message-bubble">
             <div class="message-bubble-body ${isSingleLine ? "is-single-line" : "is-multi-line"}">
+              ${senderLabelHtml}
               ${text ? `<p class="message-item-text">${renderEmojis(text)}${editedLabel}</p>` : ""}
               <span class="message-item-time">${escapeHtml(formatMessageTime(message.timestamp))}</span>
             </div>
@@ -2042,6 +2150,19 @@ function renderChatMessages() {
   } else {
     requestAnimationFrame(updateMessageScrollbar);
   }
+}
+
+function getMessageSenderLabel(message) {
+  const senderType = String(message?.senderType || "").trim();
+
+  if (senderType === "reception") {
+    return "Reception";
+  }
+
+  const senderRoomId = String(message?.senderRoomId || "").trim();
+  const senderRoom = configState?.rooms?.find((room) => room.id === senderRoomId) || null;
+
+  return String(senderRoom?.name || message?.senderName || message?.senderShortLabel || senderRoom?.shortName || "Room").trim();
 }
 
 function renderMessagingUi() {
@@ -2309,6 +2430,7 @@ function selectMessageThread(threadKey, { closeDrawer = false } = {}) {
 
   activeMessageThreadKey = normalizedThreadKey;
   unreadMessageThreadKeys.delete(normalizedThreadKey);
+  syncTaskbarMessageBadge();
 
   if (closeDrawer) {
     setMessageThreadDrawerVisibility(false);
@@ -2316,6 +2438,10 @@ function selectMessageThread(threadKey, { closeDrawer = false } = {}) {
 
   renderMessageThreads();
   renderMessagingUi();
+}
+
+function syncTaskbarMessageBadge() {
+  window.pipPanel.setTaskbarMessageBadge?.(unreadMessageThreadKeys.size > 0).catch(() => {});
 }
 
 function renderButtons() {
@@ -3651,6 +3777,19 @@ function startConfigRefresh() {
         connectSocket();
       }
     } catch {
+      const switchedServerUrl = await discoverAndApplyReceptionServerUrl();
+
+      if (switchedServerUrl) {
+        try {
+          await fetchConfig({ skipRenderIfUnchanged: true });
+          await fetchChatMessages().catch(() => {});
+          connectSocket();
+          return;
+        } catch {
+          // Keep the existing UI state if the newly discovered server is not ready yet.
+        }
+      }
+
       // Keep the existing UI state if the reception app is briefly unavailable.
     }
   }, CONFIG_REFRESH_MS);
@@ -3949,7 +4088,27 @@ async function init() {
       roomId: roomSelect.value,
     }).catch(() => {});
     saveState();
+    startConfigRefresh();
   } catch (error) {
+    const switchedServerUrl = await discoverAndApplyReceptionServerUrl();
+
+    if (switchedServerUrl) {
+      try {
+        await fetchConfig();
+        renderButtons();
+        renderSelectedRoomVolumeControl();
+        renderMessagingUi();
+        await fetchChatMessages().catch(() => {});
+        await clearStartupNotifications();
+        connectSocket();
+        saveState();
+        startConfigRefresh();
+        return;
+      } catch {
+        // Fall through to the normal offline state if discovery found a stale server.
+      }
+    }
+
     setStatus("Offline", "offline");
 
     if (isSettingsWindow) {
@@ -4370,6 +4529,7 @@ roomSelect.addEventListener("change", async () => {
   preferredRoomId = roomSelect.value;
   activeMessageThreadKey = "";
   unreadMessageThreadKeys.clear();
+  syncTaskbarMessageBadge();
   setMessageThreadDrawerVisibility(false);
   clearAllPanelNotifications();
   renderButtons();
@@ -4402,15 +4562,11 @@ panelExpandButton?.addEventListener("click", async () => {
   const expandedPanelDisplayMode = !previousExpanded && previousPanelDisplayMode === "buttons"
     ? "both"
     : previousPanelDisplayMode;
-  const applyExpandedState = (expanded) => {
-    document.body.dataset.expanded = expanded ? "true" : "false";
-    panelExpandButton.classList.toggle("is-active", expanded);
-    panelExpandButton.setAttribute(
-      "aria-label",
-      expanded ? "Collapse window" : "Expand window",
-    );
-    panelExpandButton.title = expanded ? "Collapse window" : "Expand window";
-  };
+  const shouldContractToBoth =
+    previousExpanded && panelDisplayModeBeforeExpand === "buttons";
+  const restorePanelDisplayMode = shouldContractToBoth
+    ? "both"
+    : panelDisplayModeBeforeExpand || previousPanelDisplayMode;
 
   try {
     setManualMessageExtraHeight(0);
@@ -4418,22 +4574,23 @@ panelExpandButton?.addEventListener("click", async () => {
       panelDisplayModeBeforeExpand = previousPanelDisplayMode;
       await setPanelDisplayMode("both", { persist: false, resize: false });
     }
-    applyExpandedState(nextExpanded);
+    setPanelExpandedState(nextExpanded);
     const result = await window.pipPanel.expandWindow?.({
       expandedMode: expandedPanelDisplayMode,
-      restoreMode: panelDisplayModeBeforeExpand || previousPanelDisplayMode,
+      restoreMode: restorePanelDisplayMode,
+      ...(shouldContractToBoth ? { collapseToMode: "both" } : {}),
     });
     if (result?.isExpanded !== undefined) {
-      applyExpandedState(result.isExpanded);
+      setPanelExpandedState(result.isExpanded);
       if (!result.isExpanded && panelDisplayModeBeforeExpand) {
-        await setPanelDisplayMode(panelDisplayModeBeforeExpand, { persist: false, resize: false });
+        await setPanelDisplayMode(restorePanelDisplayMode, { persist: false, resize: false });
         panelDisplayModeBeforeExpand = null;
       }
     }
     scheduleManualMessageExtraHeightUpdate();
     requestAnimationFrame(focusMessageComposer);
   } catch {
-    applyExpandedState(previousExpanded);
+    setPanelExpandedState(previousExpanded);
     if (!previousExpanded && previousPanelDisplayMode === "buttons") {
       await setPanelDisplayMode(previousPanelDisplayMode, { persist: false, resize: false }).catch(() => {});
       panelDisplayModeBeforeExpand = null;

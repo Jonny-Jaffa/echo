@@ -215,7 +215,7 @@ body[data-window-view="settings"] .thread-rail {
 
 .gadget-panel {
   display: grid;
-  gap: 14px;
+  gap: 5px;
   width: 470px;
   padding: 8px 12px 12px;
   border: 1px solid var(--line);
@@ -1145,6 +1145,7 @@ body[data-thread-rail-collapsed="true"] .thread-rail .message-thread-scroll-wrap
   min-height: 42px;
   padding: 0 8px 0 0;
   border-radius: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.72);
   background:
     linear-gradient(
       90deg,
@@ -1156,7 +1157,8 @@ body[data-thread-rail-collapsed="true"] .thread-rail .message-thread-scroll-wrap
 }
 
 .compact-message-row .action-row {
-  grid-template-columns: 72px 48px 36px;
+  grid-template-columns: 72px 48px;
+  margin-left: auto;
   min-width: 132px;
 }
 
@@ -1230,7 +1232,7 @@ body[data-thread-rail-collapsed="true"] .thread-rail .message-thread-scroll-wrap
   justify-content: center;
   margin: 0;
   border-radius: 0 2px 2px 0;
-  border: 1px solid rgba(255, 255, 255, 0.72);
+  /* border: 1px solid rgba(255, 255, 255, 0.72); */
   border-left: 0;
   background:
     radial-gradient(circle at 18% 12%, rgba(255, 255, 255, 0.92) 0 14%, transparent 42%),

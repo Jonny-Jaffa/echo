@@ -566,9 +566,6 @@ function renderCompactAlertList(state, rooms, alerts) {
                 <button class="dismiss icon-confirm" data-action="${isActive ? "dismiss" : "dismiss-row"}" data-notification-id="${escapeHtml(alert.notificationId)}" type="button" aria-label="Confirm" title="Confirm">Confirm</button>
               </div>
             </div>
-            <div class="action-slot icon-slot">
-              <button class="dismiss secondary message-room-button ${unreadChatRoomIds.has(room.id) ? "is-unread" : ""}" data-action="message-room" data-room-id="${escapeHtml(room.id)}" type="button" aria-label="Message ${escapeHtml(room.name)}" title="Message ${escapeHtml(room.name)}">Message</button>
-            </div>
           </div>
         </article>
       `;
@@ -702,12 +699,14 @@ function selectChatRoom(roomId) {
   selectedChatRoomIds.clear();
   selectedChatRoomIds.add(roomId);
   unreadChatRoomIds.delete(roomId);
+  syncTaskbarMessageBadge();
 }
 
 function selectAllChatRooms(state = appState) {
   isAllChatRoomsThreadSelected = canUseAllRoomsThread(state);
   selectedChatRoomIds.clear();
   hasUnreadAllRoomsMessage = false;
+  syncTaskbarMessageBadge();
 }
 
 function selectHeaderMessageTarget(state = appState) {
@@ -757,6 +756,28 @@ function syncMessageSectionVisibility() {
   if (!isMessageSectionVisible) {
     setManualMessageExtraHeight(0);
   }
+}
+
+function hasUnreadChatMessages() {
+  return unreadChatRoomIds.size > 0 || hasUnreadAllRoomsMessage;
+}
+
+function syncTaskbarMessageBadge() {
+  window.pip.setTaskbarMessageBadge?.(hasUnreadChatMessages()).catch(() => {});
+}
+
+function markVisibleChatThreadViewed() {
+  if (!isMessageSectionVisible) {
+    return;
+  }
+
+  if (isAllChatRoomsThreadSelected) {
+    hasUnreadAllRoomsMessage = false;
+  } else {
+    selectedChatRoomIds.forEach((roomId) => unreadChatRoomIds.delete(roomId));
+  }
+
+  syncTaskbarMessageBadge();
 }
 
 function syncMessageContext(state = appState) {
@@ -861,7 +882,7 @@ function reconcileIncomingChatMessages(nextMessages = [], previousMessages = [])
   }
 
   if (hasNewAllRoomsMessage) {
-    if (isAllChatRoomsThreadSelected) {
+    if (isAllChatRoomsThreadSelected && isMessageSectionVisible) {
       hasUnreadAllRoomsMessage = false;
     } else {
       hasUnreadAllRoomsMessage = true;
@@ -869,13 +890,15 @@ function reconcileIncomingChatMessages(nextMessages = [], previousMessages = [])
   }
 
   newIncomingRoomIds.forEach((roomId) => {
-    if (!isAllChatRoomsThreadSelected && selectedChatRoomIds.has(roomId)) {
+    if (!isAllChatRoomsThreadSelected && selectedChatRoomIds.has(roomId) && isMessageSectionVisible) {
       unreadChatRoomIds.delete(roomId);
       return;
     }
 
     unreadChatRoomIds.add(roomId);
   });
+
+  syncTaskbarMessageBadge();
 
   return hasNewAllRoomsMessage ? [...newIncomingRoomIds, RECEPTION_ALL_ROOMS_MESSAGE_GROUP_KEY] : newIncomingRoomIds;
 }
@@ -1149,6 +1172,8 @@ function renderChatMessages(state) {
     return;
   }
 
+  markVisibleChatThreadViewed();
+
   const wasPinnedToBottom =
     chatMessageList.scrollHeight -
       chatMessageList.scrollTop -
@@ -1166,18 +1191,26 @@ function renderChatMessages(state) {
     .map((message) => {
       const isOutgoing = message.senderType === "reception";
       const senderRoom = getRoomById(String(message.senderRoomId || "").trim(), state);
+      const shouldShowSenderLabel = isAllChatRoomsThreadSelected && !isOutgoing;
+      const senderLabel = shouldShowSenderLabel
+        ? String(senderRoom?.name || message.senderName || message.senderShortLabel || senderRoom?.shortName || "Room").trim()
+        : "";
       const text = String(message.text || "");
       const attachmentsHtml = renderMessageAttachments(message.attachments);
       const timestamp = formatMessageTime(message.timestamp);
-      const isSingleLine = text.length <= 34 && !text.includes("\n");
+      const isSingleLine = !senderLabel && text.length <= 34 && !text.includes("\n");
       const isDeleted = Boolean(message.deleted);
       const messageId = String(message.messageId || "").trim();
+      const senderLabelHtml = senderLabel
+        ? `<span class="message-item-label">${escapeHtml(senderLabel)}</span>`
+        : "";
 
       if (isDeleted) {
         return `
           <article class="message-item ${isOutgoing ? "is-outgoing" : "is-incoming"} is-deleted" style="--message-bubble-incoming: ${escapeHtml(senderRoom?.color || "#418191")}">
             <div class="message-bubble">
-              <div class="message-bubble-body is-single-line">
+              <div class="message-bubble-body ${senderLabel ? "is-multi-line" : "is-single-line"}">
+                ${senderLabelHtml}
                 <p class="message-item-text message-item-text-deleted">Message deleted</p>
               </div>
             </div>
@@ -1190,6 +1223,7 @@ function renderChatMessages(state) {
         <article class="message-item ${isOutgoing ? "is-outgoing" : "is-incoming"}" style="--message-bubble-incoming: ${escapeHtml(senderRoom?.color || "#418191")}" data-message-id="${escapeHtml(messageId)}">
           <div class="message-bubble">
             <div class="message-bubble-body ${isSingleLine ? "is-single-line" : "is-multi-line"}">
+              ${senderLabelHtml}
               ${text ? `<p class="message-item-text">${renderEmojis(text)}${editedLabel}</p>` : ""}
               <span class="message-item-time">${escapeHtml(timestamp)}</span>
             </div>
@@ -2066,7 +2100,12 @@ compactModeButton?.addEventListener("click", () => {
 
 toggleCompactViewButton?.addEventListener("click", async () => {
   const compactMode = !Boolean(appState?.config?.display?.compactMode);
-  await window.pip.updateDisplaySettings({ compactMode });
+  const shouldContractExpandedShell =
+    compactMode && !isMessageSectionVisible && document.body.dataset.expanded === "true";
+  await window.pip.updateDisplaySettings({
+    compactMode,
+    ...(shouldContractExpandedShell ? { expanded: false } : {}),
+  });
   compactModeButton?.setAttribute("aria-expanded", "false");
   compactModeMenu?.classList.add("hidden");
 });
@@ -2249,6 +2288,7 @@ document.body.addEventListener("drop", (event) => {
 async function toggleExpandWindow() {
   const isExpanded = document.body.dataset.expanded === "true";
   const nextExpanded = !isExpanded;
+  const shouldShowMessagesOnExpand = nextExpanded && !isMessageSectionVisible;
   document.body.dataset.expanded = nextExpanded ? "true" : "false";
   expandWindowButton?.classList.toggle("is-active", nextExpanded);
   expandAdminButton?.classList.toggle("is-active", nextExpanded);
@@ -2260,8 +2300,17 @@ async function toggleExpandWindow() {
     expandAdminButton.title = nextExpanded ? "Collapse window" : "Expand window";
     expandAdminButton.setAttribute("aria-label", nextExpanded ? "Collapse window" : "Expand window");
   }
+  if (shouldShowMessagesOnExpand) {
+    showMessageSection({ persist: false });
+    renderAlertList(appState);
+    renderChatRecipients(appState);
+    renderThreadSidebar(appState);
+    renderChatMessages(appState);
+    syncChatComposerState();
+  }
   await window.pip.updateDisplaySettings({
     expanded: nextExpanded,
+    ...(shouldShowMessagesOnExpand ? { messagesVisible: true } : {}),
   });
   reportGadgetHeight();
   requestAnimationFrame(focusChatComposer);
@@ -2606,6 +2655,7 @@ document.body.addEventListener("click", (event) => {
     } else {
       selectedChatRoomIds.add(roomId);
       unreadChatRoomIds.delete(roomId);
+      syncTaskbarMessageBadge();
     }
 
     renderChatRecipients(appState);
@@ -2854,13 +2904,14 @@ window.pip.onChatUpdate((messages) => {
   const newIncomingRoomIds = reconcileIncomingChatMessages(nextMessages, previousMessages);
 
   if (newIncomingRoomIds.length > 0) {
-    showMessageSection();
+    showMessageSection({ persist: true });
   }
 
   appState = {
     ...appState,
     chatMessages: nextMessages,
   };
+  syncTaskbarMessageBadge();
   renderAlertList(appState);
   renderChatRecipients(appState);
   renderThreadSidebar(appState);

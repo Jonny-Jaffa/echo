@@ -375,7 +375,6 @@ body[data-popup-kind="receptionPing"] .message-popup-close {
 
 body[data-popup-kind="receptionPing"] .message-popup-close:hover {
   background: transparent;
-  color: #16a34a;
 }
 
 .message-popup-neo-button {

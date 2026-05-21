@@ -29,6 +29,7 @@ let isProgrammaticWindowMove = false;
 let aboutWindow = null;
 let messagePopupWindow = null;
 let latestMessagePopupPayload = null;
+let messageTaskbarOverlayIcon = null;
 let localAppState = {
   runtimeRole: RUNTIME_ROLE_RECEPTION,
   runtimeRoleConfirmed: true,
@@ -729,6 +730,39 @@ function getAppIcon() {
     path.join(__dirname, "assets", "tray-icon.ico"),
     path.join(__dirname, "assets", "tray-icon.png"),
   ]);
+}
+
+function getMessageTaskbarOverlayIcon() {
+  if (messageTaskbarOverlayIcon) {
+    return messageTaskbarOverlayIcon;
+  }
+
+  const svg = `
+    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16">
+      <circle cx="8" cy="8" r="7" fill="#1d9ce5"/>
+      <circle cx="8" cy="8" r="4" fill="#ffffff"/>
+    </svg>
+  `;
+  messageTaskbarOverlayIcon = nativeImage.createFromDataURL(
+    `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`,
+  );
+  return messageTaskbarOverlayIcon;
+}
+
+function setTaskbarMessageBadge(visible) {
+  if (
+    process.platform !== "win32" ||
+    !mainWindow ||
+    mainWindow.isDestroyed() ||
+    typeof mainWindow.setOverlayIcon !== "function"
+  ) {
+    return;
+  }
+
+  mainWindow.setOverlayIcon(
+    visible ? getMessageTaskbarOverlayIcon() : null,
+    visible ? "Unread message" : "",
+  );
 }
 
 function getBrandLogoDataUrl() {
@@ -1451,6 +1485,12 @@ function resizeForDisplayMode(options = {}) {
     }
   }
 
+  if (options.preserveRight && !configState.display.minimized) {
+    const maxX = workArea.x + workArea.width - bounds.width;
+    const preferredX = currentBounds.x + currentBounds.width - bounds.width;
+    bounds.x = Math.min(Math.max(preferredX, workArea.x), Math.max(workArea.x, maxX));
+  }
+
   mainWindow.setAlwaysOnTop(Boolean(configState.display.alwaysOnTop));
   mainWindow.setResizable(true);
   mainWindow.setMinimumSize(bounds.width, minimumHeight);
@@ -1528,9 +1568,13 @@ function getWindowBounds(config, currentBounds = null, options = {}) {
     options.preserveBottom && !config.display.minimized
       ? referenceBounds.y + referenceBounds.height - height
       : referenceBounds.y;
+  const preferredX =
+    options.preserveRight && !config.display.minimized
+      ? referenceBounds.x + referenceBounds.width - width
+      : referenceBounds.x;
 
   return {
-    x: Math.min(Math.max(referenceBounds.x, workArea.x), Math.max(workArea.x, maxX)),
+    x: Math.min(Math.max(preferredX, workArea.x), Math.max(workArea.x, maxX)),
     y: Math.min(Math.max(preferredY, workArea.y), Math.max(workArea.y, maxY)),
     width,
     height,
@@ -1671,6 +1715,10 @@ function initializeConfigPath() {
 async function updateDisplaySettings(patch) {
   const wasExpanded = Boolean(configState.display.expanded);
   const willBeExpanded = typeof patch.expanded === "boolean" ? patch.expanded : wasExpanded;
+  const wasMessagesVisible = Boolean(configState.display.messagesVisible);
+  const willMessagesVisible =
+    typeof patch.messagesVisible === "boolean" ? patch.messagesVisible : wasMessagesVisible;
+  const isTogglingMessages = wasMessagesVisible !== willMessagesVisible;
 
   if (!wasExpanded && willBeExpanded && mainWindow && !mainWindow.isDestroyed()) {
     const { x, y, height } = mainWindow.getBounds();
@@ -1710,6 +1758,10 @@ async function updateDisplaySettings(patch) {
   setLaunchAtStartup(configState.display.launchAtStartup);
 
   const resizeOptions = {};
+  if (isTogglingMessages && !willBeExpanded) {
+    resizeOptions.preserveRight = true;
+    resizeOptions.preserveBottom = true;
+  }
   if (!wasExpanded && willBeExpanded && preExpandWindowPosition) {
     resizeOptions.overrideHeight = Math.max(
       WINDOW_MINIMIZED_HEIGHT,
@@ -2134,6 +2186,11 @@ app.whenReady().then(async () => {
     return updateDisplaySettings(nextPatch);
   });
 
+  ipcMain.handle("display:setMessageBadge", (_event, visible) => {
+    setTaskbarMessageBadge(Boolean(visible));
+    return { ok: true };
+  });
+
   ipcMain.handle("display:updateGadgetHeight", async (_event, height) => {
     if (!configState || configState.display.minimized) {
       return { ok: false };
@@ -2155,8 +2212,11 @@ app.whenReady().then(async () => {
 
     measuredGadgetHeight = nextHeight;
     resizeForDisplayMode({
+      preserveRight: true,
       preserveBottom: true,
-      preserveManualHeight: !Boolean(configState.display?.compactMode),
+      preserveManualHeight:
+        !Boolean(configState.display?.compactMode) &&
+        Boolean(configState.display?.messagesVisible),
     });
 
     return { ok: true, height: measuredGadgetHeight };

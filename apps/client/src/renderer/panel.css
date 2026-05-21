@@ -212,6 +212,14 @@ body[data-window-view="main"] .panel-card {
   z-index: 1;
 }
 
+body[data-platform="win32"][data-window-view="main"]:not([data-view="waiting"]) .panel-card {
+  width: calc(100% - 1px);
+  min-width: calc(var(--panel-width) - 1px);
+  min-height: calc(100vh - 1px);
+  max-height: calc(100vh - 1px);
+  height: calc(100vh - 1px);
+}
+
 body[data-window-view="main"][data-quick-actions-visible="true"] .panel-card {
   grid-template-rows: auto auto auto auto auto minmax(0, 1fr);
 }
@@ -1888,6 +1896,14 @@ body[data-thread-rail-collapsed="true"] .thread-rail .message-thread-scroll-wrap
 
 .message-bubble-body.is-multi-line .message-item-text {
   padding-right: 42px;
+}
+
+.message-item-label {
+  display: block;
+  margin: 0 0 3px;
+  color: rgba(255, 255, 255, 0.82);
+  font-size: 11px;
+  line-height: 1.2;
 }
 
 .message-item-time {
